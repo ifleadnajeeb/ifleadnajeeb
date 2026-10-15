@@ -11,7 +11,6 @@ export const api = axios.create({
   },
 });
 
-// ─── Response interceptor: handle 401 / 403 ───
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
