@@ -9,7 +9,7 @@ export const appConfig = {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
     sameSite: 'lax' as const,
-    domain: env.NODE_ENV === 'production' ? env.COOKIE_DOMAIN : undefined,
+    // No `domain` — cookie scopes to the exact host (Railway or Vercel)
   },
 
   accessTokenTtlMs: 15 * 60 * 1000,
