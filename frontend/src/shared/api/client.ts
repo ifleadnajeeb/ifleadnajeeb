@@ -1,7 +1,10 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+const baseURL = API_BASE ? `${API_BASE}/api` : '/api';
+
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -15,7 +18,6 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url ?? '';
 
-    // Don't loop on login/refresh failures
     const isAuthCall =
       url.includes('/auth/login') ||
       url.includes('/auth/refresh') ||
@@ -30,11 +32,6 @@ api.interceptors.response.use(
           window.location.href = '/login';
         }
       }
-    }
-
-    if (status === 403) {
-      // Let the caller decide — the AuthProvider marks 403 as unauthorized
-      // and route-level RoleRoute already guards the UI.
     }
 
     return Promise.reject(error);
