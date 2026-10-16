@@ -177,6 +177,49 @@ export const userService = {
     });
   },
 
+  async remove(actor: AuthUser, id: string) {
+    if (id === actor.id) throw new Error('Cannot delete yourself');
+
+    const target = await prisma.user.findUnique({
+      where: { id },
+      include: { role: true },
+    });
+    if (!target) throw new Error('User not found');
+    if (target.organizationId !== actor.organizationId) {
+      throw new Error('Cross-organization access denied');
+    }
+
+    // Nobody can delete an ADMIN (including other admins)
+    if (target.role.name === 'ADMIN') {
+      throw new Error('Cannot delete an ADMIN');
+    }
+
+    // Hierarchy check — same rules as deactivate
+    if (actor.role !== 'ADMIN') {
+      const allowed = CAN_MANAGE[actor.role as RoleName] ?? [];
+      if (!allowed.includes(target.role.name)) {
+        throw new Error(`Cannot manage ${target.role.name}`);
+      }
+    }
+
+    // Reassign direct reports so they don't become orphaned
+    await prisma.user.updateMany({
+      where: { managerId: id },
+      data: { managerId: actor.id },
+    });
+
+    // Delete in a transaction so FK cascades run cleanly
+    await prisma.$transaction([
+      // Null out lead assignments so we don't lose leads
+      prisma.lead.updateMany({
+        where: { assignedToId: id },
+        data: { assignedToId: null },
+      }),
+      // Remove the user
+      prisma.user.delete({ where: { id } }),
+    ]);
+  },
+
   canCreate(actorRole: string): RoleName[] {
     return CAN_CREATE[actorRole as RoleName] ?? [];
   },

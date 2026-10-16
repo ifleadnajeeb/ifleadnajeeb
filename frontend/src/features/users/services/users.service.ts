@@ -59,6 +59,9 @@ export const usersService = {
   deactivate: async (id: string): Promise<void> => {
     await api.delete(`/users/${id}`);
   },
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/users/${id}/permanent`);
+  },
 };
 
 export const ROLE_LABEL: Record<string, string> = {

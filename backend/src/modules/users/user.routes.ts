@@ -19,5 +19,6 @@ router.get('/', requirePermission('users:read'), validate(ListUsersQuerySchema, 
 router.post('/', requirePermission('users:create'), validate(CreateUserSchema), audit('user.create', 'User'), userController.create);
 router.patch('/:id', requirePermission('users:update'), validate(UpdateUserSchema), audit('user.update', 'User'), userController.update);
 router.delete('/:id', requirePermission('users:delete'), audit('user.deactivate', 'User'), userController.deactivate);
+router.delete('/:id/permanent', requirePermission('users:delete'), audit('user.delete', 'User'), userController.remove);
 
 export default router;

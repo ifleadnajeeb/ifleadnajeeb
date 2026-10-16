@@ -137,21 +137,47 @@ export default function UsersPage() {
                         : 'Never'}
                     </td>
                     <td className="px-3 py-3 text-right">
-                      {/* "Deactivate" gated by users:delete permission */}
                       <CanDo permission="users:delete">
                         {u.role !== 'ADMIN' && u.id !== user?.id ? (
-                          <button
-                            onClick={() => {
-                              if (confirm('Deactivate ' + u.name + '?')) {
-                                usersService.deactivate(u.id).then(() => {
-                                  qc.invalidateQueries({ queryKey: ['users'] });
-                                });
-                              }
-                            }}
-                            className="text-[12px] text-danger hover:underline"
-                          >
-                            Deactivate
-                          </button>
+                          <div className="flex items-center justify-end gap-3">
+                            <button
+                              onClick={() => {
+                                if (confirm('Deactivate ' + u.name + '?')) {
+                                  usersService.deactivate(u.id).then(() => {
+                                    qc.invalidateQueries({ queryKey: ['users'] });
+                                  });
+                                }
+                              }}
+                              className="text-[12px] text-amber-600 hover:underline"
+                            >
+                              Deactivate
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (
+                                  confirm(
+                                    `PERMANENTLY DELETE "${u.name}"?\n\nThis cannot be undone.\nTheir leads will be unassigned, and their reports will be reassigned to you.`
+                                  )
+                                ) {
+                                  usersService
+                                    .remove(u.id)
+                                    .then(() => {
+                                      qc.invalidateQueries({ queryKey: ['users'] });
+                                      alert(u.name + ' has been deleted.');
+                                    })
+                                    .catch((err: any) => {
+                                      alert(
+                                        err?.response?.data?.message ||
+                                          'Could not delete user'
+                                      );
+                                    });
+                                }
+                              }}
+                              className="text-[12px] text-danger font-medium hover:underline"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         ) : null}
                       </CanDo>
                     </td>

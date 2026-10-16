@@ -30,6 +30,11 @@ export const userController = {
     res.status(204).end();
   },
 
+  async remove(req: AuthRequest, res: Response) {
+    await userService.remove(req.user!, req.params.id);
+    res.status(204).end();
+  },
+
   async canCreate(req: AuthRequest, res: Response) {
     const roles = userService.canCreate(req.user!.role);
     res.json({ data: roles });
