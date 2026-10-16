@@ -30,6 +30,7 @@ type Intent =
   | 'my_profile'
   | 'my_team'
   | 'count_users'
+  | 'llm_fallback'
   | 'unknown';
 
 function detectIntent(msg: string): Intent {

@@ -5,6 +5,8 @@ import { Bell, X, CheckSquare, AlertTriangle } from 'lucide-react';
 // Audio (inline, no external imports)
 // ─────────────────────────────────────────────────────────────
 let audioCtx: AudioContext | null = null;
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) || '';
+
 function beep() {
   try {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
@@ -81,7 +83,7 @@ export function TaskReminderWatcher() {
     async function poll() {
       if (cancelled) return;
       try {
-        const res = await fetch('/api/tasks/reminders/due', {
+        const res = await fetch(`${API_BASE}/api/tasks/reminders/due`, {
           credentials: 'include',
           headers: { 'Accept': 'application/json' },
         });
@@ -122,7 +124,7 @@ export function TaskReminderWatcher() {
         beepIntervalRef.current = setInterval(beep, 1500);
 
         // Mark as fired on server
-        fetch(`/api/tasks/${next.id}/reminder-fired`, {
+        fetch(`${API_BASE}/api/tasks/${next.id}/reminder-fired`, {
           method: 'POST',
           credentials: 'include',
         }).catch(() => {});
@@ -167,7 +169,7 @@ export function TaskReminderWatcher() {
   const markDone = async () => {
     if (!active) return;
     try {
-      await fetch(`/api/tasks/${active.id}/move`, {
+      await fetch(`${API_BASE}/api/tasks/${active.id}/move`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
