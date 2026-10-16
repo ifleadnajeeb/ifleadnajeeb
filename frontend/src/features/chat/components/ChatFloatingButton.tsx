@@ -4,10 +4,20 @@ import { MessageCircle, X } from 'lucide-react';
 import { chatService } from '../services/chat.service';
 import { ChatPanel } from './ChatPanel';
 import { cn } from '@/shared/utils/cn';
+import { useDraggable } from '@/shared/hooks/useDraggable';
 
 export function ChatFloatingButton() {
   const [open, setOpen] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
+  const { pos, isDragging, didMove, dragHandlers } = useDraggable(
+    'ifleads-chat-button-pos',
+    { x: window.innerWidth - 240, y: window.innerHeight - 60 }
+  );
+
+  const handleClick = () => {
+    if (didMove()) return; // it was a drag, not a click
+    setOpen((v) => !v);
+  };
 
   // Poll unread count every 10s
   useEffect(() => {
@@ -28,12 +38,17 @@ export function ChatFloatingButton() {
   return createPortal(
     <>
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-4 right-[220px] z-30 inline-flex items-center gap-2
-                   px-4 py-2.5 rounded-full bg-brand text-white
-                   text-[13px] font-medium shadow-lg hover:bg-brand-hover
-                   transition-all"
-        title="iFChat"
+        {...dragHandlers}
+        onClick={handleClick}
+        style={{ left: pos.x, top: pos.y }}
+        className={cn(
+          'fixed z-30 inline-flex items-center gap-2',
+          'px-4 py-2.5 rounded-full bg-brand text-white',
+          'text-[13px] font-medium shadow-lg hover:bg-brand-hover',
+          'select-none touch-none',
+          isDragging ? 'cursor-grabbing opacity-90' : 'cursor-grab transition-all'
+        )}
+        title="iFChat — drag to move"
       >
         <MessageCircle className="w-4 h-4" />
         iFChat

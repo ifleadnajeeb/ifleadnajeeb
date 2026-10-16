@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Sparkles, X, Send, RotateCcw, Copy, Check, Bot, User } from 'lucide-react';
 import { aiService } from '../services/ai.service';
 import { cn } from '@/shared/utils/cn';
+import { useDraggable } from '@/shared/hooks/useDraggable';
 
 interface Message {
   role: 'user' | 'ai';
@@ -65,6 +66,15 @@ export function AIAssistant() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { pos, isDragging, didMove, dragHandlers } = useDraggable(
+    'ifleads-ai-button-pos',
+    { x: window.innerWidth - 160, y: window.innerHeight - 60 }
+  );
+
+  const handleButtonClick = () => {
+    if (didMove()) return;
+    setOpen((v) => !v);
+  };
 
   useEffect(() => {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-50))); } catch {}
@@ -123,15 +133,27 @@ export function AIAssistant() {
   return createPortal(
     <>
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-4 right-4 z-50 rounded-full px-4 py-2.5 bg-brand text-white font-medium text-sm shadow-lg hover:bg-brand-hover transition-colors flex items-center gap-2"
+        {...dragHandlers}
+        onClick={handleButtonClick}
+        style={{ left: pos.x, top: pos.y }}
+        className={cn(
+          'fixed z-50 rounded-full px-4 py-2.5 bg-brand text-white',
+          'font-medium text-sm shadow-lg hover:bg-brand-hover',
+          'flex items-center gap-2 select-none touch-none',
+          isDragging ? 'cursor-grabbing opacity-90' : 'cursor-grab transition-colors'
+        )}
+        title="AI Assistant — drag to move"
       >
         <Sparkles className="w-4 h-4" /> AI Assistant
       </button>
 
       {open && (
         <div
-          className="fixed bottom-20 right-4 z-50 flex flex-col w-[420px] max-w-[calc(100vw-24px)] h-[640px] max-h-[80vh] bg-white border border-ink-border rounded-2xl shadow-2xl overflow-hidden"
+          style={{
+            left: Math.min(pos.x, window.innerWidth - 440),
+            top: Math.max(pos.y - 660, 8),
+          }}
+          className="fixed z-50 flex flex-col w-[420px] max-w-[calc(100vw-24px)] h-[640px] max-h-[80vh] bg-white border border-ink-border rounded-2xl shadow-2xl overflow-hidden"
           role="dialog"
         >
           {/* Header */}
