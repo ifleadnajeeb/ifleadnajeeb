@@ -28,7 +28,7 @@ export const rolesService = {
 export const ROLE_LABEL: Record<string, string> = {
   ADMIN: 'Administrator',
   CEO: 'Chief Executive Officer',
-  BDM: 'Business Development Manager',
+  BDM: 'General Manager',
   SALES_HEAD: 'Sales Head',
   BDE: 'Business Development Executive',
 };

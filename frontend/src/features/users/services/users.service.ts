@@ -67,7 +67,7 @@ export const usersService = {
 export const ROLE_LABEL: Record<string, string> = {
   ADMIN: 'Admin',
   CEO: 'CEO',
-  BDM: 'BDM',
+  BDM: 'GM',
   SALES_HEAD: 'Sales Head',
   BDE: 'BDE',
 };
