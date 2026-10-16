@@ -8,8 +8,7 @@ export const appConfig = {
   cookieOptions: {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    // No `domain` — cookie scopes to the exact host (Railway or Vercel)
+    sameSite: (env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
   },
 
   accessTokenTtlMs: 15 * 60 * 1000,
