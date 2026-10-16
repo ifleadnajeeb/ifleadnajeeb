@@ -27,6 +27,9 @@ type Intent =
   | 'today_appointments'
   | 'count_customers'
   | 'recent_activity'
+  | 'my_profile'
+  | 'my_team'
+  | 'count_users'
   | 'unknown';
 
 function detectIntent(msg: string): Intent {
@@ -46,6 +49,10 @@ function detectIntent(msg: string): Intent {
   if (/\b(appointment|meeting)s?\b.*\btoday\b/.test(m) || /\btoday.*\bappointment/.test(m)) return 'today_appointments';
   if (/\b(how many|count|total)\b.*\bcustomer/.test(m)) return 'count_customers';
   if (/\b(recent|latest|last)\b.*\b(activity|activities|action)/.test(m)) return 'recent_activity';
+
+  if (/\b(my|what('s| is)? my)\b.*\b(role|profile|email|name|designation)\b/.test(m) || /\bwho am i\b/.test(m)) return 'my_profile';
+  if (/\bmy team\b/.test(m) || /\bwho('s| is)\b.*\bmy team\b/.test(m) || /\bteam members?\b/.test(m)) return 'my_team';
+  if (/\b(how many|count|total|number of)\b.*\busers?\b/.test(m) || /\busers?\b.*\b(count|total)\b/.test(m)) return 'count_users';
 
   // Meta questions about THIS assistant specifically (narrower — lets general
   // "what is AI" flow through to the LLM for a real answer)
@@ -385,6 +392,47 @@ Just ask in plain English.`,
         intent,
         reply: `Recent activity:\n\n${list}`,
         links: [{ label: 'Full audit log', href: '/audit' }],
+      };
+    }
+
+    case 'my_profile': {
+      return {
+        intent,
+        reply: `👤 **Your Profile**\n\n• **Name:** ${actor.name}\n• **Email:** ${actor.email}\n• **Role:** ${actor.role}\n• **Role Level:** ${actor.roleLevel}`,
+        data: { name: actor.name, email: actor.email, role: actor.role, roleLevel: actor.roleLevel },
+      };
+    }
+
+    case 'my_team': {
+      const members = await prisma.user.findMany({
+        where: { managerId: actor.id, organizationId: actor.organizationId },
+        select: { id: true, name: true, email: true, role: { select: { name: true } } },
+        orderBy: { name: 'asc' },
+      });
+      if (members.length === 0) {
+        return { intent, reply: 'You have no direct team members assigned to you. 👥' };
+      }
+      const list = members.map((u) => `• **${u.name}** (${u.role.name}) — ${u.email}`).join('\n');
+      return {
+        intent,
+        reply: `👥 **Your team (${members.length})**:\n\n${list}`,
+        data: members,
+        links: [{ label: 'Team performance', href: '/team-performance' }],
+      };
+    }
+
+    case 'count_users': {
+      if (actor.role !== 'ADMIN' && actor.role !== 'CEO') {
+        return { intent, reply: 'You do not have permission to see the full user list.' };
+      }
+      const total = await prisma.user.count({
+        where: { organizationId: actor.organizationId },
+      });
+      return {
+        intent,
+        reply: `There are **${total} user${total === 1 ? '' : 's'}** in your organization.`,
+        data: { total },
+        links: [{ label: 'View users', href: '/users' }],
       };
     }
 
