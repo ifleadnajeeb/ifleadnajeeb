@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Sparkles, X, Send, RotateCcw, Copy, Check, Bot, User } from 'lucide-react';
 import { aiService } from '../services/ai.service';
 import { cn } from '@/shared/utils/cn';
@@ -119,7 +120,7 @@ export function AIAssistant() {
     });
   };
 
-  return (
+  return createPortal(
     <>
       <button
         onClick={() => setOpen((v) => !v)}
@@ -256,6 +257,7 @@ export function AIAssistant() {
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }

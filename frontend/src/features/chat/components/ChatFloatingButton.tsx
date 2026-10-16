@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MessageCircle, X } from 'lucide-react';
 import { chatService } from '../services/chat.service';
 import { ChatPanel } from './ChatPanel';
@@ -24,7 +25,7 @@ export function ChatFloatingButton() {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  return (
+  return createPortal(
     <>
       <button
         onClick={() => setOpen((v) => !v)}
@@ -46,6 +47,7 @@ export function ChatFloatingButton() {
       </button>
 
       {open && <ChatPanel onClose={() => setOpen(false)} />}
-    </>
+    </>,
+    document.body
   );
 }
