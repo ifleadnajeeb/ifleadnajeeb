@@ -15,6 +15,7 @@ export async function buildScopeFilter(
       return { where: {} };
 
     case 'CEO':
+    case 'OP_MANAGER':
       return { where: { organizationId: user.organizationId } };
 
     case 'BDM': {
