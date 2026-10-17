@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { Briefcase, CheckSquare, Users, AlertCircle, Building2, CheckCircle, XCircle } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Briefcase, CheckSquare, Users, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { operationsService } from '@/features/operations/services/operations.service';
-import { tasksService } from '@/features/tasks/services/tasks.service';
 import { customersService } from '@/features/customers/services/customers.service';
+import { tasksService } from '@/features/tasks/services/tasks.service';
 import { useAuth } from '@/app/providers/auth-provider';
 
 export default function OPDashboard() {
@@ -15,24 +15,41 @@ export default function OPDashboard() {
     queryFn: operationsService.listProjects,
   });
 
-  // Fetch Converted Leads (Customers)
+  // Fetch Customers
   const { data: customersResponse, isLoading: customersLoading } = useQuery({
     queryKey: ['customers'],
     queryFn: () => customersService.list({ page: 1, pageSize: 10 }),
   });
-
   const customers = customersResponse?.data || [];
 
-  const { data: pendingReviews, isLoading: reviewsLoading } = useQuery({
-    queryKey: ['tasks', 'reviews'],
-    queryFn: () => tasksService.list({ pageSize: 50 }),
-  });
-  const reviewTasks = pendingReviews?.data?.filter((t: any) => t.reviewStatus === 'PENDING_REVIEW') || [];
-
+  // Fetch Daily Reports
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ['daily-reports'],
     queryFn: operationsService.listDailyReports,
   });
+
+  // Fetch Pending Reviews
+  const { data: allTasks } = useQuery({
+    queryKey: ['tasks', 'all-reviews'],
+    queryFn: () => tasksService.list({ pageSize: 100 }),
+  });
+  const reviewTasks = allTasks?.data?.filter((t: any) => t.reviewStatus === 'PENDING_REVIEW') || [];
+
+  const handleApprove = async (id: string) => {
+    try {
+      await tasksService.approve(id);
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    } catch { alert('Failed to approve'); }
+  };
+
+  const handleCorrect = async (id: string) => {
+    const reason = prompt('Reason for correction:');
+    if (!reason) return;
+    try {
+      await tasksService.requestCorrection(id, reason);
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    } catch { alert('Failed to request correction'); }
+  };
 
   return (
     <div className="space-y-6">
@@ -58,20 +75,20 @@ export default function OPDashboard() {
         <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Pending Tasks</p>
-              <h2 className="text-3xl font-bold text-ink mt-1">0</h2>
+              <p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Awaiting Review</p>
+              <h2 className="text-3xl font-bold text-ink mt-1">{reviewTasks.length}</h2>
             </div>
-            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg"><CheckSquare className="w-5 h-5" /></div>
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><AlertCircle className="w-5 h-5" /></div>
           </div>
         </div>
 
         <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Awaiting Review</p>
+              <p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Pending Tasks</p>
               <h2 className="text-3xl font-bold text-ink mt-1">0</h2>
             </div>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg"><AlertCircle className="w-5 h-5" /></div>
+            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg"><CheckSquare className="w-5 h-5" /></div>
           </div>
         </div>
 
@@ -83,6 +100,37 @@ export default function OPDashboard() {
             </div>
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><Users className="w-5 h-5" /></div>
           </div>
+        </div>
+      </div>
+
+      {/* Work Review & Approvals */}
+      <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-ink-border bg-amber-50">
+          <h2 className="text-base font-semibold text-amber-900 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" /> Work Awaiting Review ({reviewTasks.length})
+          </h2>
+        </div>
+        <div className="p-4">
+          {reviewTasks.length === 0 ? (
+            <div className="text-center py-4 text-ink-muted text-sm">No tasks awaiting review. Great job!</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reviewTasks.map((t: any) => (
+                <div key={t.id} className="border border-ink-border rounded-lg p-4">
+                  <h3 className="font-medium text-ink">{t.title}</h3>
+                  <p className="text-[12px] text-ink-muted mt-1">Submitted by: {t.assignedTo?.name}</p>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => handleApprove(t.id)} className="flex-1 bg-green-600 text-white rounded py-1.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-1">
+                      <CheckCircle className="w-4 h-4" /> Approve
+                    </button>
+                    <button onClick={() => handleCorrect(t.id)} className="flex-1 border border-amber-300 text-amber-700 rounded py-1.5 text-sm font-medium hover:bg-amber-50 flex items-center justify-center gap-1">
+                      <XCircle className="w-4 h-4" /> Correct
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -151,43 +199,7 @@ export default function OPDashboard() {
           </div>
         </div>
 
-
-      {/* Work Review & Approvals */}
-      <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden mt-6">
-        <div className="px-5 py-4 border-b border-ink-border bg-amber-50">
-          <h2 className="text-base font-semibold text-amber-900 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" /> Awaiting Review ({reviewTasks.length})
-          </h2>
-        </div>
-        <div className="p-4">
-          {reviewsLoading ? (
-            <div className="text-center py-4 text-ink-muted text-sm">Loading...</div>
-          ) : reviewTasks.length === 0 ? (
-            <div className="text-center py-4 text-ink-muted text-sm">No tasks awaiting review. Great job!</div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {reviewTasks.map((t: any) => (
-                <div key={t.id} className="border border-ink-border rounded-lg p-4">
-                  <h3 className="font-medium text-ink">{t.title}</h3>
-                  <p className="text-[12px] text-ink-muted mt-1">Submitted by: {t.assignedTo?.name}</p>
-                  <div className="flex gap-2 mt-3">
-                    <button onClick={() => { tasksService.approve(t.id); qc.invalidateQueries({queryKey: ['tasks']}); }} className="flex-1 bg-green-600 text-white rounded py-1.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-1">
-                      <CheckCircle className="w-4 h-4" /> Approve
-                    </button>
-                    <button onClick={() => {
-                      const reason = prompt('Reason for correction:');
-                      if (reason) { tasksService.requestCorrection(t.id, reason); qc.invalidateQueries({queryKey: ['tasks']}); }
-                    }} className="flex-1 border border-amber-300 text-amber-700 rounded py-1.5 text-sm font-medium hover:bg-amber-50 flex items-center justify-center gap-1">
-                      <XCircle className="w-4 h-4" /> Correct
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
-
     </div>
   );
 }
