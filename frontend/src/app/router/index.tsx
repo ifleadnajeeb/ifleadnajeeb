@@ -83,6 +83,7 @@ export const router = createBrowserRouter([
         element: <DesktopLayout />,
         children: [
           { path: '/dashboard',        element: <DashboardHome /> },
+          { path: '/operations',       element: <OperationsPage /> },
           { path: '/missions',         element: <MissionsPage /> },
           { path: '/leads',            element: <LeadsPage /> },
           { path: '/ai',               element: <AIAssistantPage /> },
