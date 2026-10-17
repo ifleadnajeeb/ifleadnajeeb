@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Clock, CheckSquare, X } from 'lucide-react';
-import { tasksService, Task } from '@/features/tasks/services/tasks.service';
+import { tasksService } from '@/features/tasks/services/tasks.service';
 import { operationsService } from '@/features/operations/services/operations.service';
 import { useAuth } from '@/app/providers/auth-provider';
 
@@ -10,15 +10,18 @@ export default function EmployeeDashboard() {
   const qc = useQueryClient();
   const [reportTaskId, setReportTaskId] = useState<string | null>(null);
 
+  // Fetch ALL tasks assigned to this user without strict filters
   const { data: tasksData, isLoading } = useQuery({
     queryKey: ['tasks', 'my-work', user?.id],
-    queryFn: () => tasksService.list({ assignedToId: user?.id, pageSize: 50 }),
+    queryFn: () => tasksService.list({ pageSize: 100 }), // Fetch all, we will filter below
     enabled: !!user?.id,
   });
 
-  const tasks = tasksData?.data || [];
-  const pendingTasks = tasks.filter(t => t.acceptance === 'PENDING');
-  const activeTasks = tasks.filter(t => t.acceptance === 'ACCEPTED');
+  // Filter locally to ensure nothing is missed
+  const myTasks = tasksData?.data?.filter(t => t.assignedToId === user?.id) || [];
+  
+  const pendingTasks = myTasks.filter(t => t.acceptance === 'PENDING' || t.acceptance === null || t.acceptance === undefined);
+  const activeTasks = myTasks.filter(t => t.acceptance === 'ACCEPTED');
 
   const handleAccept = async (id: string) => {
     try {
@@ -26,16 +29,6 @@ export default function EmployeeDashboard() {
       qc.invalidateQueries({ queryKey: ['tasks'] });
     } catch (e: any) {
       alert(e?.response?.data?.message || 'Failed to accept task');
-    }
-  };
-
-  const handleSubmitReview = async (id: string) => {
-    if (!confirm('Submit this work for OP Manager review?')) return;
-    try {
-      await tasksService.submitForReview(id);
-      qc.invalidateQueries({ queryKey: ['tasks'] });
-    } catch (e: any) {
-      alert(e?.response?.data?.message || 'Failed to submit');
     }
   };
 
@@ -49,6 +42,18 @@ export default function EmployeeDashboard() {
       alert(e?.response?.data?.message || 'Failed to reject task');
     }
   };
+
+  const handleSubmitReview = async (id: string) => {
+    if (!confirm('Submit this work for OP Manager review?')) return;
+    try {
+      await tasksService.submitForReview(id);
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (e: any) {
+      alert(e?.response?.data?.message || 'Failed to submit');
+    }
+  };
+
+  if (isLoading) return <div className="p-10 text-center text-ink-muted">Loading Workspace...</div>;
 
   return (
     <div className="space-y-6">
@@ -75,9 +80,6 @@ export default function EmployeeDashboard() {
               pendingTasks.map(t => (
                 <div key={t.id} className="border border-ink-border rounded-lg p-4">
                   <h3 className="font-medium text-ink">{t.title}</h3>
-                  {t.reviewStatus === 'CORRECTION_REQUESTED' && (
-                    <p className="text-[12px] text-red-600 bg-red-50 p-2 rounded mt-1">Correction needed: {t.rejectionReason}</p>
-                  )}
                   <p className="text-[13px] text-ink-muted mt-1 mb-3">{t.description || 'No description'}</p>
                   <div className="flex gap-2">
                     <button onClick={() => handleAccept(t.id)} className="flex-1 bg-green-600 text-white rounded py-1.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-1">
@@ -148,11 +150,9 @@ function SubmitReportModal({ taskId, onClose, onSuccess }: { taskId: string, onC
     setSubmitting(true);
     try {
       await operationsService.createDailyReport({
-        taskId,
-        workCompleted,
+        taskId, workCompleted,
         timeSpent: timeSpent ? Number(timeSpent) : undefined,
-        blockers,
-        nextPlan
+        blockers, nextPlan
       });
       onSuccess();
     } catch (e) {
