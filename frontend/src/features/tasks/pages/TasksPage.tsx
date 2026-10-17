@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, LayoutGrid, List as ListIcon, X, Calendar } from 'lucide-react';
 import {
   tasksService, Task, TaskStatus, TaskPriority,
   STATUS_LABEL, STATUS_COLOR, PRIORITY_COLOR,
 } from '../services/tasks.service';
+import { operationsService, Project, Department } from '@/features/operations/services/operations.service';
+import { usersService, AppUser } from '@/features/users/services/users.service';
 import { cn } from '@/shared/utils/cn';
 import { CanDo } from '@/shared/permissions/CanDo';
 import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
@@ -25,11 +28,19 @@ function isOverdue(iso: string | null) {
 
 export default function TasksPage() {
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const customerName = searchParams.get('customerName');
+  
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(!!customerName);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
+
+  // Auto-open modal if coming from "Assign Work"
+  useEffect(() => {
+    if (customerName) setCreateOpen(true);
+  }, [customerName]);
 
   const kanbanQ = useQuery({
     queryKey: ['tasks', 'kanban', search],
@@ -248,6 +259,7 @@ export default function TasksPage() {
 
       <NewTaskModal
         open={createOpen}
+        defaultCustomerName={customerName || ''}
         onClose={() => setCreateOpen(false)}
         onSuccess={() => { setCreateOpen(false); qc.invalidateQueries({ queryKey: ['tasks'] }); }}
       />
@@ -257,14 +269,28 @@ export default function TasksPage() {
   );
 }
 
-function NewTaskModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
+function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open: boolean; onClose: () => void; onSuccess: () => void; defaultCustomerName?: string }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [status, setStatus] = useState<TaskStatus>('TODO');
   const [dueAt, setDueAt] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Fetch Dropdown Data
+  const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: operationsService.listProjects });
+  const { data: departments } = useQuery({ queryKey: ['departments'], queryFn: operationsService.listDepartments });
+  const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
+
+  useEffect(() => {
+    if (defaultCustomerName) {
+      setTitle(`Work for ${defaultCustomerName}`);
+    }
+  }, [defaultCustomerName]);
 
   if (!open) return null;
 
@@ -278,8 +304,12 @@ function NewTaskModal({ open, onClose, onSuccess }: { open: boolean; onClose: ()
         description: description.trim() || undefined,
         priority, status,
         dueAt: dueAt ? new Date(dueAt).toISOString() : undefined,
+        projectId: projectId || undefined,
+        departmentId: departmentId || undefined,
+        assignedToId: assignedToId || undefined,
       });
       setTitle(''); setDescription(''); setPriority('MEDIUM'); setStatus('TODO'); setDueAt('');
+      setProjectId(''); setDepartmentId(''); setAssignedToId('');
       onSuccess();
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Failed to create');
@@ -299,7 +329,7 @@ function NewTaskModal({ open, onClose, onSuccess }: { open: boolean; onClose: ()
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Title *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} autoFocus
-              placeholder="Follow up with John about quotation"
+              placeholder="Build homepage"
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
           </div>
           <div>
@@ -307,6 +337,35 @@ function NewTaskModal({ open, onClose, onSuccess }: { open: boolean; onClose: ()
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
               className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px] resize-none focus:outline-none focus:border-brand" />
           </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Project</label>
+              <select value={projectId} onChange={e => setProjectId(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand">
+                <option value="">— None —</option>
+                {projects?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Department</label>
+              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand">
+                <option value="">— None —</option>
+                {departments?.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Assign To Employee</label>
+            <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)}
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand">
+              <option value="">— Unassigned —</option>
+              {users?.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+            </select>
+          </div>
+
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-[13px] text-ink-muted mb-1.5">Priority</label>
@@ -323,7 +382,7 @@ function NewTaskModal({ open, onClose, onSuccess }: { open: boolean; onClose: ()
               </select>
             </div>
             <div>
-              <label className="block text-[13px] text-ink-muted mb-1.5">Due</label>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Due Date</label>
               <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
                 className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
             </div>
