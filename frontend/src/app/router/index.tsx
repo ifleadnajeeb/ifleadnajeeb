@@ -12,6 +12,7 @@ import ReportsPage from '@/features/reports/pages/ReportsPage';
 import LeadsPage from '@/features/leads/pages/LeadsPage';
 import DashboardHome from '@/features/dashboard/pages/DashboardHome';
 import AIAssistantPage from '@/features/ai/pages/AIAssistantPage';
+import OperationsPage from '@/features/operations/pages/OperationsPage';
 import MissionsPage from '@/features/missions/pages/MissionsPage';
 import FollowupsPage from '@/features/followups/pages/FollowupsPage';
 import AppointmentsPage from '@/features/appointments/pages/AppointmentsPage';

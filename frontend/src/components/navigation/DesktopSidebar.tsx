@@ -36,6 +36,7 @@ const NAV: NavItem[] = [
   { label: 'Team Performance', href: '/team-performance', icon: UsersRound,      permission: 'users:read' },
   { label: 'Missions',      href: '/missions',     icon: Target,          permission: 'followups:read' },
   { label: 'Leads',         href: '/leads',        icon: Users,           permission: 'leads:read' },
+  { label: 'Operations', href: '/operations', icon: Briefcase, permission: 'tasks:read' },
   { label: 'Customers',     href: '/customers',    icon: UserSquare,      permission: 'customers:read' },
   { label: 'Follow-ups',    href: '/followups',    icon: Clock,           permission: 'followups:read' },
   { label: 'Appointments',  href: '/appointments', icon: CalendarCheck,   permission: 'appointments:read' },
