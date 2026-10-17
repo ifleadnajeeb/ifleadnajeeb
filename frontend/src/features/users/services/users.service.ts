@@ -65,6 +65,13 @@ export const usersService = {
 };
 
 export const ROLE_LABEL: Record<string, string> = {
+  OP_MANAGER: 'OP Manager',
+  WEB_DEVELOPER: 'Web Dev',
+  SOFTWARE_DEVELOPER: 'Software Dev',
+  DIGITAL_MARKETER: 'Digital Mktg',
+  CONTENT_CREATOR: 'Content Creator',
+  VIDEO_EDITOR: 'Video Editor',
+
   ADMIN: 'Admin',
   CEO: 'CEO',
   BDM: 'GM',
@@ -73,6 +80,13 @@ export const ROLE_LABEL: Record<string, string> = {
 };
 
 export const ROLE_COLOR: Record<string, string> = {
+  OP_MANAGER: 'bg-indigo-100 text-indigo-700',
+  WEB_DEVELOPER: 'bg-sky-100 text-sky-700',
+  SOFTWARE_DEVELOPER: 'bg-cyan-100 text-cyan-700',
+  DIGITAL_MARKETER: 'bg-teal-100 text-teal-700',
+  CONTENT_CREATOR: 'bg-lime-100 text-lime-700',
+  VIDEO_EDITOR: 'bg-orange-100 text-orange-700',
+
   ADMIN: 'bg-purple-100 text-purple-700',
   CEO: 'bg-blue-100 text-blue-700',
   BDM: 'bg-emerald-100 text-emerald-700',
