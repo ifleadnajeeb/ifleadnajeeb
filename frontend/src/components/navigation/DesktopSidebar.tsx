@@ -90,18 +90,25 @@ export function DesktopSidebar() {
       {/* Nav — shows ALL items to every role */}
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
         {NAV.filter((item) => {
+          // Hide standard Tasks for Ops roles (since it becomes Works)
+          const isOpsRole = ['OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '');
+          
           if (['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '')) {
-            const allowed = ['Dashboard', 'Works', 'Calendar'];
+            const allowed = ['Dashboard', 'Tasks', 'Calendar'];
             return allowed.includes(item.label);
           }
           if (user?.role === 'OP_MANAGER') {
-            const allowed = ['Dashboard', 'Operations', 'Works', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
+            const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
             return allowed.includes(item.label);
           }
           return true;
         }).map((item) => {
           const Icon = item.icon;
           const allowed = can(item.permission);
+
+          // Dynamically rename "Tasks" to "Works" for Ops roles
+          const displayLabel = (isOpsRole && item.label === 'Tasks') ? 'Works' : item.label;
+          const DisplayIcon = (isOpsRole && item.label === 'Tasks') ? Briefcase : Icon;
 
           return (
             <NavLink
@@ -117,7 +124,7 @@ export function DesktopSidebar() {
               title={!allowed ? 'View only — actions are restricted by your role' : undefined}
             >
               <DisplayIcon className="w-4 h-4 shrink-0" />
-              <span className="flex-1">{item.label}</span>
+              <span className="flex-1">{displayLabel}</span>
               {!allowed && (
                 <Lock className="w-3 h-3 shrink-0 opacity-40" aria-label="View only" />
               )}
