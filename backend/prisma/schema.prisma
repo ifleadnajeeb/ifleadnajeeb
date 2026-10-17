@@ -398,6 +398,7 @@ model TimeBlock {
 }
 
 model Task {
+  dailyReports   DailyReport[]
   id              String       @id @default(cuid())
   organizationId  String
   title           String
@@ -501,6 +502,7 @@ model WorkOrder {
 }
 
 model DailyReport {
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   id             String   @id @default(cuid())
   organizationId String
   taskId         String

@@ -74,7 +74,7 @@ export const taskService = {
   },
 
   async approveTask(req: AuthRequest, id: string) {
-    return prisma.task.update({
+    const task = await prisma.task.update({
       where: { id },
       data: { reviewStatus: 'APPROVED' },
     });
@@ -95,7 +95,7 @@ export const taskService = {
   },
 
   async requestCorrection(req: AuthRequest, id: string, reason: string) {
-    return prisma.task.update({
+    const task = await prisma.task.update({
       where: { id },
       data: { reviewStatus: 'CORRECTION_REQUESTED', status: 'IN_PROGRESS', rejectionReason: reason },
     });

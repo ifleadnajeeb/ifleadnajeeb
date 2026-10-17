@@ -36,7 +36,7 @@ export const operationsService = {
       where: { organizationId: actor.organizationId },
       include: { 
         task: { select: { title: true, assignedTo: { select: { name: true } } } }
-      } as any,
+      },
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
