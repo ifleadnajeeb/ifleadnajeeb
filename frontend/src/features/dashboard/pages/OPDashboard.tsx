@@ -98,6 +98,36 @@ export default function OPDashboard() {
           </table>
         )}
       </div>
+
+      {/* Two Column Layout for Converted Leads & Work Reports */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        
+        {/* Converted Leads / Customers */}
+        <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-ink-border flex justify-between items-center">
+            <h2 className="text-base font-semibold text-ink">Converted Leads (Customers)</h2>
+            <a href="/customers" className="text-[12px] text-brand hover:underline">View all</a>
+          </div>
+          <div className="p-5 text-center text-ink-muted text-sm">
+            <p>Converted customers from all sales panels will appear here.</p>
+            <p className="text-[12px] mt-1 text-ink-muted/70">(Connect the Customers API here)</p>
+          </div>
+        </div>
+
+        {/* Employee Work Reports */}
+        <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-ink-border flex justify-between items-center">
+            <h2 className="text-base font-semibold text-ink">Recent Employee Work Reports</h2>
+            <a href="/reports" className="text-[12px] text-brand hover:underline">View all</a>
+          </div>
+          <div className="p-5 text-center text-ink-muted text-sm">
+            <p>Daily work reports from Web Devs, Software Devs, and Creators will appear here.</p>
+            <p className="text-[12px] mt-1 text-ink-muted/70">(Connect the DailyReport API here)</p>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
+
