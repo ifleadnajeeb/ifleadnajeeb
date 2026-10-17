@@ -463,3 +463,93 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
     </>
   );
 }
+
+
+function AssignWorkModal({ open, onClose, customerId, customerName, onSuccess }: { open: boolean, onClose: () => void, customerId: string, customerName: string, onSuccess: () => void }) {
+  const [title, setTitle] = useState(`Work for ${customerName}`);
+  const [description, setDescription] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
+  const [dueAt, setDueAt] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const { data: departments } = useQuery({ queryKey: ['departments'], queryFn: operationsService.listDepartments });
+  const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
+
+  if (!open) return null;
+
+  const submit = async () => {
+    setError('');
+    if (title.trim().length < 2) { setError('Title must be at least 2 characters'); return; }
+    setSubmitting(true);
+    try {
+      await tasksService.create({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        departmentId: departmentId || undefined,
+        assignedToId: assignedToId || undefined,
+        dueAt: dueAt ? new Date(dueAt).toISOString() : undefined,
+        customerId: customerId,
+        status: 'TODO',
+        priority: 'MEDIUM'
+      });
+      onSuccess();
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to assign work');
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-[520px] w-full" onClick={e => e.stopPropagation()}>
+        <div className="px-5 py-3.5 border-b border-ink-border">
+          <h2 className="text-[16px] font-semibold text-ink">Assign Work to Team</h2>
+        </div>
+        <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Work Title *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} autoFocus
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+          </div>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Instructions / Description</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
+              className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px] resize-none focus:outline-none focus:border-brand" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Department</label>
+              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand">
+                <option value="">— Select Dept —</option>
+                {departments?.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Assign To Employee</label>
+              <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand">
+                <option value="">— Select Employee —</option>
+                {users?.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Due Date</label>
+            <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+          </div>
+          {error && <div className="text-[13px] text-danger bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</div>}
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-ink-border">
+          <button onClick={onClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] hover:bg-brand-light">Cancel</button>
+          <button onClick={submit} disabled={submitting}
+            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50">
+            {submitting ? 'Assigning…' : 'Assign Work'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
