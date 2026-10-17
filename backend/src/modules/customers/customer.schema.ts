@@ -13,6 +13,8 @@ export const CreateCustomerSchema = z.object({
 export const UpdateCustomerSchema = CreateCustomerSchema.partial();
 
 export const ConvertLeadSchema = z.object({
+  serviceType: z.string().optional(),
+ z.object({
   // extra fields to add during conversion — all optional, defaults pulled from lead
   email: z.string().email().optional(),
   company: z.string().max(200).optional(),

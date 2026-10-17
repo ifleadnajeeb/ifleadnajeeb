@@ -258,8 +258,8 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
       await customersService.update(customerId, { notes: noteText });
       qc.invalidateQueries({ queryKey: ['customer', customerId] });
       setIsEditingNote(false);
-    } catch {
-      alert('Failed to save note');
+    } catch (err: any) {
+      alert('Failed to save note: ' + (err?.response?.data?.message || err.message));
     }
   };
 
