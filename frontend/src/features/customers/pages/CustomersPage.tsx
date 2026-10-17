@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Building2, Mail, Phone, User, Briefcase, FileText, Edit2 } from 'lucide-react';
+import { Plus, Search, CheckCircle, Building2, Mail, Phone, User, Briefcase, FileText, Edit2 } from 'lucide-react';
+import { tasksService } from '@/features/tasks/services/tasks.service';
+import { operationsService } from '@/features/operations/services/operations.service';
+import { usersService } from '@/features/users/services/users.service';
 import { customersService, Customer, CustomerDetail } from '../services/customers.service';
 import { cn } from '@/shared/utils/cn';
 import { CanDo } from '@/shared/permissions/CanDo';
@@ -238,6 +241,7 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [isEditingNote, setIsEditingNote] = useState(false);
+  const [assignWorkOpen, setAssignWorkOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
 
   const { data, isLoading, isError } = useQuery({
@@ -245,6 +249,13 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
     queryFn: () => customersService.get(customerId!),
     enabled: !!customerId,
   });
+
+  const { data: worksData, isLoading: worksLoading } = useQuery({
+    queryKey: ['works', customerId],
+    queryFn: () => tasksService.list({ customerId: customerId!, pageSize: 50 }),
+    enabled: !!customerId,
+  });
+  const works = worksData?.data || [];
 
   // Load existing notes into state when data arrives
   useEffect(() => {
@@ -279,7 +290,7 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
           <div className="flex items-center gap-3">
             {data && (
               <button
-                onClick={() => navigate(`/tasks?customerId=${data.id}&customerName=${encodeURIComponent(data.name)}`)}
+                onClick={() => setAssignWorkOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-brand text-white text-[13px] font-medium hover:bg-brand-hover transition-colors"
               >
                 <Briefcase className="w-3.5 h-3.5" /> Assign Work
@@ -338,6 +349,42 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
                   <p className="text-[13px] text-ink whitespace-pre-wrap">
                     {data.notes || <span className="text-ink-muted italic">No notes added yet. Click "Edit Note" to add requirements.</span>}
                   </p>
+                )}
+              </div>
+
+
+              {/* Works Section */}
+              <div className="bg-white border border-ink-border rounded-xl p-5 mt-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-[14px] font-semibold text-ink flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-brand" /> Assigned Works
+                  </h3>
+                  <button onClick={() => setAssignWorkOpen(true)} className="text-[12px] text-brand hover:underline font-medium">
+                    + Assign New
+                  </button>
+                </div>
+                {worksLoading ? (
+                  <div className="text-sm text-ink-muted text-center py-4">Loading works...</div>
+                ) : works.length === 0 ? (
+                  <p className="text-[13px] text-ink-muted italic">No works assigned yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {works.map((w: any) => (
+                      <div key={w.id} className="flex items-center justify-between p-3 border border-ink-border rounded-lg bg-gray-50">
+                        <div>
+                          <div className="text-[13px] font-medium text-ink">{w.title}</div>
+                          <div className="text-[11px] text-ink-muted">
+                            {w.assignedTo ? `Assigned to: ${w.assignedTo.name}` : 'Unassigned'} 
+                            {w.acceptance === 'PENDING' && ' • Pending'}
+                            {w.acceptance === 'ACCEPTED' && ' • In Progress'}
+                          </div>
+                        </div>
+                        <span className={cn('px-2 py-0.5 rounded text-[10px] font-medium', w.status === 'DONE' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>
+                          {w.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
 
@@ -412,6 +459,7 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
           )}
         </div>
       </aside>
+      {data && <AssignWorkModal open={assignWorkOpen} onClose={() => setAssignWorkOpen(false)} customerId={data.id} customerName={data.name} onSuccess={() => { setAssignWorkOpen(false); qc.invalidateQueries({ queryKey: ['works', customerId] }); }} />}
     </>
   );
 }

@@ -8,6 +8,7 @@ export const CreateTaskSchema = z.object({
   dueAt: z.string().optional(),
   reminderAt: z.string().optional(),
   assignedToId: z.string().optional(),
+  customerId: z.string().optional(),
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial();
@@ -22,6 +23,7 @@ export const ListTasksQuerySchema = z.object({
   status: z.enum(['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED']).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   assignedToId: z.string().optional(),
+  customerId: z.string().optional(),
   search: z.string().optional(),
   view: z.enum(['list', 'kanban']).default('list'),
 });
