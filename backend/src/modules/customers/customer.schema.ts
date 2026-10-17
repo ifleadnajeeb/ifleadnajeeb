@@ -5,6 +5,7 @@ export const CreateCustomerSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().min(6).max(20).optional().or(z.literal('')),
   company: z.string().max(200).optional(),
+  serviceType: z.string().optional(),
   address: z.string().max(500).optional(),
   notes: z.string().max(5000).optional(),
   ownerId: z.string().optional(),
@@ -14,9 +15,7 @@ export const UpdateCustomerSchema = CreateCustomerSchema.partial();
 
 export const ConvertLeadSchema = z.object({
   serviceType: z.string().optional(),
- z.object({
-  // extra fields to add during conversion — all optional, defaults pulled from lead
-  email: z.string().email().optional(),
+  email: z.string().email().optional().or(z.literal('')),
   company: z.string().max(200).optional(),
   address: z.string().max(500).optional(),
   notes: z.string().max(5000).optional(),
