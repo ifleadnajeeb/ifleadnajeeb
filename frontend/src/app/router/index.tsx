@@ -97,6 +97,7 @@ export const router = createBrowserRouter([
           { path: '/appointments',     element: <AppointmentsPage /> },
           { path: '/calendar',         element: <CalendarPage /> },
           { path: '/tasks',            element: <TasksPage /> },
+          { path: '/works',            element: <TasksPage /> },
           { path: '/documents',        element: <DocumentsPage /> },
           { path: '/reports',          element: <ReportsPage /> },
           { path: '/reports/user/:userId', element: <ReportsPage /> },
