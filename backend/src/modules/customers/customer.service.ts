@@ -115,7 +115,6 @@ export const customerService = {
         activities: {
           orderBy: { createdAt: 'desc' },
           take: 30,
-          include: { user: { select: { id: true, name: true } } },
         },
         appointments: {
           select: { id: true, title: true, startAt: true, status: true },
@@ -141,7 +140,7 @@ export const customerService = {
       documents: c.documents,
       activities: c.activities.map(a => ({
         id: a.id, type: a.type, title: a.title, body: a.body,
-        createdAt: a.createdAt, by: a.user,
+        createdAt: a.createdAt, by: null,
       })),
       appointments: c.appointments,
       createdAt: c.createdAt,
