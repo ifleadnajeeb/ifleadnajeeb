@@ -220,7 +220,7 @@ function CreateCustomerModal({ open, onClose, onSuccess }: { open: boolean; onCl
 
 // ─── Detail drawer ───
 function CustomerDrawer({ customerId, onClose }: { customerId: string | null; onClose: () => void }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['customer', customerId],
     queryFn: () => customersService.get(customerId!),
     enabled: !!customerId,
