@@ -91,7 +91,7 @@ export function DesktopSidebar() {
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
         {NAV.filter((item) => {
           if (user?.role === 'OP_MANAGER') {
-            const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance'];
+            const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
             return allowed.includes(item.label);
           }
           return true;
