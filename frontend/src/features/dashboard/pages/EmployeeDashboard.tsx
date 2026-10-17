@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, XCircle, Clock, CheckSquare } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, CheckSquare, X } from 'lucide-react';
 import { tasksService, Task } from '@/features/tasks/services/tasks.service';
+import { operationsService } from '@/features/operations/services/operations.service';
 import { useAuth } from '@/app/providers/auth-provider';
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const [reportTaskId, setReportTaskId] = useState<string | null>(null);
 
   const { data: tasksData, isLoading } = useQuery({
     queryKey: ['tasks', 'my-work', user?.id],
@@ -93,7 +96,7 @@ export default function EmployeeDashboard() {
                   <h3 className="font-medium text-ink">{t.title}</h3>
                   <div className="flex justify-between items-center mt-3">
                     <span className="text-[12px] font-semibold text-ink-muted bg-gray-100 px-2 py-1 rounded">{t.status}</span>
-                    <button className="text-[13px] text-brand font-medium hover:underline">Submit Daily Report</button>
+                    <button onClick={() => setReportTaskId(t.id)} className="text-[13px] text-brand font-medium hover:underline">Submit Daily Report</button>
                   </div>
                 </div>
               ))
@@ -101,6 +104,83 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
+      </div>
+
+      {reportTaskId && (
+        <SubmitReportModal 
+          taskId={reportTaskId} 
+          onClose={() => setReportTaskId(null)} 
+          onSuccess={() => { setReportTaskId(null); alert('Report submitted successfully!'); }} 
+        />
+      )}
+    </div>
+  );
+}
+
+function SubmitReportModal({ taskId, onClose, onSuccess }: { taskId: string, onClose: () => void, onSuccess: () => void }) {
+  const [workCompleted, setWorkCompleted] = useState('');
+  const [timeSpent, setTimeSpent] = useState('');
+  const [blockers, setBlockers] = useState('');
+  const [nextPlan, setNextPlan] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    if (!workCompleted.trim()) return;
+    setSubmitting(true);
+    try {
+      await operationsService.createDailyReport({
+        taskId,
+        workCompleted,
+        timeSpent: timeSpent ? Number(timeSpent) : undefined,
+        blockers,
+        nextPlan
+      });
+      onSuccess();
+    } catch (e) {
+      alert('Failed to submit report');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-[520px] w-full" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-border">
+          <h2 className="text-[16px] font-semibold text-ink">Submit Daily Report</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-md text-ink-muted hover:bg-brand-light">
+            <X className="w-4 h-4 mx-auto" />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">What did you complete today? *</label>
+            <textarea value={workCompleted} onChange={e => setWorkCompleted(e.target.value)} rows={3} autoFocus
+              className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px] resize-none focus:outline-none focus:border-brand" />
+          </div>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Hours Spent</label>
+            <input type="number" value={timeSpent} onChange={e => setTimeSpent(e.target.value)}
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+          </div>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Any Blockers?</label>
+            <input value={blockers} onChange={e => setBlockers(e.target.value)}
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+          </div>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Plan for tomorrow</label>
+            <input value={nextPlan} onChange={e => setNextPlan(e.target.value)}
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-ink-border">
+          <button onClick={onClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] hover:bg-brand-light">Cancel</button>
+          <button onClick={submit} disabled={submitting || !workCompleted.trim()}
+            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50">
+            {submitting ? 'Submitting…' : 'Submit Report'}
+          </button>
+        </div>
       </div>
     </div>
   );

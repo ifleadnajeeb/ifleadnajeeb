@@ -21,6 +21,11 @@ export default function OPDashboard() {
 
   const customers = customersResponse?.data || [];
 
+  const { data: reports, isLoading: reportsLoading } = useQuery({
+    queryKey: ['daily-reports'],
+    queryFn: operationsService.listDailyReports,
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -114,12 +119,27 @@ export default function OPDashboard() {
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-ink-border flex justify-between items-center">
             <h2 className="text-base font-semibold text-ink">Recent Employee Work Reports</h2>
-            <a href="/tasks" className="text-[12px] text-brand hover:underline">View all</a>
           </div>
-          <div className="p-8 text-center text-ink-muted text-sm flex flex-col items-center justify-center">
-            <Building2 className="w-8 h-8 text-ink-muted/50 mb-2" />
-            <p>Employee daily reports will appear here.</p>
-            <p className="text-[12px] mt-1 text-ink-muted/70">(Coming in Phase 5)</p>
+          <div className="flex-1 overflow-auto max-h-[300px] p-4 space-y-3">
+            {reportsLoading ? (
+              <div className="text-center text-ink-muted text-sm py-4">Loading reports...</div>
+            ) : !reports || reports.length === 0 ? (
+              <div className="text-center text-ink-muted text-sm py-4">No work reports submitted yet.</div>
+            ) : (
+              reports.map((r: any) => (
+                <div key={r.id} className="border border-ink-border rounded-lg p-3 bg-gray-50">
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="font-medium text-ink text-[13.5px]">{r.task?.title || 'Unknown Task'}</div>
+                    <span className="text-[11px] text-ink-muted bg-white px-2 py-0.5 rounded border border-ink-border">
+                      {r.task?.assignedTo?.name || 'Employee'}
+                    </span>
+                  </div>
+                  <p className="text-[12.5px] text-ink-muted mt-1">"{r.workCompleted}"</p>
+                  {r.blockers && <p className="text-[11px] text-red-500 mt-1">Blocker: {r.blockers}</p>}
+                  {r.timeSpent && <p className="text-[11px] text-ink-muted mt-1">{r.timeSpent} hours spent</p>}
+                </div>
+              ))
+            )}
           </div>
         </div>
 

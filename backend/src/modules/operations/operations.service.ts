@@ -31,6 +31,31 @@ export const operationsService = {
     });
   },
 
+  async listDailyReports(actor: AuthUser) {
+    return prisma.dailyReport.findMany({
+      where: { organizationId: actor.organizationId },
+      include: { 
+        task: { select: { title: true, assignedTo: { select: { name: true } } } }
+      } as any,
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+  },
+
+  async createDailyReport(actor: AuthUser, input: any) {
+    return prisma.dailyReport.create({
+      data: {
+        organizationId: actor.organizationId,
+        employeeId: actor.id,
+        taskId: input.taskId,
+        workCompleted: input.workCompleted,
+        timeSpent: input.timeSpent,
+        blockers: input.blockers,
+        nextPlan: input.nextPlan,
+      },
+    });
+  },
+
   async createDepartment(actor: AuthUser, input: any) {
     return prisma.department.create({
       data: {

@@ -15,6 +15,14 @@ export const operationsController = {
     const data = await operationsService.listDepartments(req.user!);
     res.json({ data });
   },
+  async listDailyReports(req: AuthRequest, res: Response) {
+    const data = await operationsService.listDailyReports(req.user!);
+    res.json({ data });
+  },
+  async createDailyReport(req: AuthRequest, res: Response) {
+    const data = await operationsService.createDailyReport(req.user!, req.body);
+    res.status(201).json({ data });
+  },
   async createDepartment(req: AuthRequest, res: Response) {
     const data = await operationsService.createDepartment(req.user!, req.body);
     res.status(201).json({ data });

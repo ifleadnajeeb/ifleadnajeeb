@@ -28,6 +28,14 @@ export const operationsService = {
     const res = await api.get<{ data: Department[] }>('/operations/departments');
     return res.data.data;
   },
+  listDailyReports: async (): Promise<any[]> => {
+    const res = await api.get<{ data: any[] }>('/operations/reports');
+    return res.data.data;
+  },
+  createDailyReport: async (input: any): Promise<any> => {
+    const res = await api.post<{ data: any }>('/operations/reports', input);
+    return res.data.data;
+  },
   createDepartment: async (input: Partial<Department>): Promise<Department> => {
     const res = await api.post<{ data: Department }>('/operations/departments', input);
     return res.data.data;

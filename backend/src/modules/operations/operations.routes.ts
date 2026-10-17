@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/auth.middleware.js';
 import { requirePermission } from '../../middleware/permission.middleware.js';
 import { validate } from '../../middleware/validation.middleware.js';
-import { CreateProjectSchema, CreateDepartmentSchema } from './operations.schema.js';
+import { CreateProjectSchema, CreateDepartmentSchema, CreateDailyReportSchema } from './operations.schema.js';
 import { operationsController } from './operations.controller.js';
 
 const router = Router();
@@ -11,6 +11,10 @@ router.use(authenticate);
 // Projects
 router.get('/projects', requirePermission('tasks:read'), operationsController.listProjects);
 router.post('/projects', requirePermission('tasks:create'), validate(CreateProjectSchema), operationsController.createProject);
+
+// Reports
+router.get('/reports', requirePermission('reports:read'), operationsController.listDailyReports);
+router.post('/reports', requirePermission('tasks:update'), validate(CreateDailyReportSchema), operationsController.createDailyReport);
 
 // Departments
 router.get('/departments', requirePermission('tasks:read'), operationsController.listDepartments);

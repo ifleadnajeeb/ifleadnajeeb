@@ -13,3 +13,11 @@ export const CreateDepartmentSchema = z.object({
   name: z.string().min(2),
   description: z.string().optional(),
 });
+
+export const CreateDailyReportSchema = z.object({
+  taskId: z.string(),
+  workCompleted: z.string().min(2),
+  timeSpent: z.number().optional(),
+  blockers: z.string().optional(),
+  nextPlan: z.string().optional(),
+});
