@@ -3,6 +3,16 @@ import { AuthRequest } from '../../middleware/auth.middleware.js';
 import { taskService } from './task.service.js';
 
 export const taskController = {
+  async accept(req: AuthRequest, res: Response) {
+    const task = await taskService.acceptTask(req, req.params.id);
+    res.json({ data: task });
+  },
+
+  async reject(req: AuthRequest, res: Response) {
+    const task = await taskService.rejectTask(req, req.params.id, req.body.reason || 'No reason provided');
+    res.json({ data: task });
+  },
+
   async list(req: AuthRequest, res: Response) {
     res.json(await taskService.list(req, req.query as any));
   },

@@ -4,6 +4,8 @@ export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE' | 'CANCELLED';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface Task {
+  acceptance?: string;
+  rejectionReason?: string;
   id: string;
   title: string;
   description: string | null;

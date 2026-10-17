@@ -51,6 +51,20 @@ function toDTO(t: any) {
 const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'] as const;
 
 export const taskService = {
+  async acceptTask(req: AuthRequest, id: string) {
+    return prisma.task.update({
+      where: { id },
+      data: { acceptance: 'ACCEPTED' },
+    });
+  },
+
+  async rejectTask(req: AuthRequest, id: string, reason: string) {
+    return prisma.task.update({
+      where: { id },
+      data: { acceptance: 'REJECTED', rejectionReason: reason },
+    });
+  },
+
   async list(req: AuthRequest, q: ListTasksQuery) {
     const scope = await scopeFor(req);
     const where: any = { ...scope };

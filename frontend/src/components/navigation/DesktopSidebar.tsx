@@ -90,6 +90,10 @@ export function DesktopSidebar() {
       {/* Nav — shows ALL items to every role */}
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
         {NAV.filter((item) => {
+          if (['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '')) {
+            const allowed = ['Dashboard', 'Tasks', 'Calendar'];
+            return allowed.includes(item.label);
+          }
           if (user?.role === 'OP_MANAGER') {
             const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
             return allowed.includes(item.label);
