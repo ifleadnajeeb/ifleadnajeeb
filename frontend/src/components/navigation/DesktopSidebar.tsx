@@ -57,7 +57,7 @@ const NAV: NavItem[] = [
 ];
 
 export function DesktopSidebar() {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
 
   const handleReset = () => {
     if (confirm('Reset demo data? This restores the sample leads.')) {
@@ -89,7 +89,13 @@ export function DesktopSidebar() {
 
       {/* Nav — shows ALL items to every role */}
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
-        {NAV.map((item) => {
+        {NAV.filter((item) => {
+          if (user?.role === 'OP_MANAGER') {
+            const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance'];
+            return allowed.includes(item.label);
+          }
+          return true;
+        }).map((item) => {
           const Icon = item.icon;
           const allowed = can(item.permission);
 
