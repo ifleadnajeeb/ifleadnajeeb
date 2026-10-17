@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -78,6 +78,35 @@ enum TaskPriority {
   URGENT
 }
 
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum WorkOrderStatus {
+  PENDING
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum TaskAcceptance {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum TaskReview {
+  NOT_SUBMITTED
+  PENDING_REVIEW
+  APPROVED
+  CORRECTION_REQUESTED
+}
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -86,7 +115,7 @@ model Organization {
   teams     Team[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  services    String[] @default([])
+  services  String[] @default([])
 }
 
 model Team {
@@ -127,12 +156,12 @@ model User {
   passwordChangedAt   DateTime  @default(now())
 
   // Gamification
-  xp              Int       @default(0)
-  streak          Int       @default(0)
-  lastActiveDate  DateTime?
+  xp             Int       @default(0)
+  streak         Int       @default(0)
+  lastActiveDate DateTime?
 
-  sessions  Session[]
-  auditLogs AuditLog[]
+  sessions        Session[]
+  auditLogs       AuditLog[]
   chatMemberships ChatMember[]
   chatMessages    ChatMessage[]
 
@@ -146,19 +175,19 @@ model User {
   taskComments         TaskComment[]
   createdTasks         Task[]        @relation("TaskCreator")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  appointmentsRequested Appointment[] @relation("AppointmentRequester")
+  appointmentsFor       Appointment[] @relation("AppointmentFor")
+  appointmentsApproved  Appointment[] @relation("AppointmentApprover")
+  timeBlocks            TimeBlock[]   @relation("TimeBlockUser")
+  timeBlocksCreated     TimeBlock[]   @relation("TimeBlockCreator")
 
   @@index([organizationId])
   @@index([roleId])
   @@index([managerId])
   @@index([teamId])
   @@index([status])
-  appointmentsRequested   Appointment[]  @relation("AppointmentRequester")
-  appointmentsFor         Appointment[]  @relation("AppointmentFor")
-  appointmentsApproved    Appointment[]  @relation("AppointmentApprover")
-  timeBlocks              TimeBlock[]    @relation("TimeBlockUser")
-  timeBlocksCreated       TimeBlock[]    @relation("TimeBlockCreator")
 }
 
 model Role {
@@ -250,12 +279,12 @@ model Lead {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  service   String?
 
   @@index([organizationId])
   @@index([assignedToId])
   @@index([status])
   @@index([priority])
-  service  String?
 }
 
 model Customer {
@@ -333,20 +362,20 @@ model Appointment {
   assignedToId String?
   assignedTo   User?   @relation("AppointmentAssignee", fields: [assignedToId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  requestedById String?
+  requestedBy   User?     @relation("AppointmentRequester", fields: [requestedById], references: [id])
+  forUserId     String?
+  forUser       User?     @relation("AppointmentFor", fields: [forUserId], references: [id])
+  approverId    String?
+  approver      User?     @relation("AppointmentApprover", fields: [approverId], references: [id])
+  approvedAt    DateTime?
+  declineReason String?
 
   @@index([organizationId])
   @@index([assignedToId])
   @@index([startAt])
-  requestedById String?
-  requestedBy   User?   @relation("AppointmentRequester", fields: [requestedById], references: [id])
-  forUserId     String?
-  forUser       User?   @relation("AppointmentFor", fields: [forUserId], references: [id])
-  approverId    String?
-  approver      User?   @relation("AppointmentApprover", fields: [approverId], references: [id])
-  approvedAt    DateTime?
-  declineReason String?
 }
 
 model TimeBlock {
@@ -367,47 +396,63 @@ model TimeBlock {
   @@index([startAt])
 }
 
-
 model Task {
-  id             String       @id @default(cuid())
-  organizationId String
-  title          String
-  description    String?
-  status         TaskStatus   @default(TODO)
-  priority       TaskPriority @default(MEDIUM)
-  dueAt          DateTime?
-  reminderAt     DateTime?
+  id              String       @id @default(cuid())
+  organizationId  String
+  title           String
+  description     String?
+  status          TaskStatus   @default(TODO)
+  priority        TaskPriority @default(MEDIUM)
+  dueAt           DateTime?
+  reminderAt      DateTime?
   reminderFiredAt DateTime?
-  completedAt    DateTime?
+  completedAt     DateTime?
 
   assignedToId String?
   assignedTo   User?   @relation("TaskAssignee", fields: [assignedToId], references: [id])
   createdById  String
   createdBy    User    @relation("TaskCreator", fields: [createdById], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  comments  TaskComment[]
+  checklist TaskChecklistItem[]
+
+  // Operations Fields
+  departmentId    String?
+  projectId       String?
+  workOrderId     String?
+  acceptance      TaskAcceptance @default(ACCEPTED)
+  reviewStatus    TaskReview     @default(NOT_SUBMITTED)
+  rejectionReason String?
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  project         Project?       @relation(fields: [projectId], references: [id])
+  workOrder       WorkOrder?     @relation(fields: [workOrderId], references: [id])
 
   @@index([organizationId])
   @@index([assignedToId])
-  comments     TaskComment[]
-  checklist    TaskChecklistItem[]
-
   @@index([status])
 }
 
 model Project {
-  id             String    @id @default(cuid())
+  id             String        @id @default(cuid())
   organizationId String
   name           String
   description    String?
   customerId     String?
-  customer       Customer? @relation(fields: [customerId], references: [id])
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  status         ProjectStatus @default(PLANNING)
+  startDate      DateTime?
+  endDate        DateTime?
+
+  tasks      Task[]
+  workOrders WorkOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizationId])
+  @@index([customerId])
 }
 
 model Document {
@@ -426,8 +471,53 @@ model Document {
   @@index([customerId])
 }
 
-model Activity {
+model Department {
   id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  tasks          Task[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+model WorkOrder {
+  id             String          @id @default(cuid())
+  organizationId String
+  projectId      String
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  description    String?
+  status         WorkOrderStatus @default(PENDING)
+  createdById    String
+  tasks          Task[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([organizationId])
+  @@index([projectId])
+}
+
+model DailyReport {
+  id             String   @id @default(cuid())
+  organizationId String
+  taskId         String
+  employeeId     String
+  date           DateTime @default(now())
+  workCompleted  String
+  timeSpent      Float?
+  blockers       String?
+  nextPlan       String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([taskId])
+  @@index([employeeId])
+}
+
+model Activity {
+  id             String  @id @default(cuid())
   organizationId String
   type           String
   title          String
@@ -494,7 +584,7 @@ model TaskChecklistItem {
 model Chat {
   id             String        @id @default(cuid())
   organizationId String
-  name           String?       // null for 1:1 DMs
+  name           String? // null for 1:1 DMs
   isGroup        Boolean       @default(false)
   createdById    String
   members        ChatMember[]
@@ -538,9 +628,9 @@ model ChatMessage {
 model ConfigItem {
   id             String   @id @default(cuid())
   organizationId String
-  type           String   // tag | lead_category | status | lead_source | dead_reason
+  type           String // tag | lead_category | status | lead_source | dead_reason
   name           String
-  color          String?  // hex color like "#ef4444" (used for tags)
+  color          String? // hex color like "#ef4444" (used for tags)
   order          Int      @default(0)
   createdById    String?
   createdAt      DateTime @default(now())
