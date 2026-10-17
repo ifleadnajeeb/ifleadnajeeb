@@ -43,6 +43,7 @@ const NAV: NavItem[] = [
   { label: 'Appointments',  href: '/appointments', icon: CalendarCheck,   permission: 'appointments:read' },
   { label: 'Calendar',      href: '/calendar',     icon: Calendar,        permission: 'calendar:read' },
   { label: 'Tasks',         href: '/tasks',        icon: CheckSquare,     permission: 'tasks:read' },
+  { label: 'Works',         href: '/works',        icon: Briefcase,       permission: 'tasks:read' },
   { label: 'Documents',     href: '/documents',    icon: FileText,        permission: 'documents:read' },
   { label: 'Reports',       href: '/reports',      icon: BarChart3,       permission: 'reports:read' },
   { label: 'Configuration', href: '/config',       icon: Settings,        permission: 'settings:read' },
@@ -91,11 +92,11 @@ export function DesktopSidebar() {
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
         {NAV.filter((item) => {
           if (['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '')) {
-            const allowed = ['Dashboard', 'Tasks', 'Calendar'];
+            const allowed = ['Dashboard', 'Works', 'Calendar'];
             return allowed.includes(item.label);
           }
           if (user?.role === 'OP_MANAGER') {
-            const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
+            const allowed = ['Dashboard', 'Operations', 'Works', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
             return allowed.includes(item.label);
           }
           return true;

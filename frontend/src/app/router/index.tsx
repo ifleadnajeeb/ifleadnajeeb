@@ -18,6 +18,7 @@ import FollowupsPage from '@/features/followups/pages/FollowupsPage';
 import AppointmentsPage from '@/features/appointments/pages/AppointmentsPage';
 import CalendarPage from '@/features/calendar/pages/CalendarPage';
 import CustomersPage from '@/features/customers/pages/CustomersPage';
+import WorksPage from '@/features/tasks/pages/WorksPage';
 import TasksPage from '@/features/tasks/pages/TasksPage';
 import DocumentsPage from '@/features/documents/pages/DocumentsPage';
 import RolesPage from '@/features/roles/pages/RolesPage';
@@ -97,6 +98,7 @@ export const router = createBrowserRouter([
           { path: '/appointments',     element: <AppointmentsPage /> },
           { path: '/calendar',         element: <CalendarPage /> },
           { path: '/tasks',            element: <TasksPage /> },
+          { path: '/works',            element: <WorksPage /> },
           { path: '/documents',        element: <DocumentsPage /> },
           { path: '/reports',          element: <ReportsPage /> },
           { path: '/reports/user/:userId', element: <ReportsPage /> },

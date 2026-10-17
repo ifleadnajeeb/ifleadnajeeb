@@ -12,7 +12,7 @@ export default function EmployeeDashboard() {
 
   const { data: tasksData, isLoading } = useQuery({
     queryKey: ['tasks', 'my-work', user?.id],
-    queryFn: () => tasksService.list({ assignedToId: user?.id, pageSize: 50 }),
+    queryFn: () => tasksService.list({ assignedToId: user?.id, pageSize: 50, isOperations: 'true' }),
     enabled: !!user?.id,
   });
 

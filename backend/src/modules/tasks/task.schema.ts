@@ -26,6 +26,7 @@ export const ListTasksQuerySchema = z.object({
   customerId: z.string().optional(),
   search: z.string().optional(),
   view: z.enum(['list', 'kanban']).default('list'),
+  isOperations: z.string().optional(),
 });
 
 export type CreateTaskInput = z.infer<typeof CreateTaskSchema>;

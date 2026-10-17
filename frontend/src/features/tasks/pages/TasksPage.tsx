@@ -44,13 +44,13 @@ export default function TasksPage() {
 
   const kanbanQ = useQuery({
     queryKey: ['tasks', 'kanban', search],
-    queryFn: () => tasksService.kanban({ search: search || undefined }),
+    queryFn: () => tasksService.kanban({ search: search || undefined, isOperations: 'false' }),
     enabled: view === 'kanban',
   });
 
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
-    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30 }),
+    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: 'false' }),
     enabled: view === 'list',
   });
 
