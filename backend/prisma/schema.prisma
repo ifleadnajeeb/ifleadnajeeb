@@ -289,6 +289,7 @@ model Lead {
 
 model Customer {
   id             String   @id @default(cuid())
+  serviceType    String?
   organizationId String
   name           String
   email          String?

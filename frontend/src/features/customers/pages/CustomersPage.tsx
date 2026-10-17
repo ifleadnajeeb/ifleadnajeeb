@@ -137,6 +137,7 @@ function CreateCustomerModal({ open, onClose, onSuccess }: { open: boolean; onCl
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [company, setCompany] = useState('');
+  const [serviceType, setServiceType] = useState('Website');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -154,6 +155,7 @@ function CreateCustomerModal({ open, onClose, onSuccess }: { open: boolean; onCl
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
         company: company.trim() || undefined,
+        serviceType: serviceType || undefined,
         address: address.trim() || undefined,
         notes: notes.trim() || undefined,
       });
@@ -194,6 +196,18 @@ function CreateCustomerModal({ open, onClose, onSuccess }: { open: boolean; onCl
             <label className="block text-[13px] text-ink-muted mb-1.5">Company</label>
             <input value={company} onChange={e => setCompany(e.target.value)}
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+          </div>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Service Required</label>
+            <select value={serviceType} onChange={e => setServiceType(e.target.value)}
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
+              <option value="Website">Website Development</option>
+              <option value="Software">Software Development</option>
+              <option value="App">App Development</option>
+              <option value="Digital Marketing">Digital Marketing</option>
+              <option value="Graphic Design">Graphic Design</option>
+              <option value="Video Editing">Video Editing</option>
+            </select>
           </div>
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Address</label>
@@ -266,6 +280,7 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
                   <span className="text-ink-muted">Phone</span><span className="text-ink">{data.phone ?? '—'}</span>
                   <span className="text-ink-muted">Email</span><span className="text-ink">{data.email ?? '—'}</span>
                   <span className="text-ink-muted">Company</span><span className="text-ink">{data.company ?? '—'}</span>
+                  <span className="text-ink-muted">Service</span><span className="text-brand font-medium">{data.serviceType ?? '—'}</span>
                   <span className="text-ink-muted">Address</span><span className="text-ink">{data.address ?? '—'}</span>
                   <span className="text-ink-muted">Owner</span><span className="text-ink">{data.owner?.name ?? '—'}</span>
                   <span className="text-ink-muted">Since</span><span className="text-ink">{fmtDate(data.createdAt)}</span>
