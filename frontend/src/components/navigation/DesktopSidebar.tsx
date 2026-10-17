@@ -43,7 +43,6 @@ const NAV: NavItem[] = [
   { label: 'Appointments',  href: '/appointments', icon: CalendarCheck,   permission: 'appointments:read' },
   { label: 'Calendar',      href: '/calendar',     icon: Calendar,        permission: 'calendar:read' },
   { label: 'Tasks',         href: '/tasks',        icon: CheckSquare,     permission: 'tasks:read' },
-  { label: 'Works',         href: '/works',        icon: Briefcase,       permission: 'tasks:read' },
   { label: 'Documents',     href: '/documents',    icon: FileText,        permission: 'documents:read' },
   { label: 'Reports',       href: '/reports',      icon: BarChart3,       permission: 'reports:read' },
   { label: 'Configuration', href: '/config',       icon: Settings,        permission: 'settings:read' },
@@ -117,7 +116,7 @@ export function DesktopSidebar() {
               }
               title={!allowed ? 'View only — actions are restricted by your role' : undefined}
             >
-              <Icon className="w-4 h-4 shrink-0" />
+              <DisplayIcon className="w-4 h-4 shrink-0" />
               <span className="flex-1">{item.label}</span>
               {!allowed && (
                 <Lock className="w-3 h-3 shrink-0 opacity-40" aria-label="View only" />
