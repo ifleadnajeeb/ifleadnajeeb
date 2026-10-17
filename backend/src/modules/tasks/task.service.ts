@@ -52,10 +52,25 @@ const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'] as const;
 
 export const taskService = {
   async submitForReview(req: AuthRequest, id: string) {
-    return prisma.task.update({
+    const task = await prisma.task.update({
       where: { id },
       data: { status: 'DONE', reviewStatus: 'PENDING_REVIEW' },
     });
+
+    // Notify the task creator (usually OP Manager)
+    if (task.createdById && task.createdById !== req.user!.id) {
+      await prisma.notification.create({
+        data: {
+          organizationId: req.user!.organizationId,
+          userId: task.createdById,
+          type: 'review_pending',
+          title: 'Work Submitted for Review',
+          body: `${req.user!.name} submitted "${task.title}" for review.`,
+          data: { taskId: task.id },
+        }
+      });
+    }
+    return task;
   },
 
   async approveTask(req: AuthRequest, id: string) {
@@ -63,6 +78,20 @@ export const taskService = {
       where: { id },
       data: { reviewStatus: 'APPROVED' },
     });
+
+    if (task.assignedToId) {
+      await prisma.notification.create({
+        data: {
+          organizationId: req.user!.organizationId,
+          userId: task.assignedToId,
+          type: 'task_approved',
+          title: 'Work Approved',
+          body: `Your work on "${task.title}" was approved! 🎉`,
+          data: { taskId: task.id },
+        }
+      });
+    }
+    return task;
   },
 
   async requestCorrection(req: AuthRequest, id: string, reason: string) {
@@ -70,6 +99,20 @@ export const taskService = {
       where: { id },
       data: { reviewStatus: 'CORRECTION_REQUESTED', status: 'IN_PROGRESS', rejectionReason: reason },
     });
+
+    if (task.assignedToId) {
+      await prisma.notification.create({
+        data: {
+          organizationId: req.user!.organizationId,
+          userId: task.assignedToId,
+          type: 'correction_requested',
+          title: 'Correction Needed',
+          body: `Your work on "${task.title}" needs correction: ${reason}`,
+          data: { taskId: task.id },
+        }
+      });
+    }
+    return task;
   },
 
   async acceptTask(req: AuthRequest, id: string) {
