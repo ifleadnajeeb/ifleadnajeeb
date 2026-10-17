@@ -89,48 +89,47 @@ export function DesktopSidebar() {
 
       {/* Nav — shows ALL items to every role */}
       <nav className="flex-1 min-h-0 overflow-y-auto px-3 pb-3 space-y-1">
-        {NAV.filter((item) => {
-          // Hide standard Tasks for Ops roles (since it becomes Works)
+        {(() => {
           const isOpsRole = ['OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '');
-          
-          if (['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '')) {
-            const allowed = ['Dashboard', 'Tasks', 'Calendar'];
-            return allowed.includes(item.label);
-          }
-          if (user?.role === 'OP_MANAGER') {
-            const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
-            return allowed.includes(item.label);
-          }
-          return true;
-        }).map((item) => {
-          const Icon = item.icon;
-          const allowed = can(item.permission);
+          const isDevRole = ['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '');
 
-          // Dynamically rename "Tasks" to "Works" for Ops roles
-          const displayLabel = (isOpsRole && item.label === 'Tasks') ? 'Works' : item.label;
-          const DisplayIcon = (isOpsRole && item.label === 'Tasks') ? Briefcase : Icon;
+          return NAV.filter((item) => {
+            if (isDevRole) {
+              const allowed = ['Dashboard', 'Tasks', 'Calendar'];
+              return allowed.includes(item.label);
+            }
+            if (user?.role === 'OP_MANAGER') {
+              const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
+              return allowed.includes(item.label);
+            }
+            return true;
+          }).map((item) => {
+            const allowed = can(item.permission);
+            const displayLabel = (isOpsRole && item.label === 'Tasks') ? 'Works' : item.label;
+            const DisplayIcon = (isOpsRole && item.label === 'Tasks') ? Briefcase : item.icon;
 
-          return (
-            <NavLink
-              key={item.href}
-              to={item.href}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2.5 px-3 py-2.5 rounded-md text-[14px] text-ink',
-                  'hover:bg-brand-light transition-colors',
-                  isActive && 'bg-brand text-white hover:bg-brand-hover'
-                )
-              }
-              title={!allowed ? 'View only — actions are restricted by your role' : undefined}
-            >
-              <DisplayIcon className="w-4 h-4 shrink-0" />
-              <span className="flex-1">{displayLabel}</span>
-              {!allowed && (
-                <Lock className="w-3 h-3 shrink-0 opacity-40" aria-label="View only" />
-              )}
-            </NavLink>
-          );
-        })}
+            return (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-2.5 px-3 py-2.5 rounded-md text-[14px] text-ink',
+                    'hover:bg-brand-light transition-colors',
+                    isActive && 'bg-brand text-white hover:bg-brand-hover'
+                  )
+                }
+                title={!allowed ? 'View only — actions are restricted by your role' : undefined}
+              >
+                <DisplayIcon className="w-4 h-4 shrink-0" />
+                <span className="flex-1">{displayLabel}</span>
+                {!allowed && (
+                  <Lock className="w-3 h-3 shrink-0 opacity-40" aria-label="View only" />
+                )}
+              </NavLink>
+            );
+          });
+        })()}
       </nav>
 
       {/* Footer */}
