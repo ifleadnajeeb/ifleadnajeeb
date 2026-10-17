@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Users, Clock, Flame, TrendingUp, Calendar, CheckSquare, AlertCircle, Activity, ArrowRight } from 'lucide-react';
 import { api } from '@/shared/api/client';
+import OPDashboard from './OPDashboard';
 import { useAuth } from '@/app/providers/auth-provider';
 import { cn } from '@/shared/utils/cn';
 
@@ -29,6 +30,11 @@ function timeAgo(iso: string) {
 
 export default function DashboardHome() {
   const { user } = useAuth();
+
+  if (user?.role === 'OP_MANAGER') {
+    return <OPDashboard />;
+  }
+
   const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
