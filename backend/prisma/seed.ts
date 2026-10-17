@@ -4,6 +4,13 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 const ROLE_LEVELS: Record<RoleName, number> = {
+  OP_MANAGER: 50,
+  WEB_DEVELOPER: 20,
+  SOFTWARE_DEVELOPER: 20,
+  DIGITAL_MARKETER: 20,
+  CONTENT_CREATOR: 20,
+  VIDEO_EDITOR: 20,
+
   ADMIN: 100,
   CEO: 80,
   BDM: 60,
@@ -22,6 +29,13 @@ const MODULES = [
 const ACTIONS = ['read', 'create', 'update', 'delete', 'assign', 'export'];
 
 const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
+  OP_MANAGER: ['dashboard:read', 'tasks:*', 'projects:*', 'reports:*', 'users:read'],
+  WEB_DEVELOPER: ['dashboard:read', 'tasks:*'],
+  SOFTWARE_DEVELOPER: ['dashboard:read', 'tasks:*'],
+  DIGITAL_MARKETER: ['dashboard:read', 'tasks:*'],
+  CONTENT_CREATOR: ['dashboard:read', 'tasks:*'],
+  VIDEO_EDITOR: ['dashboard:read', 'tasks:*'],
+
   ADMIN: ['*'],
   CEO: [
     'dashboard:read', 'leads:*', 'customers:*', 'customer360:*',
