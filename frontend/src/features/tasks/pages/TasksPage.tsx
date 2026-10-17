@@ -27,7 +27,11 @@ function isOverdue(iso: string | null) {
 }
 
 export default function TasksPage() {
+  const { user } = useAuth();
   const qc = useQueryClient();
+  const isOpsRole = ['OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '');
+  const pageTitle = isOpsRole ? 'Works' : 'Tasks';
+  const opsFilter = isOpsRole ? 'true' : 'false';
   const [searchParams] = useSearchParams();
   const customerName = searchParams.get('customerName');
   
@@ -44,13 +48,13 @@ export default function TasksPage() {
 
   const kanbanQ = useQuery({
     queryKey: ['tasks', 'kanban', search],
-    queryFn: () => tasksService.kanban({ search: search || undefined, isOperations: 'false' }),
+    queryFn: () => tasksService.kanban({ search: search || undefined, isOperations: opsFilter }),
     enabled: view === 'kanban',
   });
 
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
-    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: 'false' }),
+    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter }),
     enabled: view === 'list',
   });
 
@@ -78,8 +82,8 @@ export default function TasksPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink">Tasks</h1>
-          <p className="text-[13.5px] text-ink-muted mt-0.5">Manage your team's work</p>
+          <h1 className="text-2xl font-semibold text-ink">{pageTitle}</h1>
+          <p className="text-[13.5px] text-ink-muted mt-0.5">{isOpsRole ? 'Manage Operations & Assigned Works' : 'Manage your team\'s work'}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex border border-ink-border rounded-md overflow-hidden bg-white">
@@ -103,7 +107,7 @@ export default function TasksPage() {
               onClick={() => setCreateOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover"
             >
-              <Plus className="w-4 h-4" /> New Task
+              <Plus className="w-4 h-4" /> New {pageTitle.slice(0, -1)}
             </button>
           </CanDo>
         </div>
@@ -114,7 +118,7 @@ export default function TasksPage() {
         <input
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search tasks…"
+          placeholder={`Search ${isOpsRole ? 'works' : 'tasks'}…`}
           className="w-full h-10 pl-9 pr-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
         />
       </div>
