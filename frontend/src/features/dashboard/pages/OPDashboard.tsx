@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Briefcase, CheckSquare, Users, AlertCircle } from 'lucide-react';
+import { Briefcase, CheckSquare, Users, AlertCircle, Building2 } from 'lucide-react';
 import { operationsService } from '@/features/operations/services/operations.service';
+import { customersService } from '@/features/customers/services/customers.service';
 import { useAuth } from '@/app/providers/auth-provider';
 
 export default function OPDashboard() {
@@ -11,6 +12,14 @@ export default function OPDashboard() {
     queryKey: ['operations', 'projects'],
     queryFn: operationsService.listProjects,
   });
+
+  // Fetch Converted Leads (Customers)
+  const { data: customersResponse, isLoading: customersLoading } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => customersService.list({ page: 1, pageSize: 10 }),
+  });
+
+  const customers = customersResponse?.data || [];
 
   return (
     <div className="space-y-6">
@@ -56,73 +65,61 @@ export default function OPDashboard() {
         <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Team Members</p>
-              <h2 className="text-3xl font-bold text-ink mt-1">0</h2>
+              <p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Total Customers</p>
+              <h2 className="text-3xl font-bold text-ink mt-1">{customersResponse?.meta?.total || customers.length || 0}</h2>
             </div>
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><Users className="w-5 h-5" /></div>
           </div>
         </div>
       </div>
 
-      {/* Recent Projects Table */}
-      <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-ink-border">
-          <h2 className="text-base font-semibold text-ink">Active Projects & Requirements</h2>
-        </div>
-        {!projects || projects.length === 0 ? (
-          <div className="p-8 text-center text-ink-muted">No active projects. Go to the Operations tab to create one.</div>
-        ) : (
-          <table className="w-full text-sm text-left">
-            <thead className="bg-ink-bg text-[12px] uppercase tracking-wider text-brand font-semibold">
-              <tr>
-                <th className="px-5 py-3">Project Name</th>
-                <th className="px-5 py-3">Customer</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projects.map((p) => (
-                <tr key={p.id} className="border-t border-ink-border hover:bg-ink-bg/50">
-                  <td className="px-5 py-3 font-medium text-ink">{p.name}</td>
-                  <td className="px-5 py-3 text-ink-muted">{p.customer?.name || 'No Customer Linked'}</td>
-                  <td className="px-5 py-3">
-                    <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-100 text-blue-700">{p.status}</span>
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <button className="text-brand hover:underline text-[13px] font-medium">Assign Work</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
       {/* Two Column Layout for Converted Leads & Work Reports */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         
         {/* Converted Leads / Customers */}
-        <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-ink-border flex justify-between items-center">
             <h2 className="text-base font-semibold text-ink">Converted Leads (Customers)</h2>
             <a href="/customers" className="text-[12px] text-brand hover:underline">View all</a>
           </div>
-          <div className="p-5 text-center text-ink-muted text-sm">
-            <p>Converted customers from all sales panels will appear here.</p>
-            <p className="text-[12px] mt-1 text-ink-muted/70">(Connect the Customers API here)</p>
+          <div className="flex-1 overflow-auto max-h-[300px]">
+            {customersLoading ? (
+              <div className="p-5 text-center text-ink-muted text-sm">Loading customers...</div>
+            ) : customers.length === 0 ? (
+              <div className="p-8 text-center text-ink-muted text-sm">No customers found.</div>
+            ) : (
+              <table className="w-full text-sm text-left">
+                <thead className="bg-ink-bg text-[11px] uppercase tracking-wider text-ink-muted font-semibold sticky top-0">
+                  <tr>
+                    <th className="px-4 py-2">Name</th>
+                    <th className="px-4 py-2">Company</th>
+                    <th className="px-4 py-2">Owner</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customers.map((c: any) => (
+                    <tr key={c.id} className="border-t border-ink-border hover:bg-ink-bg/50">
+                      <td className="px-4 py-2.5 font-medium text-ink">{c.name}</td>
+                      <td className="px-4 py-2.5 text-ink-muted">{c.company || '—'}</td>
+                      <td className="px-4 py-2.5 text-ink-muted">{c.owner?.name || 'Unassigned'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 
         {/* Employee Work Reports */}
-        <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
+        <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-ink-border flex justify-between items-center">
             <h2 className="text-base font-semibold text-ink">Recent Employee Work Reports</h2>
-            <a href="/reports" className="text-[12px] text-brand hover:underline">View all</a>
+            <a href="/tasks" className="text-[12px] text-brand hover:underline">View all</a>
           </div>
-          <div className="p-5 text-center text-ink-muted text-sm">
-            <p>Daily work reports from Web Devs, Software Devs, and Creators will appear here.</p>
-            <p className="text-[12px] mt-1 text-ink-muted/70">(Connect the DailyReport API here)</p>
+          <div className="p-8 text-center text-ink-muted text-sm flex flex-col items-center justify-center">
+            <Building2 className="w-8 h-8 text-ink-muted/50 mb-2" />
+            <p>Employee daily reports will appear here.</p>
+            <p className="text-[12px] mt-1 text-ink-muted/70">(Coming in Phase 5)</p>
           </div>
         </div>
 
@@ -130,4 +127,3 @@ export default function OPDashboard() {
     </div>
   );
 }
-
