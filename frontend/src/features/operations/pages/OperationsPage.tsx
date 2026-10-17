@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Briefcase, Building2, Plus, X } from 'lucide-react';
-import { operationsService, Project, Department } from '../services/operations.service';
+import { operationsService } from '../services/operations.service';
+import type { Project, Department } from '../services/operations.service';
 import { cn } from '@/shared/utils/cn';
 
 export default function OperationsPage() {
