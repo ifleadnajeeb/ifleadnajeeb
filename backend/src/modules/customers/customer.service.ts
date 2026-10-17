@@ -13,7 +13,7 @@ import type {
 async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
-  if (u.role === 'CEO') return { organizationId: u.organizationId };
+  if (u.role === 'CEO' || u.role === 'OP_MANAGER') return { organizationId: u.organizationId };
   if (u.role === 'BDM') {
     const ids = await collectDesc(u.id);
     return { organizationId: u.organizationId, ownerId: { in: ids } };
@@ -314,7 +314,7 @@ export const customerService = {
 async function buildLeadScope(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
-  if (u.role === 'CEO') return { organizationId: u.organizationId };
+  if (u.role === 'CEO' || u.role === 'OP_MANAGER') return { organizationId: u.organizationId };
   if (u.role === 'BDM') {
     const ids = await collectDesc(u.id);
     return { organizationId: u.organizationId, assignedToId: { in: ids } };
