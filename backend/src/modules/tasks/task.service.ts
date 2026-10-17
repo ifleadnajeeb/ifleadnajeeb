@@ -51,6 +51,27 @@ function toDTO(t: any) {
 const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'] as const;
 
 export const taskService = {
+  async submitForReview(req: AuthRequest, id: string) {
+    return prisma.task.update({
+      where: { id },
+      data: { status: 'DONE', reviewStatus: 'PENDING_REVIEW' },
+    });
+  },
+
+  async approveTask(req: AuthRequest, id: string) {
+    return prisma.task.update({
+      where: { id },
+      data: { reviewStatus: 'APPROVED' },
+    });
+  },
+
+  async requestCorrection(req: AuthRequest, id: string, reason: string) {
+    return prisma.task.update({
+      where: { id },
+      data: { reviewStatus: 'CORRECTION_REQUESTED', status: 'IN_PROGRESS', rejectionReason: reason },
+    });
+  },
+
   async acceptTask(req: AuthRequest, id: string) {
     return prisma.task.update({
       where: { id },

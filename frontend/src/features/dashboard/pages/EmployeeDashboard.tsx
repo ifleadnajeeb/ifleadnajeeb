@@ -29,6 +29,16 @@ export default function EmployeeDashboard() {
     }
   };
 
+  const handleSubmitReview = async (id: string) => {
+    if (!confirm('Submit this work for OP Manager review?')) return;
+    try {
+      await tasksService.submitForReview(id);
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (e: any) {
+      alert(e?.response?.data?.message || 'Failed to submit');
+    }
+  };
+
   const handleReject = async (id: string) => {
     const reason = prompt('Why are you rejecting this task?');
     if (!reason) return;
@@ -65,6 +75,9 @@ export default function EmployeeDashboard() {
               pendingTasks.map(t => (
                 <div key={t.id} className="border border-ink-border rounded-lg p-4">
                   <h3 className="font-medium text-ink">{t.title}</h3>
+                  {t.reviewStatus === 'CORRECTION_REQUESTED' && (
+                    <p className="text-[12px] text-red-600 bg-red-50 p-2 rounded mt-1">Correction needed: {t.rejectionReason}</p>
+                  )}
                   <p className="text-[13px] text-ink-muted mt-1 mb-3">{t.description || 'No description'}</p>
                   <div className="flex gap-2">
                     <button onClick={() => handleAccept(t.id)} className="flex-1 bg-green-600 text-white rounded py-1.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-1">
@@ -94,9 +107,15 @@ export default function EmployeeDashboard() {
               activeTasks.map(t => (
                 <div key={t.id} className="border border-ink-border rounded-lg p-4">
                   <h3 className="font-medium text-ink">{t.title}</h3>
+                  {t.reviewStatus === 'CORRECTION_REQUESTED' && (
+                    <p className="text-[12px] text-red-600 bg-red-50 p-2 rounded mt-1">Correction needed: {t.rejectionReason}</p>
+                  )}
                   <div className="flex justify-between items-center mt-3">
                     <span className="text-[12px] font-semibold text-ink-muted bg-gray-100 px-2 py-1 rounded">{t.status}</span>
-                    <button onClick={() => setReportTaskId(t.id)} className="text-[13px] text-brand font-medium hover:underline">Submit Daily Report</button>
+                    <div className="flex gap-2">
+                      <button onClick={() => setReportTaskId(t.id)} className="text-[13px] text-ink-muted font-medium hover:underline">Log Daily Report</button>
+                      <button onClick={() => handleSubmitReview(t.id)} className="text-[13px] bg-green-600 text-white px-2 py-1 rounded font-medium hover:bg-green-700">Submit for Review</button>
+                    </div>
                   </div>
                 </div>
               ))

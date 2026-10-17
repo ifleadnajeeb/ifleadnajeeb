@@ -5,6 +5,7 @@ export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 export interface Task {
   acceptance?: string;
+  reviewStatus?: string;
   rejectionReason?: string;
   id: string;
   title: string;

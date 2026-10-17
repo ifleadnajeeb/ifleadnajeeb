@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { Briefcase, CheckSquare, Users, AlertCircle, Building2 } from 'lucide-react';
+import { Briefcase, CheckSquare, Users, AlertCircle, Building2, CheckCircle, XCircle } from 'lucide-react';
 import { operationsService } from '@/features/operations/services/operations.service';
+import { tasksService } from '@/features/tasks/services/tasks.service';
 import { customersService } from '@/features/customers/services/customers.service';
 import { useAuth } from '@/app/providers/auth-provider';
 
 export default function OPDashboard() {
   const { user } = useAuth();
+  const qc = useQueryClient();
 
   // Fetch Projects
   const { data: projects } = useQuery({
@@ -20,6 +22,12 @@ export default function OPDashboard() {
   });
 
   const customers = customersResponse?.data || [];
+
+  const { data: pendingReviews, isLoading: reviewsLoading } = useQuery({
+    queryKey: ['tasks', 'reviews'],
+    queryFn: () => tasksService.list({ pageSize: 50 }),
+  });
+  const reviewTasks = pendingReviews?.data?.filter((t: any) => t.reviewStatus === 'PENDING_REVIEW') || [];
 
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ['daily-reports'],
@@ -143,7 +151,43 @@ export default function OPDashboard() {
           </div>
         </div>
 
+
+      {/* Work Review & Approvals */}
+      <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden mt-6">
+        <div className="px-5 py-4 border-b border-ink-border bg-amber-50">
+          <h2 className="text-base font-semibold text-amber-900 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" /> Awaiting Review ({reviewTasks.length})
+          </h2>
+        </div>
+        <div className="p-4">
+          {reviewsLoading ? (
+            <div className="text-center py-4 text-ink-muted text-sm">Loading...</div>
+          ) : reviewTasks.length === 0 ? (
+            <div className="text-center py-4 text-ink-muted text-sm">No tasks awaiting review. Great job!</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {reviewTasks.map((t: any) => (
+                <div key={t.id} className="border border-ink-border rounded-lg p-4">
+                  <h3 className="font-medium text-ink">{t.title}</h3>
+                  <p className="text-[12px] text-ink-muted mt-1">Submitted by: {t.assignedTo?.name}</p>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => { tasksService.approve(t.id); qc.invalidateQueries({queryKey: ['tasks']}); }} className="flex-1 bg-green-600 text-white rounded py-1.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-1">
+                      <CheckCircle className="w-4 h-4" /> Approve
+                    </button>
+                    <button onClick={() => {
+                      const reason = prompt('Reason for correction:');
+                      if (reason) { tasksService.requestCorrection(t.id, reason); qc.invalidateQueries({queryKey: ['tasks']}); }
+                    }} className="flex-1 border border-amber-300 text-amber-700 rounded py-1.5 text-sm font-medium hover:bg-amber-50 flex items-center justify-center gap-1">
+                      <XCircle className="w-4 h-4" /> Correct
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
     </div>
   );
 }

@@ -3,6 +3,21 @@ import { AuthRequest } from '../../middleware/auth.middleware.js';
 import { taskService } from './task.service.js';
 
 export const taskController = {
+  async submitReview(req: AuthRequest, res: Response) {
+    const task = await taskService.submitForReview(req, req.params.id);
+    res.json({ data: task });
+  },
+
+  async approve(req: AuthRequest, res: Response) {
+    const task = await taskService.approveTask(req, req.params.id);
+    res.json({ data: task });
+  },
+
+  async requestCorrection(req: AuthRequest, res: Response) {
+    const task = await taskService.requestCorrection(req, req.params.id, req.body.reason || 'Please review instructions');
+    res.json({ data: task });
+  },
+
   async accept(req: AuthRequest, res: Response) {
     const task = await taskService.acceptTask(req, req.params.id);
     res.json({ data: task });
