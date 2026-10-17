@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Building2, Mail, Phone, User } from 'lucide-react';
+import { Plus, Search, Building2, Mail, Phone, User, Briefcase } from 'lucide-react';
 import { customersService, Customer, CustomerDetail } from '../services/customers.service';
 import { cn } from '@/shared/utils/cn';
 import { CanDo } from '@/shared/permissions/CanDo';
@@ -220,6 +221,7 @@ function CreateCustomerModal({ open, onClose, onSuccess }: { open: boolean; onCl
 
 // ─── Detail drawer ───
 function CustomerDrawer({ customerId, onClose }: { customerId: string | null; onClose: () => void }) {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['customer', customerId],
     queryFn: () => customersService.get(customerId!),
@@ -239,7 +241,17 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
               {data?.name ?? 'Customer'}
             </h2>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-md text-ink-muted hover:bg-brand-light">✕</button>
+          <div className="flex items-center gap-3">
+            {data && (
+              <button
+                onClick={() => navigate(`/tasks?customerId=${data.id}&customerName=${encodeURIComponent(data.name)}`)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-brand text-white text-[13px] font-medium hover:bg-brand-hover transition-colors"
+              >
+                <Briefcase className="w-3.5 h-3.5" /> Assign Work
+              </button>
+            )}
+            <button onClick={onClose} className="w-8 h-8 rounded-md text-ink-muted hover:bg-brand-light">✕</button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
