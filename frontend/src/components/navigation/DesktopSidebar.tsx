@@ -37,7 +37,6 @@ const NAV: NavItem[] = [
   { label: 'Team Performance', href: '/team-performance', icon: UsersRound,      permission: 'users:read' },
   { label: 'Missions',      href: '/missions',     icon: Target,          permission: 'followups:read' },
   { label: 'Leads',         href: '/leads',        icon: Users,           permission: 'leads:read' },
-  { label: 'Operations', href: '/operations', icon: Briefcase, permission: 'tasks:read' },
   { label: 'Customers',     href: '/customers',    icon: UserSquare,      permission: 'customers:read' },
   { label: 'Follow-ups',    href: '/followups',    icon: Clock,           permission: 'followups:read' },
   { label: 'Appointments',  href: '/appointments', icon: CalendarCheck,   permission: 'appointments:read' },
@@ -99,7 +98,7 @@ export function DesktopSidebar() {
               return allowed.includes(item.label);
             }
             if (user?.role === 'OP_MANAGER') {
-              const allowed = ['Dashboard', 'Operations', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
+              const allowed = ['Dashboard', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
               return allowed.includes(item.label);
             }
             return true;

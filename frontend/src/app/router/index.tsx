@@ -12,7 +12,6 @@ import ReportsPage from '@/features/reports/pages/ReportsPage';
 import LeadsPage from '@/features/leads/pages/LeadsPage';
 import DashboardHome from '@/features/dashboard/pages/DashboardHome';
 import AIAssistantPage from '@/features/ai/pages/AIAssistantPage';
-import OperationsPage from '@/features/operations/pages/OperationsPage';
 import MissionsPage from '@/features/missions/pages/MissionsPage';
 import FollowupsPage from '@/features/followups/pages/FollowupsPage';
 import AppointmentsPage from '@/features/appointments/pages/AppointmentsPage';
@@ -83,7 +82,6 @@ export const router = createBrowserRouter([
         element: <DesktopLayout />,
         children: [
           { path: '/dashboard',        element: <DashboardHome /> },
-          { path: '/operations',       element: <OperationsPage /> },
           { path: '/missions',         element: <MissionsPage /> },
           { path: '/leads',            element: <LeadsPage /> },
           { path: '/ai',               element: <AIAssistantPage /> },
