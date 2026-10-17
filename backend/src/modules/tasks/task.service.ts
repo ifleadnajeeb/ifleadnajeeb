@@ -51,10 +51,10 @@ function toDTO(t: any) {
 const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'] as const;
 
 export const taskService = {
-  async submitForReview(req: AuthRequest, id: string) {
+  async submitForReview(req: AuthRequest, id: string, deliverableUrl?: string) {
     const task = await prisma.task.update({
       where: { id },
-      data: { status: 'DONE', reviewStatus: 'PENDING_REVIEW' },
+      data: { status: 'DONE', reviewStatus: 'PENDING_REVIEW', deliverableUrl },
     });
 
     // Notify the task creator (usually OP Manager)

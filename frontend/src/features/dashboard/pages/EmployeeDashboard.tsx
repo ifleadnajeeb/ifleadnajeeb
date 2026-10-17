@@ -9,6 +9,7 @@ export default function EmployeeDashboard() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [reportTaskId, setReportTaskId] = useState<string | null>(null);
+  const [reviewTaskId, setReviewTaskId] = useState<string | null>(null);
 
   // Fetch ALL tasks assigned to this user without strict filters
   const { data: tasksData, isLoading } = useQuery({
@@ -43,15 +44,7 @@ export default function EmployeeDashboard() {
     }
   };
 
-  const handleSubmitReview = async (id: string) => {
-    if (!confirm('Submit this work for OP Manager review?')) return;
-    try {
-      await tasksService.submitForReview(id);
-      qc.invalidateQueries({ queryKey: ['tasks'] });
-    } catch (e: any) {
-      alert(e?.response?.data?.message || 'Failed to submit');
-    }
-  };
+
 
   if (isLoading) return <div className="p-10 text-center text-ink-muted">Loading Workspace...</div>;
 
@@ -116,7 +109,7 @@ export default function EmployeeDashboard() {
                     <span className="text-[12px] font-semibold text-ink-muted bg-gray-100 px-2 py-1 rounded">{t.status}</span>
                     <div className="flex gap-2">
                       <button onClick={() => setReportTaskId(t.id)} className="text-[13px] text-ink-muted font-medium hover:underline">Log Daily Report</button>
-                      <button onClick={() => handleSubmitReview(t.id)} className="text-[13px] bg-green-600 text-white px-2 py-1 rounded font-medium hover:bg-green-700">Submit for Review</button>
+                      <button onClick={() => setReviewTaskId(t.id)} className="text-[13px] bg-green-600 text-white px-2 py-1 rounded font-medium hover:bg-green-700">Submit for Review</button>
                     </div>
                   </div>
                 </div>
@@ -126,6 +119,14 @@ export default function EmployeeDashboard() {
         </div>
 
       </div>
+
+      {reviewTaskId && (
+        <SubmitReviewModal
+          taskId={reviewTaskId}
+          onClose={() => setReviewTaskId(null)}
+          onSuccess={() => { setReviewTaskId(null); qc.invalidateQueries({ queryKey: ['tasks'] }); }}
+        />
+      )}
 
       {reportTaskId && (
         <SubmitReportModal 
@@ -198,6 +199,57 @@ function SubmitReportModal({ taskId, onClose, onSuccess }: { taskId: string, onC
           <button onClick={submit} disabled={submitting || !workCompleted.trim()}
             className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50">
             {submitting ? 'Submitting…' : 'Submit Report'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function SubmitReviewModal({ taskId, onClose, onSuccess }: { taskId: string, onClose: () => void, onSuccess: () => void }) {
+  const [url, setUrl] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      await tasksService.submitForReview(taskId, url.trim() || undefined);
+      onSuccess();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || 'Failed to submit');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-[520px] w-full" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-border">
+          <h2 className="text-[16px] font-semibold text-ink">Submit for Review</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-md text-ink-muted hover:bg-brand-light">
+            <X className="w-4 h-4 mx-auto" />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <p className="text-[13px] text-ink-muted">Provide a link to your deliverable so the OP Manager can review it.</p>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Deliverable Link (GitHub, Figma, Drive, etc.)</label>
+            <input 
+              type="url" 
+              value={url} 
+              onChange={e => setUrl(e.target.value)} 
+              placeholder="https://github.com/..." 
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" 
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-ink-border">
+          <button onClick={onClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] hover:bg-brand-light">Cancel</button>
+          <button onClick={submit} disabled={submitting}
+            className="h-10 px-5 rounded-md bg-green-600 text-white text-[13.5px] font-medium hover:bg-green-700 disabled:opacity-50">
+            {submitting ? 'Submitting…' : 'Submit Work'}
           </button>
         </div>
       </div>

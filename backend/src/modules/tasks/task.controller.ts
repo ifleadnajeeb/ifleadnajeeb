@@ -4,7 +4,7 @@ import { taskService } from './task.service.js';
 
 export const taskController = {
   async submitReview(req: AuthRequest, res: Response) {
-    const task = await taskService.submitForReview(req, req.params.id);
+    const task = await taskService.submitForReview(req, req.params.id, req.body.deliverableUrl);
     res.json({ data: task });
   },
 

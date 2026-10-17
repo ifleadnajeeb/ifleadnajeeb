@@ -119,6 +119,11 @@ export default function OPDashboard() {
                 <div key={t.id} className="border border-ink-border rounded-lg p-4">
                   <h3 className="font-medium text-ink">{t.title}</h3>
                   <p className="text-[12px] text-ink-muted mt-1">Submitted by: {t.assignedTo?.name}</p>
+                  {t.deliverableUrl && (
+                    <a href={t.deliverableUrl} target="_blank" rel="noreferrer" className="inline-block mt-2 text-[12px] font-medium text-brand hover:underline bg-brand-light px-2 py-1 rounded">
+                      🔗 View Deliverable
+                    </a>
+                  )}
                   <div className="flex gap-2 mt-3">
                     <button onClick={() => handleApprove(t.id)} className="flex-1 bg-green-600 text-white rounded py-1.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-1">
                       <CheckCircle className="w-4 h-4" /> Approve

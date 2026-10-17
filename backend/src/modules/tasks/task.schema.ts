@@ -9,6 +9,7 @@ export const CreateTaskSchema = z.object({
   reminderAt: z.string().optional(),
   assignedToId: z.string().optional(),
   customerId: z.string().optional(),
+  deliverableUrl: z.string().optional(),
 });
 
 export const UpdateTaskSchema = CreateTaskSchema.partial();
@@ -24,6 +25,7 @@ export const ListTasksQuerySchema = z.object({
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
   assignedToId: z.string().optional(),
   customerId: z.string().optional(),
+  deliverableUrl: z.string().optional(),
   search: z.string().optional(),
   view: z.enum(['list', 'kanban']).default('list'),
   isOperations: z.string().optional(),
