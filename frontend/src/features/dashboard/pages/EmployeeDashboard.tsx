@@ -19,12 +19,21 @@ export default function EmployeeDashboard() {
 
   const handleAccept = async (id: string) => {
     try {
-      // In a real app, you'd call the API here
-      // await tasksService.accept(id);
-      alert('Task Accepted! (API integration next)');
+      await tasksService.accept(id);
       qc.invalidateQueries({ queryKey: ['tasks'] });
-    } catch (e) {
-      alert('Failed to accept');
+    } catch (e: any) {
+      alert(e?.response?.data?.message || 'Failed to accept task');
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const reason = prompt('Why are you rejecting this task?');
+    if (!reason) return;
+    try {
+      await tasksService.reject(id, reason);
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (e: any) {
+      alert(e?.response?.data?.message || 'Failed to reject task');
     }
   };
 
@@ -58,7 +67,7 @@ export default function EmployeeDashboard() {
                     <button onClick={() => handleAccept(t.id)} className="flex-1 bg-green-600 text-white rounded py-1.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-1">
                       <CheckCircle className="w-4 h-4" /> Accept
                     </button>
-                    <button className="flex-1 border border-red-200 text-red-600 rounded py-1.5 text-sm font-medium hover:bg-red-50 flex items-center justify-center gap-1">
+                    <button onClick={() => handleReject(t.id)} className="flex-1 border border-red-200 text-red-600 rounded py-1.5 text-sm font-medium hover:bg-red-50 flex items-center justify-center gap-1">
                       <XCircle className="w-4 h-4" /> Reject
                     </button>
                   </div>
