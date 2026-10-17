@@ -4,27 +4,11 @@ import type { SummaryQuery } from './dashboard.schema.js';
 
 async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
+  
+  // ADMIN can see all leads for system management.
   if (u.role === 'ADMIN') return { org: u.organizationId, lead: {} };
-  if (u.role === 'CEO') return { org: u.organizationId, lead: { organizationId: u.organizationId } };
-  if (u.role === 'BDM') {
-    const ids = await collectDescendants(u.id);
-    return {
-      org: u.organizationId,
-      lead: { organizationId: u.organizationId, assignedToId: { in: ids } },
-    };
-  }
-  if (u.role === 'SALES_HEAD') {
-    if (!u.teamId) return { org: u.organizationId, lead: { organizationId: u.organizationId, assignedToId: u.id } };
-    const mem = await prisma.user.findMany({
-      where: { teamId: u.teamId, organizationId: u.organizationId },
-      select: { id: true },
-    });
-    const ids = [u.id, ...mem.map((m) => m.id)];
-    return {
-      org: u.organizationId,
-      lead: { organizationId: u.organizationId, assignedToId: { in: ids } },
-    };
-  }
+  
+  // Every other role (CEO, GM, SALES_HEAD, BDE) only sees leads assigned to them personally.
   return {
     org: u.organizationId,
     lead: { organizationId: u.organizationId, assignedToId: u.id },
