@@ -1,5 +1,4 @@
-import { NavLink   Briefcase,
-} from 'lucide-react'; from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -19,9 +18,9 @@ import {
   UsersRound,
   Lock,
   MessageCircle,
-  Settings,
   Briefcase,
-} from 'lucide-react'; from 'lucide-react';
+  Settings,
+} from 'lucide-react';
 import { useAuth } from '@/app/providers/auth-provider';
 import { cn } from '@/shared/utils/cn';
 
