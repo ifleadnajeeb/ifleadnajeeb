@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Building2, Mail, Phone, User, Briefcase } from 'lucide-react';
+import { Plus, Search, Building2, Mail, Phone, User, Briefcase, FileText, Edit2 } from 'lucide-react';
 import { customersService, Customer, CustomerDetail } from '../services/customers.service';
 import { cn } from '@/shared/utils/cn';
 import { CanDo } from '@/shared/permissions/CanDo';
@@ -236,11 +236,32 @@ function CreateCustomerModal({ open, onClose, onSuccess }: { open: boolean; onCl
 // ─── Detail drawer ───
 function CustomerDrawer({ customerId, onClose }: { customerId: string | null; onClose: () => void }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteText, setNoteText] = useState('');
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ['customer', customerId],
     queryFn: () => customersService.get(customerId!),
     enabled: !!customerId,
   });
+
+  // Load existing notes into state when data arrives
+  useEffect(() => {
+    if (data?.notes) setNoteText(data.notes);
+    else setNoteText('');
+  }, [data]);
+
+  const saveNote = async () => {
+    if (!customerId) return;
+    try {
+      await customersService.update(customerId, { notes: noteText });
+      qc.invalidateQueries({ queryKey: ['customer', customerId] });
+      setIsEditingNote(false);
+    } catch {
+      alert('Failed to save note');
+    }
+  };
 
   if (!customerId) return null;
 
@@ -285,9 +306,37 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string | null; on
                   <span className="text-ink-muted">Owner</span><span className="text-ink">{data.owner?.name ?? '—'}</span>
                   <span className="text-ink-muted">Since</span><span className="text-ink">{fmtDate(data.createdAt)}</span>
                 </div>
-                {data.notes && (
-                  <p className="text-[13px] text-ink mt-3 whitespace-pre-wrap border-t border-ink-border pt-3">
-                    {data.notes}
+
+              </div>
+
+              {/* Project Notes */}
+              <div className="bg-white border border-ink-border rounded-xl p-5 mt-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-[14px] font-semibold text-ink flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-brand" /> Project Notes
+                  </h3>
+                  {!isEditingNote && (
+                    <button onClick={() => setIsEditingNote(true)} className="text-[12px] text-brand hover:underline flex items-center gap-1 font-medium">
+                      <Edit2 className="w-3 h-3" /> Edit Note
+                    </button>
+                  )}
+                </div>
+                {isEditingNote ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      className="w-full h-32 p-3 text-[13px] border border-ink-border rounded-md focus:outline-none focus:border-brand bg-ink-bg focus:bg-white resize-none"
+                      placeholder="Write requirements discussed with the customer..."
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setIsEditingNote(false)} className="px-4 py-1.5 text-[13px] border border-ink-border rounded-md hover:bg-gray-50">Cancel</button>
+                      <button onClick={saveNote} className="px-4 py-1.5 text-[13px] bg-brand text-white rounded-md hover:bg-brand-hover">Save Note</button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[13px] text-ink whitespace-pre-wrap">
+                    {data.notes || <span className="text-ink-muted italic">No notes added yet. Click "Edit Note" to add requirements.</span>}
                   </p>
                 )}
               </div>
