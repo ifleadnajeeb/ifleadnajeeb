@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Briefcase, Building2, Plus, X } from 'lucide-react';
-import { operationsService } from '../services/operations.service';
-import type { Project, Department } from '../services/operations.service';
+import { operationsService, Project, Department } from '../services/operations.service';
+import { customersService, Customer } from '@/features/customers/services/customers.service';
 import { cn } from '@/shared/utils/cn';
 
 export default function OperationsPage() {
@@ -25,9 +25,7 @@ export default function OperationsPage() {
           onClick={() => setTab('projects')}
           className={cn(
             'px-4 py-2 text-[13.5px] font-medium border-b-2 transition-colors flex items-center gap-2',
-            tab === 'projects'
-              ? 'border-brand text-brand'
-              : 'border-transparent text-ink-muted hover:text-ink'
+            tab === 'projects' ? 'border-brand text-brand' : 'border-transparent text-ink-muted hover:text-ink'
           )}
         >
           <Briefcase className="w-4 h-4" /> Projects
@@ -36,9 +34,7 @@ export default function OperationsPage() {
           onClick={() => setTab('departments')}
           className={cn(
             'px-4 py-2 text-[13.5px] font-medium border-b-2 transition-colors flex items-center gap-2',
-            tab === 'departments'
-              ? 'border-brand text-brand'
-              : 'border-transparent text-ink-muted hover:text-ink'
+            tab === 'departments' ? 'border-brand text-brand' : 'border-transparent text-ink-muted hover:text-ink'
           )}
         >
           <Building2 className="w-4 h-4" /> Departments
@@ -76,7 +72,7 @@ function ProjectsTab() {
       {isLoading ? (
         <div className="p-8 text-center text-ink-muted">Loading...</div>
       ) : !projects || projects.length === 0 ? (
-        <div className="p-8 text-center text-ink-muted">No projects found.</div>
+        <div className="p-8 text-center text-ink-muted">No projects found. Create one to get started.</div>
       ) : (
         <table className="w-full text-sm text-left">
           <thead className="bg-ink-bg text-[12px] uppercase tracking-wider text-brand font-semibold">
@@ -84,6 +80,7 @@ function ProjectsTab() {
               <th className="px-5 py-3">Project Name</th>
               <th className="px-5 py-3">Customer</th>
               <th className="px-5 py-3">Status</th>
+              <th className="px-5 py-3">Start Date</th>
             </tr>
           </thead>
           <tbody>
@@ -95,6 +92,9 @@ function ProjectsTab() {
                   <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-blue-100 text-blue-700">
                     {p.status}
                   </span>
+                </td>
+                <td className="px-5 py-3 text-ink-muted">
+                  {p.startDate ? new Date(p.startDate).toLocaleDateString('en-GB') : '—'}
                 </td>
               </tr>
             ))}
@@ -129,13 +129,15 @@ function DepartmentsTab() {
       {isLoading ? (
         <div className="p-8 text-center text-ink-muted">Loading...</div>
       ) : !depts || depts.length === 0 ? (
-        <div className="p-8 text-center text-ink-muted">No departments found.</div>
+        <div className="p-8 text-center text-ink-muted">No departments found. Create one to get started.</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-5">
           {depts.map((d) => (
             <div key={d.id} className="border border-ink-border rounded-lg p-4">
-              <div className="font-semibold text-ink">{d.name}</div>
-              <div className="text-[13px] text-ink-muted mt-1">{d.description || 'No description'}</div>
+              <div className="font-semibold text-ink flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-brand" /> {d.name}
+              </div>
+              <div className="text-[13px] text-ink-muted mt-2">{d.description || 'No description provided.'}</div>
             </div>
           ))}
         </div>
@@ -146,16 +148,31 @@ function DepartmentsTab() {
 }
 
 // ─── Modals ───
+
 function CreateProjectModal({ onClose, onSuccess }: { onClose: () => void, onSuccess: () => void }) {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
+  const [customerId, setCustomerId] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Fetch customers for the dropdown
+  const { data: customersData } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => customersService.list({ page: 1, pageSize: 100 }),
+  });
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await operationsService.createProject({ name, description: desc });
+      await operationsService.createProject({ 
+        name, 
+        description: desc,
+        customerId: customerId || undefined,
+        startDate: startDate || undefined,
+        status: 'PLANNING'
+      });
       onSuccess();
     } catch { alert('Error creating project'); } finally { setLoading(false); }
   };
@@ -169,12 +186,25 @@ function CreateProjectModal({ onClose, onSuccess }: { onClose: () => void, onSuc
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm mb-1">Project Name</label>
-            <input required value={name} onChange={e => setName(e.target.value)} className="w-full border rounded p-2 text-sm" />
+            <label className="block text-sm mb-1 font-medium">Project Name *</label>
+            <input required value={name} onChange={e => setName(e.target.value)} className="w-full border rounded p-2 text-sm" placeholder="e.g. Acme Website Redesign" />
           </div>
           <div>
-            <label className="block text-sm mb-1">Description</label>
+            <label className="block text-sm mb-1 font-medium">Link to Customer</label>
+            <select value={customerId} onChange={e => setCustomerId(e.target.value)} className="w-full border rounded p-2 text-sm bg-white">
+              <option value="">— No Customer —</option>
+              {customersData?.data?.map((c: Customer) => (
+                <option key={c.id} value={c.id}>{c.name} ({c.company || 'No Company'})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm mb-1 font-medium">Description</label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} className="w-full border rounded p-2 text-sm" rows={3} />
+          </div>
+          <div>
+            <label className="block text-sm mb-1 font-medium">Start Date</label>
+            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full border rounded p-2 text-sm" />
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-2">
@@ -211,11 +241,11 @@ function CreateDepartmentModal({ onClose, onSuccess }: { onClose: () => void, on
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm mb-1">Department Name</label>
+            <label className="block text-sm mb-1 font-medium">Department Name *</label>
             <input required value={name} onChange={e => setName(e.target.value)} className="w-full border rounded p-2 text-sm" placeholder="e.g. Web Development" />
           </div>
           <div>
-            <label className="block text-sm mb-1">Description (Optional)</label>
+            <label className="block text-sm mb-1 font-medium">Description (Optional)</label>
             <input value={desc} onChange={e => setDesc(e.target.value)} className="w-full border rounded p-2 text-sm" />
           </div>
         </div>

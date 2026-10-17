@@ -7,6 +7,8 @@ export interface Project {
   status: string;
   customerId: string | null;
   customer?: { name: string };
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface Department {
@@ -16,6 +18,7 @@ export interface Department {
 }
 
 export const operationsService = {
+  // Projects
   listProjects: async (): Promise<Project[]> => {
     const res = await api.get<{ data: Project[] }>('/operations/projects');
     return res.data.data;
@@ -24,10 +27,18 @@ export const operationsService = {
     const res = await api.post<{ data: Project }>('/operations/projects', input);
     return res.data.data;
   },
+
+  // Departments
   listDepartments: async (): Promise<Department[]> => {
     const res = await api.get<{ data: Department[] }>('/operations/departments');
     return res.data.data;
   },
+  createDepartment: async (input: Partial<Department>): Promise<Department> => {
+    const res = await api.post<{ data: Department }>('/operations/departments', input);
+    return res.data.data;
+  },
+
+  // Reports
   listDailyReports: async (): Promise<any[]> => {
     const res = await api.get<{ data: any[] }>('/operations/reports');
     return res.data.data;
@@ -35,9 +46,5 @@ export const operationsService = {
   createDailyReport: async (input: any): Promise<any> => {
     const res = await api.post<{ data: any }>('/operations/reports', input);
     return res.data.data;
-  },
-  createDepartment: async (input: Partial<Department>): Promise<Department> => {
-    const res = await api.post<{ data: Department }>('/operations/departments', input);
-    return res.data.data;
-  },
+  }
 };
