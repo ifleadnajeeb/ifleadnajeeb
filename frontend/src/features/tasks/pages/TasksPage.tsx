@@ -170,7 +170,7 @@ export default function TasksPage() {
                       {task.description && (
                         <p className="text-[12px] text-ink-muted line-clamp-2 mb-2">{task.description}</p>
                       )}
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
                         <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', PRIORITY_COLOR[task.priority])}>
                           {task.priority}
                         </span>
@@ -181,8 +181,52 @@ export default function TasksPage() {
                           </span>
                         )}
                       </div>
+
+                      {/* Workflow Status & Progress */}
+                      <div className="space-y-1.5 pb-2 border-b border-ink-border mb-2">
+                        <div className="flex justify-between items-center text-[10px]">
+                          <span className="text-ink-muted">Status:</span>
+                          <span className={cn('font-bold px-1.5 py-0.5 rounded', 
+                            task.acceptance === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                            task.reviewStatus === 'PENDING_REVIEW' ? 'bg-purple-100 text-purple-700' :
+                            task.reviewStatus === 'CORRECTION_REQUESTED' ? 'bg-red-100 text-red-700' :
+                            task.status === 'DONE' ? 'bg-green-100 text-green-700' :
+                            'bg-blue-100 text-blue-700'
+                          )}>
+                            {task.acceptance === 'PENDING' ? 'PENDING ACCEPT' :
+                             task.reviewStatus === 'PENDING_REVIEW' ? 'IN REVIEW' :
+                             task.reviewStatus === 'CORRECTION_REQUESTED' ? 'NEEDS FIX' :
+                             task.status === 'DONE' ? 'COMPLETED' : 'IN PROGRESS'}
+                          </span>
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        {(() => {
+                          let progress = 0;
+                          if (task.status === 'DONE') progress = 100;
+                          else if (task.reviewStatus === 'PENDING_REVIEW') progress = 80;
+                          else if (task.dailyReports?.[0]?.progress) progress = task.dailyReports[0].progress;
+                          else if (task.acceptance === 'ACCEPTED') progress = 20;
+
+                          return (
+                            <div>
+                              <div className="flex justify-between text-[10px] text-ink-muted mb-0.5">
+                                <span>Progress</span>
+                                <span className="font-semibold">{progress}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                <div className={cn("h-1.5 rounded-full", progress === 100 ? "bg-green-500" : "bg-brand")} style={{ width: `${progress}%` }}></div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
                       {task.assignedTo && (
-                        <div className="text-[11px] text-ink-muted mt-1.5 pt-1.5 border-t border-ink-border">
+                        <div className="flex items-center gap-1 text-[11px] text-ink font-medium">
+                          <div className="w-4 h-4 rounded-full bg-brand-light text-brand flex items-center justify-center text-[8px]">
+                            {task.assignedTo.name.charAt(0).toUpperCase()}
+                          </div>
                           {task.assignedTo.name}
                         </div>
                       )}

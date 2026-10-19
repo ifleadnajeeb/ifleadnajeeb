@@ -153,6 +153,7 @@ export const taskService = {
         include: {
           assignedTo: { select: { id: true, name: true } },
           createdBy: { select: { id: true, name: true } },
+          dailyReports: { orderBy: { createdAt: 'desc' }, take: 1 }
         },
         orderBy: [{ priority: 'desc' }, { dueAt: 'asc' }, { createdAt: 'desc' }],
         skip: q.view === 'kanban' ? 0 : (q.page - 1) * q.pageSize,
