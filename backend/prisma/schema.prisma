@@ -398,6 +398,7 @@ model TimeBlock {
 }
 
 model Task {
+  deliverableUrl String?
   dailyReports   DailyReport[]
   id              String       @id @default(cuid())
   organizationId  String
