@@ -63,16 +63,18 @@ export const dashboardService = {
     endOfToday.setDate(endOfToday.getDate() + 1);
 
     // ── Leads ──
+    const activeLeadWhere = { ...leadWhere, status: { notIn: ['WON', 'LOST'] } };
+
     const [totalLeads, newLeads, hotLeads, wonLeads, lostLeads] = await Promise.all([
-      prisma.lead.count({ where: leadWhere }),
-      prisma.lead.count({ where: { ...leadWhere, status: 'NEW' } }),
-      prisma.lead.count({ where: { ...leadWhere, priority: 'HOT' } }),
+      prisma.lead.count({ where: activeLeadWhere }),
+      prisma.lead.count({ where: { ...activeLeadWhere, status: 'NEW' } }),
+      prisma.lead.count({ where: { ...activeLeadWhere, priority: 'HOT' } }),
       prisma.lead.count({ where: { ...leadWhere, status: 'WON' } }),
       prisma.lead.count({ where: { ...leadWhere, status: 'LOST' } }),
     ]);
 
     // ── Follow-ups ──
-    const followupScope = { lead: { ...scope.lead } };
+    const followupScope = { lead: { ...scope.lead, status: { notIn: ['WON', 'LOST'] } } };
     const [followupsToday, followupsOverdue, followupsUpcoming] = await Promise.all([
       prisma.followup.count({
         where: {
@@ -165,7 +167,7 @@ export const dashboardService = {
 
     // ── Recent leads (for right-side card) ──
     const recentLeads = await prisma.lead.findMany({
-      where: scope.lead,
+      where: { ...scope.lead, status: { notIn: ['WON', 'LOST'] } },
       orderBy: { createdAt: 'desc' },
       take: 5,
       select: {

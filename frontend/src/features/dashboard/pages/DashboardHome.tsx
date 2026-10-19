@@ -58,7 +58,7 @@ function StandardDashboard() {
         <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Total Leads</p>
+              <p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Active Leads</p>
               <h2 className="text-3xl font-bold text-ink mt-1">{summary?.leads.total || 0}</h2>
             </div>
             <div className="p-2 bg-pink-50 text-pink-600 rounded-lg"><Users className="w-5 h-5" /></div>
