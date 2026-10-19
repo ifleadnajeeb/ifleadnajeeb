@@ -5,7 +5,7 @@ import {
   Users, Clock, Flame, TrendingUp, AlertCircle, 
   CheckSquare, Calendar, Activity, Briefcase, CheckCircle 
 } from 'lucide-react';
-import { dashboardService } from '../services/dashboard.service';
+import { dashboardService } from '@/features/dashboard/services/dashboard.service';
 import { operationsService } from '@/features/operations/services/operations.service';
 import { tasksService } from '@/features/tasks/services/tasks.service';
 import { customersService } from '@/features/customers/services/customers.service';
