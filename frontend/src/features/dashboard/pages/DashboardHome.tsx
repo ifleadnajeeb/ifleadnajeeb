@@ -180,6 +180,26 @@ function OPManagerDashboard() {
     } catch { alert('Failed to request correction'); }
   };
 
+  // Group tasks by employee for the Workload view
+  const tasksByEmployee: Record<string, { name: string, tasks: any[] }> = {};
+  allTasksList.forEach((t: any) => {
+    const empName = t.assignedTo?.name || 'Unassigned';
+    if (!tasksByEmployee[empName]) {
+      tasksByEmployee[empName] = { name: empName, tasks: [] };
+    }
+    tasksByEmployee[empName].tasks.push(t);
+  });
+
+  // Calculate progress for a task based on the latest daily report
+  const getTaskProgress = (task: any) => {
+    if (task.status === 'DONE') return 100;
+    const taskReports = reports?.filter((r: any) => r.taskId === task.id) || [];
+    if (taskReports.length === 0) return task.acceptance === 'ACCEPTED' ? 10 : 0;
+    // Get the latest report
+    const latestReport = taskReports[0]; // Assuming reports are sorted by date desc
+    return latestReport.progress || 0;
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -262,30 +282,46 @@ function OPManagerDashboard() {
           </div>
         </div>
 
-        {/* Daily Reports */}
+        {/* TEAM WORKLOAD & PROGRESS */}
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden flex flex-col">
           <div className="px-5 py-4 border-b border-ink-border flex justify-between items-center bg-blue-50">
             <h2 className="text-base font-semibold text-blue-900 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> Recent Employee Reports
+              <Users className="w-4 h-4" /> Team Workload & Active Works
             </h2>
-            <Link to="/daily-reports" className="text-[12px] text-brand hover:underline">View all</Link>
+            <Link to="/works" className="text-[12px] text-brand hover:underline">View Works Board</Link>
           </div>
-          <div className="flex-1 overflow-auto max-h-[400px] p-4 space-y-3 bg-gray-50">
-            {reportsLoading ? (
-              <div className="text-center text-ink-muted text-sm py-4">Loading reports...</div>
-            ) : !reports || reports.length === 0 ? (
-              <div className="text-center text-ink-muted text-sm py-4">No work reports submitted yet.</div>
+          <div className="flex-1 overflow-auto max-h-[400px] p-4 space-y-4 bg-gray-50">
+            {Object.keys(tasksByEmployee).length === 0 ? (
+               <div className="text-center text-ink-muted text-sm py-4">No active works assigned yet.</div>
             ) : (
-              reports.slice(0, 5).map((r: any) => (
-                <div key={r.id} className="border border-ink-border rounded-lg p-3 bg-white shadow-sm">
-                  <div className="flex justify-between items-start mb-1">
-                    <div className="font-medium text-ink text-[13.5px]">{r.task?.title || 'Unknown Task'}</div>
-                    <span className="text-[11px] text-ink-muted bg-gray-100 px-2 py-0.5 rounded border border-ink-border">
-                      {r.task?.assignedTo?.name || 'Employee'}
-                    </span>
+              Object.values(tasksByEmployee).map((emp) => (
+                <div key={emp.name} className="bg-white border border-ink-border rounded-lg p-3 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-ink-border">
+                    <div className="w-6 h-6 rounded-full bg-brand-light text-brand flex items-center justify-center text-[10px] font-bold">
+                      {emp.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-semibold text-ink text-[13.5px]">{emp.name}</span>
+                    <span className="text-[11px] text-ink-muted ml-auto">{emp.tasks.length} Tasks</span>
                   </div>
-                  <p className="text-[12.5px] text-ink-muted mt-1 whitespace-pre-wrap font-mono bg-gray-50 p-2 rounded">{r.workCompleted}</p>
-                  {r.blockers && <p className="text-[11px] text-red-500 mt-2 font-medium">⚠️ Blocker: {r.blockers}</p>}
+                  <div className="space-y-3">
+                    {emp.tasks.map((t: any) => {
+                      const progress = getTaskProgress(t);
+                      return (
+                        <div key={t.id} className="text-[13px]">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium text-ink truncate max-w-[200px]">{t.title}</span>
+                            <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', t.status === 'DONE' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>
+                              {t.status.replace('_', ' ')}
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div className="bg-brand h-1.5 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
+                          </div>
+                          <div className="text-[10px] text-ink-muted text-right mt-0.5">{progress}% done via daily report</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ))
             )}
