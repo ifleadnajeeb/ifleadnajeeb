@@ -44,6 +44,7 @@ const NAV: NavItem[] = [
   { label: 'Tasks',         href: '/tasks',        icon: CheckSquare,     permission: 'tasks:read' },
   { label: 'Documents',     href: '/documents',    icon: FileText,        permission: 'documents:read' },
   { label: 'Reports',       href: '/reports',      icon: BarChart3,       permission: 'reports:read' },
+  { label: 'Daily Reports', href: '/daily-reports',icon: FileText,        permission: 'reports:read' },
   { label: 'Configuration', href: '/config',       icon: Settings,        permission: 'settings:read' },
   { label: 'AI Assistant',  href: '/ai',           icon: Sparkles,        permission: 'ai:read' },
   { label: 'Voice AI',      href: '/voice',        icon: Mic,             permission: 'ai:read' },
@@ -98,7 +99,7 @@ export function DesktopSidebar() {
               return allowed.includes(item.label);
             }
             if (user?.role === 'OP_MANAGER') {
-              const allowed = ['Dashboard', 'Tasks', 'Customers', 'Reports', 'Team Performance', 'Calendar', 'Appointments'];
+              const allowed = ['Dashboard', 'Tasks', 'Customers', 'Reports', 'Daily Reports', 'Team Performance', 'Calendar', 'Appointments'];
               return allowed.includes(item.label);
             }
             return true;

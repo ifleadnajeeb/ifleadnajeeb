@@ -8,6 +8,7 @@ import TeamPerformancePage from '@/features/users/pages/TeamPerformancePage';
 import UserPanelPage from '@/features/users/pages/UserPanelPage';
 import IntegrationsPage from '@/features/integrations/pages/IntegrationsPage';
 import VoicePage from '@/features/ai/voice/VoicePage';
+import DailyReportsPage from '@/features/reports/pages/DailyReportsPage';
 import ReportsPage from '@/features/reports/pages/ReportsPage';
 import LeadsPage from '@/features/leads/pages/LeadsPage';
 import DashboardHome from '@/features/dashboard/pages/DashboardHome';
@@ -99,6 +100,7 @@ export const router = createBrowserRouter([
           { path: '/works',            element: <TasksPage /> },
           { path: '/documents',        element: <DocumentsPage /> },
           { path: '/reports',          element: <ReportsPage /> },
+          { path: '/daily-reports',    element: <DailyReportsPage /> },
           { path: '/reports/user/:userId', element: <ReportsPage /> },
           { path: '/roles',            element: <RolesPage /> },
           { path: '/audit',            element: <AuditPage /> },
