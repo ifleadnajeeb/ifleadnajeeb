@@ -1,6 +1,11 @@
 import { api } from '@/shared/api/client';
 
 export const operationsService = {
+  getAnalytics: async (): Promise<any[]> => {
+    const res = await api.get<{ data: any[] }>('/operations/analytics');
+    return res.data.data;
+  },
+
   listDailyReports: async (): Promise<any[]> => {
     const res = await api.get<{ data: any[] }>('/operations/reports');
     return res.data.data;

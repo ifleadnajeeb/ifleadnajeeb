@@ -16,6 +16,9 @@ router.post('/projects', requirePermission('tasks:create'), validate(CreateProje
 router.get('/reports', requirePermission('reports:read'), operationsController.listDailyReports);
 router.post('/reports', requirePermission('tasks:update'), validate(CreateDailyReportSchema), operationsController.createDailyReport);
 
+// Analytics
+router.get('/analytics', requirePermission('reports:read'), operationsController.getAnalytics);
+
 // Departments
 router.get('/departments', requirePermission('tasks:read'), operationsController.listDepartments);
 router.post('/departments', requirePermission('tasks:create'), validate(CreateDepartmentSchema), operationsController.createDepartment);

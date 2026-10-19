@@ -3,6 +3,11 @@ import { AuthRequest } from '../../middleware/auth.middleware.js';
 import { operationsService } from './operations.service.js';
 
 export const operationsController = {
+  async getAnalytics(req: AuthRequest, res: Response) {
+    const data = await operationsService.getAnalytics(req.user!);
+    res.json({ data });
+  },
+
   async listProjects(req: AuthRequest, res: Response) {
     const data = await operationsService.listProjects(req.user!);
     res.json({ data });
