@@ -146,47 +146,44 @@ export default function TasksPage() {
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {tasks.map(task => (
-                    <div
-                      key={task.id}
-                      draggable
-                      onDragStart={e => e.dataTransfer.setData('text/task-id', task.id)}
-                      className="bg-white border border-ink-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <button
-                          onClick={() => setOpenTaskId(task.id)}
-                          className="text-[13.5px] font-medium text-ink leading-snug flex-1 text-left hover:text-brand"
-                        >
-                          {task.title}
-                        </button>
-                        <button
-                          onClick={() => deleteTask(task)}
-                          className="text-ink-muted hover:text-danger"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      {task.description && (
-                        <p className="text-[12px] text-ink-muted line-clamp-2 mb-2">{task.description}</p>
-                      )}
-                      <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                        <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', PRIORITY_COLOR[task.priority])}>
-                          {task.priority}
-                        </span>
-                        {task.dueAt && (
-                          <span className={cn('text-[11px] inline-flex items-center gap-1',
-                            isOverdue(task.dueAt) && task.status !== 'DONE' ? 'text-danger font-medium' : 'text-ink-muted')}>
-                            <Calendar className="w-3 h-3" /> {fmtDate(task.dueAt)}
-                          </span>
-                        )}
-                      </div>
+                  {tasks.map(task => {
+                    // Calculate progress based on status or latest daily report
+                    let progress = 0;
+                    if (task.status === 'DONE') progress = 100;
+                    else if (task.reviewStatus === 'PENDING_REVIEW') progress = 80;
+                    else if (task.dailyReports?.[0]?.progress) progress = task.dailyReports[0].progress;
+                    else if (task.acceptance === 'ACCEPTED') progress = 20;
+                    else if (task.acceptance === 'PENDING') progress = 0;
 
-                      {/* Workflow Status & Progress */}
-                      <div className="space-y-1.5 pb-2 border-b border-ink-border mb-2">
-                        <div className="flex justify-between items-center text-[10px]">
-                          <span className="text-ink-muted">Status:</span>
-                          <span className={cn('font-bold px-1.5 py-0.5 rounded', 
+                    // Get latest report text (shortened)
+                    const latestReport = task.dailyReports?.[0]?.workCompleted;
+                    const shortReport = latestReport ? (latestReport.length > 40 ? latestReport.substring(0, 40) + '...' : latestReport) : null;
+
+                    return (
+                      <div
+                        key={task.id}
+                        draggable
+                        onDragStart={e => e.dataTransfer.setData('text/task-id', task.id)}
+                        className="bg-white border border-ink-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <button
+                            onClick={() => setOpenTaskId(task.id)}
+                            className="text-[13.5px] font-medium text-ink leading-snug flex-1 text-left hover:text-brand"
+                          >
+                            {task.title}
+                          </button>
+                          <button
+                            onClick={() => deleteTask(task)}
+                            className="text-ink-muted hover:text-danger"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        
+                        {/* Status Badge */}
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold', 
                             task.acceptance === 'PENDING' ? 'bg-amber-100 text-amber-700' :
                             task.reviewStatus === 'PENDING_REVIEW' ? 'bg-purple-100 text-purple-700' :
                             task.reviewStatus === 'CORRECTION_REQUESTED' ? 'bg-red-100 text-red-700' :
@@ -198,40 +195,44 @@ export default function TasksPage() {
                              task.reviewStatus === 'CORRECTION_REQUESTED' ? 'NEEDS FIX' :
                              task.status === 'DONE' ? 'COMPLETED' : 'IN PROGRESS'}
                           </span>
+                          <span className="text-[10px] font-semibold text-ink-muted">{progress}%</span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+                          <div className={cn("h-1.5 rounded-full", progress === 100 ? "bg-green-500" : "bg-brand")} style={{ width: `${progress}%` }}></div>
+                        </div>
+
+                        {/* Latest Report Snippet */}
+                        {shortReport && (
+                          <div className="text-[10.5px] text-ink-muted italic mb-2 bg-gray-50 p-1.5 rounded border border-gray-100">
+                            "{shortReport}"
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+                          <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', PRIORITY_COLOR[task.priority])}>
+                            {task.priority}
+                          </span>
+                          {task.dueAt && (
+                            <span className={cn('text-[11px] inline-flex items-center gap-1',
+                              isOverdue(task.dueAt) && task.status !== 'DONE' ? 'text-danger font-medium' : 'text-ink-muted')}>
+                              <Calendar className="w-3 h-3" /> {fmtDate(task.dueAt)}
+                            </span>
+                          )}
                         </div>
                         
-                        {/* Progress Bar */}
-                        {(() => {
-                          let progress = 0;
-                          if (task.status === 'DONE') progress = 100;
-                          else if (task.reviewStatus === 'PENDING_REVIEW') progress = 80;
-                          else if (task.dailyReports?.[0]?.progress) progress = task.dailyReports[0].progress;
-                          else if (task.acceptance === 'ACCEPTED') progress = 20;
-
-                          return (
-                            <div>
-                              <div className="flex justify-between text-[10px] text-ink-muted mb-0.5">
-                                <span>Progress</span>
-                                <span className="font-semibold">{progress}%</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                <div className={cn("h-1.5 rounded-full", progress === 100 ? "bg-green-500" : "bg-brand")} style={{ width: `${progress}%` }}></div>
-                              </div>
+                        {task.assignedTo && (
+                          <div className="text-[11px] text-ink font-medium mt-1.5 pt-1.5 border-t border-ink-border flex items-center gap-1">
+                            <div className="w-4 h-4 rounded-full bg-brand-light text-brand flex items-center justify-center text-[8px]">
+                              {task.assignedTo.name.charAt(0).toUpperCase()}
                             </div>
-                          );
-                        })()}
-                      </div>
-
-                      {task.assignedTo && (
-                        <div className="flex items-center gap-1 text-[11px] text-ink font-medium">
-                          <div className="w-4 h-4 rounded-full bg-brand-light text-brand flex items-center justify-center text-[8px]">
-                            {task.assignedTo.name.charAt(0).toUpperCase()}
+                            {task.assignedTo.name}
                           </div>
-                          {task.assignedTo.name}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        )}
+                      </div>
+                    );
+                  })}
                   {tasks.length === 0 && (
                     <div className="text-center py-6 text-[12px] text-ink-muted">No tasks</div>
                   )}

@@ -50,6 +50,7 @@ function toDTO(t: any) {
     departmentId: t.departmentId,
     acceptance: t.acceptance,
     reviewStatus: t.reviewStatus,
+    dailyReports: t.dailyReports, // <--- Send latest report data
   };
 }
 
