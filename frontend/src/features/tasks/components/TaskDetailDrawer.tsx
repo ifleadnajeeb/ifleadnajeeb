@@ -53,9 +53,15 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
   const handleAccept = async () => {
     if (!task) return;
     setBusy(true);
-    await tasksService.accept(task.id);
-    invalidate();
-    setBusy(false);
+    try {
+      await tasksService.accept(task.id);
+      invalidate();
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to accept: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleReject = async () => {
@@ -63,9 +69,15 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
     const reason = prompt('Why are you rejecting this task?');
     if (!reason) return;
     setBusy(true);
-    await tasksService.reject(task.id, reason);
-    invalidate();
-    setBusy(false);
+    try {
+      await tasksService.reject(task.id, reason);
+      invalidate();
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to reject: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleSubmit = async () => {
