@@ -30,7 +30,10 @@ export const operationsService = {
   async listProjects(actor: AuthUser) {
     return prisma.project.findMany({
       where: { organizationId: actor.organizationId },
-      include: { customer: { select: { name: true } } },
+      include: { 
+        customer: { select: { name: true } },
+        tasks: { select: { id: true, status: true } }
+      },
       orderBy: { createdAt: 'desc' },
     });
   },

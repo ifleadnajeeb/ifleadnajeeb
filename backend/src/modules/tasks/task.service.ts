@@ -226,6 +226,19 @@ export const taskService = {
         createdBy: { select: { id: true, name: true } },
       },
     });
+
+    // Auto-update project status if all tasks are done
+    if (updated.projectId) {
+      const projectTasks = await prisma.task.findMany({ where: { projectId: updated.projectId } });
+      const allDone = projectTasks.length > 0 && projectTasks.every((t: any) => t.status === 'DONE' || t.status === 'CANCELLED');
+      
+      if (allDone) {
+        await prisma.project.update({ where: { id: updated.projectId }, data: { status: 'COMPLETED' } });
+      } else {
+        await prisma.project.update({ where: { id: updated.projectId }, data: { status: 'IN_PROGRESS' } });
+      }
+    }
+
     return toDTO(updated);
   },
 
