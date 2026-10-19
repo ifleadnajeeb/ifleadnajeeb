@@ -47,13 +47,13 @@ export default function TasksPage() {
 
   const kanbanQ = useQuery({
     queryKey: ['tasks', 'kanban', search],
-    queryFn: () => tasksService.kanban({ search: search || undefined, isOperations: opsFilter }),
+    queryFn: () => tasksService.kanban({ search: search || undefined, isOperations: opsFilter, assignedToId: isOpsRole ? undefined : user?.id }),
     enabled: view === 'kanban',
   });
 
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
-    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter }),
+    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: isOpsRole ? undefined : user?.id }),
     enabled: view === 'list',
   });
 
