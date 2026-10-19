@@ -47,7 +47,8 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
     if (!task) return;
     setBusy(true);
     try {
-      await tasksService.move(task.id, status);
+      // Use the standard update endpoint instead of the move endpoint
+      await tasksService.update(task.id, { status } as any);
       invalidate();
     } catch (err: any) {
       console.error(err);
