@@ -162,87 +162,67 @@ export const leadService = {
   async list(req: AuthRequest, query: ListLeadsQuery) {
     const actor = req.user!;
     const scope = await buildScopeFilter(req);
-
-    const where: Prisma.LeadWhereInput = { ...scope.where };
-
-    if (query.view === 'user' && query.userId) {
-      const allowed = await canViewUserLeads(req, query.userId);
-      if (!allowed) throw new NotFoundError('User not found in your scope');
-      where.assignedToId = query.userId;
-    } else if (query.view === 'mine') {
-      where.assignedToId = actor.id;
-    } else if (query.view === 'hot') {
-      where.priority = 'HOT';
-    } else if (query.view === 'won') {
+    
+    // FORCE HIDE WON/LOST LEADS
+    let where: any = { ...scope.where };
+    if (query.view === 'won') {
       where.status = 'WON';
     } else if (query.view === 'lost') {
       where.status = 'LOST';
+    } else {
+      where.status = { notIn: ['WON', 'LOST'] };
+    }
+
+    if (query.view === 'mine') {
+      where.assignedToId = actor.id;
+    } else if (query.view === 'hot') {
+      where.priority = 'HOT';
     } else if (query.view === 'overdue') {
-      const now = new Date();
-      where.followups = {
-        some: { dueAt: { lt: now }, status: 'PENDING' },
-      };
+      where.followups = { some: { status: 'PENDING', dueAt: { lt: new Date() } } };
+    } else if (query.view === 'user' && query.userId) {
+      const allowed = await canViewUserLeads(req, query.userId);
+      if (!allowed) throw new NotFoundError('User not found in your scope');
+      where.assignedToId = query.userId;
     }
 
     if (query.search) {
-      where.OR = [
-        { name: { contains: query.search, mode: 'insensitive' } },
-        { email: { contains: query.search, mode: 'insensitive' } },
-        { phone: { contains: query.search, mode: 'insensitive' } },
-        { company: { contains: query.search, mode: 'insensitive' } },
+      where.AND = [
+        { OR: [
+            { name: { contains: query.search, mode: 'insensitive' } },
+            { email: { contains: query.search, mode: 'insensitive' } },
+            { phone: { contains: query.search, mode: 'insensitive' } },
+            { company: { contains: query.search, mode: 'insensitive' } },
+        ] },
       ];
     }
+    if (query.assignedToId) where.assignedToId = query.assignedToId;
     if (query.status) where.status = query.status;
     if (query.priority) where.priority = query.priority;
     if (query.source) where.source = query.source;
-    if (query.assignedToId) where.assignedToId = query.assignedToId;
-    if (query.customerId) where.customerId = query.customerId;
     if (query.tag) where.tags = { has: query.tag };
-    if (query.from || query.to) {
-      where.createdAt = {};
-      if (query.from) (where.createdAt as any).gte = new Date(query.from);
-      if (query.to) (where.createdAt as any).lte = new Date(query.to);
-    }
+    if (query.from) where.createdAt = { ...where.createdAt, gte: new Date(query.from) };
+    if (query.to) where.createdAt = { ...where.createdAt, lte: new Date(query.to) };
 
-    const skip = (query.page - 1) * query.pageSize;
-    const orderBy: Prisma.LeadOrderByWithRelationInput = {
-      [query.sortBy]: query.sortDir,
-    };
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
 
-    const [{ data, total }, counts] = await Promise.all([
-      leadRepository.list({ where, skip, take: query.pageSize, orderBy }),
-      leadRepository.counts(where),
+    const [data, total] = await Promise.all([
+      prisma.lead.findMany({
+        where,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { [query.sortBy ?? 'createdAt']: query.sortDir ?? 'desc' },
+        include: { assignedTo: { select: { id: true, name: true } }, customer: true, _count: { select: { followups: true } } },
+      }),
+      prisma.lead.count({ where }),
     ]);
 
-    // Collect actor/assignee ids, then batch-fetch their names
-    const userIds = new Set<string>();
-    data.forEach((l: any) => {
-      const a = l.activities?.[0];
-      if (a?.userId) userIds.add(a.userId);
-      if (l.assignedToId) userIds.add(l.assignedToId);
-      if (l.createdById) userIds.add(l.createdById);
-    });
-    const users = userIds.size
-      ? await prisma.user.findMany({
-          where: { id: { in: [...userIds] } },
-          select: { id: true, name: true },
-        })
-      : [];
-    const userMap = new Map(users.map((u) => [u.id, u.name]));
-
     return {
-      data: data.map((l: any) => toDTO(l, userMap)),
-      meta: {
-        page: query.page,
-        pageSize: query.pageSize,
-        total,
-        totalPages: Math.ceil(total / query.pageSize),
-        counts,
-      },
+      data: data.map(toDTO),
+      meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     };
   },
-
-  async getById(req: AuthRequest, id: string) {
+async getById(req: AuthRequest, id: string) {
     const scope = await buildScopeFilter(req);
     const lead = await prisma.lead.findFirst({
       where: { id, ...scope.where },
