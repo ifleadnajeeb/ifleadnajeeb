@@ -35,7 +35,6 @@ function timeAgo(iso: string) {
 
 export default function DashboardHome() {
   const { user } = useAuth();
-  const { user } = useAuth();
 
   if (['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '')) {
     return <EmployeeDashboard />;
