@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Plus, Trash2, Edit, TrendingUp, MessageSquare, CheckSquare, Calendar, User, Send, CheckCircle, XCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import { X, Plus, Trash2, Edit, TrendingUp, MessageSquare, CheckSquare, Calendar, User, Send, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import {
   tasksService, TaskStatus,
   STATUS_LABEL, STATUS_COLOR, PRIORITY_COLOR,
@@ -26,7 +26,6 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
   const { user } = useAuth();
   const [newChecklist, setNewChecklist] = useState('');
   const [newComment, setNewComment] = useState('');
-  const [deliverableUrl, setDeliverableUrl] = useState('');
   const [editOpen, setEditOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,13 +77,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
     }
   };
 
-  const handleSubmit = async () => {
-    if (!task) return;
-    setBusy(true);
-    await tasksService.submitForReview(task.id, deliverableUrl);
-    invalidate();
-    setBusy(false);
-  };
+
 
   const handleApprove = async () => {
     if (!task) return;
@@ -182,15 +175,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                   </div>
                 )}
 
-                {isDev && task.acceptance === 'ACCEPTED' && task.reviewStatus === 'NOT_SUBMITTED' && (
-                  <div className="flex gap-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div className="flex-1 flex items-center gap-2">
-                      <LinkIcon className="w-4 h-4 text-blue-500" />
-                      <input value={deliverableUrl} onChange={e => setDeliverableUrl(e.target.value)} placeholder="Paste deliverable link (GitHub, Figma...)" className="flex-1 h-8 px-2 border border-blue-200 rounded text-sm" />
-                    </div>
-                    <button onClick={handleSubmit} disabled={busy} className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">Submit for Review</button>
-                  </div>
-                )}
+                
 
                 {task.reviewStatus === 'CORRECTION_REQUESTED' && (
                   <div className="bg-red-50 p-3 rounded-lg border border-red-200 mb-3">
