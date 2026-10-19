@@ -422,6 +422,7 @@ model Task {
   checklist TaskChecklistItem[]
 
   // Operations Fields
+  customerId      String?
   departmentId    String?
   projectId       String?
   workOrderId     String?
