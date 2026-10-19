@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Plus, Trash2, Edit, MessageSquare, CheckSquare, Calendar, User, Send, CheckCircle, XCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import { X, Plus, Trash2, Edit, TrendingUp, MessageSquare, CheckSquare, Calendar, User, Send, CheckCircle, XCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
 import {
   tasksService, TaskStatus,
   STATUS_LABEL, STATUS_COLOR, PRIORITY_COLOR,
@@ -197,6 +197,72 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                   </div>
                 )}
               </div>
+
+              {/* OP MANAGER WORK PROGRESS GRAPH */}
+              {isOp && (
+                <div className="bg-gradient-to-br from-gray-50 to-white border border-ink-border rounded-xl p-4 mb-4 shadow-sm">
+                  <h3 className="text-[13px] font-bold text-ink-muted uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-brand" /> Work Progress Overview
+                  </h3>
+                  
+                  <div className="grid grid-cols-2 gap-6 items-center">
+                    {/* Circular / Visual Progress Bar */}
+                    <div>
+                      <div className="flex justify-between text-[12px] font-medium text-ink mb-1">
+                        <span>Current Progress</span>
+                        <span className="text-brand font-bold text-[14px]">
+                          {task.status === 'DONE' ? '100' : (task.dailyReports?.[0]?.progress || (task.acceptance === 'ACCEPTED' ? 10 : 0))}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                        <div 
+                          className={cn("h-3 rounded-full transition-all duration-500", 
+                            task.status === 'DONE' ? 'bg-green-500' : 'bg-brand'
+                          )} 
+                          style={{ width: `${task.status === 'DONE' ? 100 : (task.dailyReports?.[0]?.progress || (task.acceptance === 'ACCEPTED' ? 10 : 0))}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Workflow Status Badges */}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-[12px]">
+                        <span className="text-ink-muted">Acceptance:</span>
+                        <span className={cn('px-2 py-0.5 rounded text-[10px] font-bold', 
+                          task.acceptance === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                          task.acceptance === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                        )}>
+                          {task.acceptance || 'ACCEPTED'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-[12px]">
+                        <span className="text-ink-muted">Review Status:</span>
+                        <span className={cn('px-2 py-0.5 rounded text-[10px] font-bold', 
+                          task.reviewStatus === 'NOT_SUBMITTED' ? 'bg-gray-100 text-gray-700' :
+                          task.reviewStatus === 'PENDING_REVIEW' ? 'bg-purple-100 text-purple-700' :
+                          task.reviewStatus === 'CORRECTION_REQUESTED' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                        )}>
+                          {task.reviewStatus?.replace('_', ' ') || 'NOT SUBMITTED'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Latest Daily Report Summary */}
+                  {task.dailyReports && task.dailyReports.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-ink-border">
+                      <div className="text-[11px] font-semibold text-ink-muted uppercase mb-1">Latest Update (Daily Report)</div>
+                      <p className="text-[12.5px] text-ink italic bg-white p-2 rounded border border-gray-100">
+                        "{task.dailyReports[0].workCompleted}"
+                      </p>
+                      <div className="flex justify-between mt-2 text-[10px] text-ink-muted">
+                        <span>Logged: {new Date(task.dailyReports[0].createdAt).toLocaleDateString()}</span>
+                        <span>Hours: {task.dailyReports[0].timeSpent || 0}h</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex flex-wrap gap-2 mb-3">
                 {COLUMNS.map(s => (

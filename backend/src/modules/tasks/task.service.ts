@@ -299,6 +299,7 @@ export const taskService = {
           include: { user: { select: { id: true, name: true } } },
         },
         checklist: { orderBy: { order: 'asc' } },
+        dailyReports: { orderBy: { createdAt: 'desc' } },
       },
     });
     if (!t) throw new NotFoundError('Task not found');
