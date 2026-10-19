@@ -45,6 +45,11 @@ function toDTO(t: any) {
     assignedTo: t.assignedTo,
     createdBy: t.createdBy,
     createdAt: t.createdAt,
+    customerId: t.customerId,
+    projectId: t.projectId,
+    departmentId: t.departmentId,
+    acceptance: t.acceptance,
+    reviewStatus: t.reviewStatus,
   };
 }
 

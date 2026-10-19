@@ -220,15 +220,39 @@ function CustomerDrawer({ customerId, onClose }: { customerId: string; onClose: 
               <p className="text-[13px] text-ink-muted italic">No works assigned yet.</p>
             ) : (
               <div className="space-y-3">
-                {customerWorks.map((w: any) => (
-                  <div key={w.id} className="border border-ink-border rounded-lg p-3 bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div className="font-medium text-ink">{w.title}</div>
-                      <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', w.status === 'DONE' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>{w.status}</span>
+                {customerWorks.map((w: any) => {
+                  // Calculate progress percentage based on status
+                  let progress = 0;
+                  if (w.status === 'DONE') progress = 100;
+                  else if (w.reviewStatus === 'PENDING_REVIEW') progress = 80;
+                  else if (w.status === 'IN_PROGRESS') progress = 50;
+                  else if (w.acceptance === 'ACCEPTED') progress = 20;
+                  else if (w.acceptance === 'PENDING') progress = 10;
+
+                  return (
+                    <div key={w.id} className="border border-ink-border rounded-lg p-4 bg-gray-50 mb-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-medium text-ink">{w.title}</div>
+                        <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', w.status === 'DONE' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700')}>
+                          {w.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-[12px] text-ink-muted mb-2">
+                        <span>Assigned to: <strong className="text-ink">{w.assignedTo?.name || 'Unassigned'}</strong></span>
+                        <span>{progress}% Complete</span>
+                      </div>
+
+                      {/* Progress Bar */}
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={cn("h-2 rounded-full transition-all", progress === 100 ? "bg-green-500" : progress >= 80 ? "bg-blue-500" : "bg-brand")} 
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="text-[12px] text-ink-muted mt-1">Assigned to: {w.assignedTo?.name || 'Unassigned'}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
