@@ -65,8 +65,6 @@ export const dashboardService = {
     // ── Leads ──
     const activeLeadWhere = { ...leadWhere, status: { notIn: ['WON', 'LOST'] } };
 
-        const activeLeadWhere = { ...leadWhere, status: { notIn: ['WON', 'LOST'] } };
-
     const [totalLeads, newLeads, hotLeads, wonLeads, lostLeads] = await Promise.all([
       prisma.lead.count({ where: activeLeadWhere }),
       prisma.lead.count({ where: { ...activeLeadWhere, status: 'NEW' } }),

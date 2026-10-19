@@ -218,7 +218,7 @@ export const leadService = {
     ]);
 
     return {
-      data: data.map(toDTO),
+      data: data.map(d => toDTO(d)),
       meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     };
   },
