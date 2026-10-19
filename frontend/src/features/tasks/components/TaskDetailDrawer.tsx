@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Plus, Trash2, MessageSquare, CheckSquare, Calendar, User, Send } from 'lucide-react';
+import { X, Plus, Trash2, MessageSquare, CheckSquare, Calendar, User, Send, CheckCircle, XCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
 import {
   tasksService, TaskStatus,
   STATUS_LABEL, STATUS_COLOR, PRIORITY_COLOR,
@@ -9,6 +9,7 @@ import { cn } from '@/shared/utils/cn';
 import { useAuth } from '@/app/providers/auth-provider';
 
 const COLUMNS: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
+const DEV_ROLES = ['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'];
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString('en-IN', {
@@ -22,6 +23,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
   const { user } = useAuth();
   const [newChecklist, setNewChecklist] = useState('');
   const [newComment, setNewComment] = useState('');
+  const [deliverableUrl, setDeliverableUrl] = useState('');
   const [busy, setBusy] = useState(false);
 
   const { data: task, isLoading } = useQuery({
@@ -41,6 +43,50 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
     if (!task) return;
     await tasksService.move(task.id, status);
     invalidate();
+  };
+
+  const handleAccept = async () => {
+    if (!task) return;
+    setBusy(true);
+    await tasksService.accept(task.id);
+    invalidate();
+    setBusy(false);
+  };
+
+  const handleReject = async () => {
+    if (!task) return;
+    const reason = prompt('Why are you rejecting this task?');
+    if (!reason) return;
+    setBusy(true);
+    await tasksService.reject(task.id, reason);
+    invalidate();
+    setBusy(false);
+  };
+
+  const handleSubmit = async () => {
+    if (!task) return;
+    setBusy(true);
+    await tasksService.submitForReview(task.id, deliverableUrl);
+    invalidate();
+    setBusy(false);
+  };
+
+  const handleApprove = async () => {
+    if (!task) return;
+    setBusy(true);
+    await tasksService.approve(task.id);
+    invalidate();
+    setBusy(false);
+  };
+
+  const handleCorrect = async () => {
+    if (!task) return;
+    const reason = prompt('Reason for correction:');
+    if (!reason) return;
+    setBusy(true);
+    await tasksService.requestCorrection(task.id, reason);
+    invalidate();
+    setBusy(false);
   };
 
   const addChecklist = async () => {
@@ -73,6 +119,9 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
     } finally { setBusy(false); }
   };
 
+  const isDev = DEV_ROLES.includes(user?.role || '');
+  const isOp = user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO';
+
   return (
     <>
       <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
@@ -80,7 +129,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
         <div className="bg-white border-b border-ink-border px-5 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <CheckSquare className="w-4 h-4 text-brand" />
-            <span className="text-[13px] font-semibold text-ink-muted uppercase tracking-wider">Task</span>
+            <span className="text-[13px] font-semibold text-ink-muted uppercase tracking-wider">Work / Task</span>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-md text-ink-muted hover:bg-brand-light">
             <X className="w-4 h-4 mx-auto" />
@@ -91,8 +140,47 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
 
         {task && (
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            
+            {/* Header & Workflow Actions */}
             <div className="bg-white border border-ink-border rounded-xl p-5">
               <h1 className="text-xl font-bold text-ink mb-3">{task.title}</h1>
+              
+              {/* Workflow Buttons */}
+              <div className="mb-4 pb-4 border-b border-ink-border">
+                {isDev && task.acceptance === 'PENDING' && (
+                  <div className="flex gap-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                    <div className="flex-1 text-[13px] text-amber-800 font-medium flex items-center">New Work Assigned</div>
+                    <button onClick={handleAccept} disabled={busy} className="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700 flex items-center gap-1"><CheckCircle className="w-4 h-4"/> Accept</button>
+                    <button onClick={handleReject} disabled={busy} className="px-4 py-1.5 border border-red-300 text-red-600 rounded text-sm font-medium hover:bg-red-50 flex items-center gap-1"><XCircle className="w-4 h-4"/> Reject</button>
+                  </div>
+                )}
+
+                {isDev && task.acceptance === 'ACCEPTED' && task.reviewStatus === 'NOT_SUBMITTED' && (
+                  <div className="flex gap-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div className="flex-1 flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4 text-blue-500" />
+                      <input value={deliverableUrl} onChange={e => setDeliverableUrl(e.target.value)} placeholder="Paste deliverable link (GitHub, Figma...)" className="flex-1 h-8 px-2 border border-blue-200 rounded text-sm" />
+                    </div>
+                    <button onClick={handleSubmit} disabled={busy} className="px-4 py-1.5 bg-blue-600 text-white rounded text-sm font-medium hover:bg-blue-700">Submit for Review</button>
+                  </div>
+                )}
+
+                {task.reviewStatus === 'CORRECTION_REQUESTED' && (
+                  <div className="bg-red-50 p-3 rounded-lg border border-red-200 mb-3">
+                    <div className="text-[12px] text-red-800 font-bold mb-1 flex items-center gap-1"><AlertCircle className="w-4 h-4"/> Correction Requested</div>
+                    <p className="text-[13px] text-red-700">{task.rejectionReason || 'Please review the requirements again.'}</p>
+                  </div>
+                )}
+
+                {isOp && task.reviewStatus === 'PENDING_REVIEW' && (
+                  <div className="flex gap-2 bg-purple-50 p-3 rounded-lg border border-purple-200">
+                    <div className="flex-1 text-[13px] text-purple-800 font-medium flex items-center">Work ready for review</div>
+                    <button onClick={handleApprove} disabled={busy} className="px-4 py-1.5 bg-green-600 text-white rounded text-sm font-medium hover:bg-green-700">Approve</button>
+                    <button onClick={handleCorrect} disabled={busy} className="px-4 py-1.5 border border-amber-300 text-amber-700 rounded text-sm font-medium hover:bg-amber-50">Correct</button>
+                  </div>
+                )}
+              </div>
+
               <div className="flex flex-wrap gap-2 mb-3">
                 {COLUMNS.map(s => (
                   <button key={s} onClick={() => changeStatus(s)}
@@ -106,6 +194,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                   </button>
                 ))}
               </div>
+              
               <div className="grid grid-cols-2 gap-3 text-[13px]">
                 <div>
                   <div className="text-[11px] uppercase tracking-wider text-ink-muted font-semibold mb-0.5">Priority</div>
@@ -127,11 +216,14 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                     {task.assignedTo?.name ?? '—'}
                   </div>
                 </div>
-                <div>
-                  <div className="text-[11px] uppercase tracking-wider text-ink-muted font-semibold mb-0.5">Created</div>
-                  <div className="text-ink">{new Date(task.createdAt).toLocaleDateString('en-GB')}</div>
-                </div>
+                {task.deliverableUrl && (
+                  <div>
+                    <div className="text-[11px] uppercase tracking-wider text-ink-muted font-semibold mb-0.5">Deliverable</div>
+                    <a href={task.deliverableUrl} target="_blank" rel="noreferrer" className="text-brand hover:underline truncate block">View Link</a>
+                  </div>
+                )}
               </div>
+              
               {task.description && (
                 <div className="mt-4 pt-4 border-t border-ink-border">
                   <div className="text-[11px] uppercase tracking-wider text-ink-muted font-semibold mb-1.5">Description</div>
@@ -147,7 +239,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                 </h2>
                 {task.checklist.length > 0 && (
                   <span className="text-[11.5px] text-ink-muted">
-                    {task.checklist.filter(i => i.done).length} / {task.checklist.length}
+                    {task.checklist.filter((i: any) => i.done).length} / {task.checklist.length}
                   </span>
                 )}
               </div>
@@ -155,7 +247,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                 {task.checklist.length === 0 && (
                   <p className="text-[12.5px] text-ink-muted text-center py-2">No items yet.</p>
                 )}
-                {task.checklist.map(item => (
+                {task.checklist.map((item: any) => (
                   <div key={item.id} className="group flex items-center gap-2 py-1">
                     <input type="checkbox" checked={item.done}
                       onChange={e => toggleCheck(item.id, e.target.checked)}
@@ -190,7 +282,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                 {task.comments.length === 0 && (
                   <p className="text-[12.5px] text-ink-muted text-center py-2">No comments yet.</p>
                 )}
-                {task.comments.map(c => (
+                {task.comments.map((c: any) => (
                   <div key={c.id} className="flex gap-2.5">
                     <div className="w-7 h-7 rounded-full bg-brand-light text-brand flex items-center justify-center text-[11px] font-bold shrink-0">
                       {c.user.name.charAt(0).toUpperCase()}
