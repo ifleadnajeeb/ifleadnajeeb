@@ -24,6 +24,13 @@ export interface ListResponse { data: Task[]; meta: { page: number; pageSize: nu
 export interface KanbanResponse { columns: Record<TaskStatus, Task[]>; meta: { total: number } }
 
 export const tasksService = {
+  accept: async (id: string): Promise<void> => {
+    await api.post(`/tasks/${id}/accept`);
+  },
+  reject: async (id: string, reason: string): Promise<void> => {
+    await api.post(`/tasks/${id}/reject`, { reason });
+  },
+
   list: async (params: Record<string, any> = {}): Promise<ListResponse> => {
     const res = await api.get<ListResponse>('/tasks', { params: { ...params, view: 'list' } });
     return res.data;

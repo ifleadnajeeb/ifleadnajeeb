@@ -55,11 +55,10 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
     setBusy(true);
     try {
       await tasksService.accept(task.id);
-      invalidate();
+      window.location.reload(); // Hard reload to guarantee UI update
     } catch (err: any) {
       console.error(err);
       alert('Failed to accept: ' + (err?.response?.data?.message || err.message));
-    } finally {
       setBusy(false);
     }
   };
@@ -71,11 +70,10 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
     setBusy(true);
     try {
       await tasksService.reject(task.id, reason);
-      invalidate();
+      window.location.reload();
     } catch (err: any) {
       console.error(err);
       alert('Failed to reject: ' + (err?.response?.data?.message || err.message));
-    } finally {
       setBusy(false);
     }
   };
