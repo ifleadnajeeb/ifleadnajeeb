@@ -302,7 +302,6 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
         dueAt: dueAt ? new Date(dueAt).toISOString() : undefined,
       });
       setTitle(''); setDescription(''); setPriority('MEDIUM'); setStatus('TODO'); setDueAt('');
-      setProjectId(''); setDepartmentId(''); setAssignedToId('');
       onSuccess();
     } catch (e: any) {
       setError(e?.response?.data?.message || 'Failed to create');

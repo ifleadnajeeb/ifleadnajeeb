@@ -6,7 +6,7 @@ import type { CreateTaskInput, UpdateTaskInput, ListTasksQuery } from './task.sc
 async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
-  if (u.role === 'CEO') return { organizationId: u.organizationId };
+  if (u.role === 'CEO' || u.role === 'OP_MANAGER') return { organizationId: u.organizationId };
   if (u.role === 'BDM') {
     const ids = await collectDesc(u.id);
     return { organizationId: u.organizationId, assignedToId: { in: ids } };
@@ -187,6 +187,10 @@ export const taskService = {
         reminderAt: (input as any).reminderAt ? new Date((input as any).reminderAt) : null,
         assignedToId: input.assignedToId ?? actor.id,
         createdById: actor.id,
+        projectId: input.projectId,
+        departmentId: input.departmentId,
+        customerId: input.customerId,
+        acceptance: (input.projectId || input.departmentId) ? 'PENDING' : 'ACCEPTED',
       },
       include: {
         assignedTo: { select: { id: true, name: true } },
