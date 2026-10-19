@@ -1,8 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Users, Clock, Flame, TrendingUp, Calendar, CheckSquare, AlertCircle, Activity, ArrowRight } from 'lucide-react';
 import { api } from '@/shared/api/client';
 import EmployeeDashboard from './EmployeeDashboard';
+import { operationsService } from '@/features/operations/services/operations.service';
+import { tasksService } from '@/features/tasks/services/tasks.service';
 import { useAuth } from '@/app/providers/auth-provider';
 import { cn } from '@/shared/utils/cn';
 
@@ -237,6 +239,109 @@ export default function DashboardHome() {
           </div>
         </>
       )}
+      <TeamOperationsWidget />
     </div>
   );
 }
+
+
+function TeamOperationsWidget() {
+  const qc = useQueryClient();
+  
+  const { data: reports, isLoading: reportsLoading } = useQuery({
+    queryKey: ['daily-reports'],
+    queryFn: operationsService.listDailyReports,
+  });
+
+  const { data: allTasks } = useQuery({
+    queryKey: ['tasks', 'all-reviews'],
+    queryFn: () => tasksService.list({ pageSize: 100 }),
+  });
+
+  const reviewTasks = allTasks?.data?.filter((t: any) => t.reviewStatus === 'PENDING_REVIEW') || [];
+
+  const handleApprove = async (id: string) => {
+    try {
+      await tasksService.approve(id);
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    } catch { alert('Failed to approve'); }
+  };
+
+  const handleCorrect = async (id: string) => {
+    const reason = prompt('Reason for correction:');
+    if (!reason) return;
+    try {
+      await tasksService.requestCorrection(id, reason);
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    } catch { alert('Failed to request correction'); }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      {/* Pending Reviews */}
+      <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div className="px-5 py-4 border-b border-ink-border flex justify-between items-center bg-amber-50">
+          <h2 className="text-base font-semibold text-amber-900 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" /> Work Awaiting Review ({reviewTasks.length})
+          </h2>
+        </div>
+        <div className="flex-1 overflow-auto max-h-[350px] p-4 space-y-3">
+          {reviewTasks.length === 0 ? (
+            <div className="text-center py-6 text-ink-muted text-sm">No tasks awaiting review. Great job!</div>
+          ) : (
+            reviewTasks.map((t: any) => (
+              <div key={t.id} className="border border-ink-border rounded-lg p-4 bg-white">
+                <h3 className="font-medium text-ink">{t.title}</h3>
+                <p className="text-[12px] text-ink-muted mt-1">Submitted by: {t.assignedTo?.name}</p>
+                {t.deliverableUrl && (
+                  <a href={t.deliverableUrl} target="_blank" rel="noreferrer" className="inline-block mt-2 text-[12px] font-medium text-brand hover:underline bg-brand-light px-2 py-1 rounded">
+                    🔗 View Deliverable
+                  </a>
+                )}
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => handleApprove(t.id)} className="flex-1 bg-green-600 text-white rounded py-1.5 text-sm font-medium hover:bg-green-700 flex items-center justify-center gap-1">
+                    <CheckCircle className="w-4 h-4" /> Approve
+                  </button>
+                  <button onClick={() => handleCorrect(t.id)} className="flex-1 border border-amber-300 text-amber-700 rounded py-1.5 text-sm font-medium hover:bg-amber-50 flex items-center justify-center gap-1">
+                    <AlertCircle className="w-4 h-4" /> Correct
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Daily Reports */}
+      <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div className="px-5 py-4 border-b border-ink-border flex justify-between items-center bg-blue-50">
+          <h2 className="text-base font-semibold text-blue-900 flex items-center gap-2">
+            <Clock className="w-4 h-4" /> Recent Employee Reports
+          </h2>
+        </div>
+        <div className="flex-1 overflow-auto max-h-[350px] p-4 space-y-3 bg-gray-50">
+          {reportsLoading ? (
+            <div className="text-center text-ink-muted text-sm py-4">Loading reports...</div>
+          ) : !reports || reports.length === 0 ? (
+            <div className="text-center text-ink-muted text-sm py-4">No work reports submitted yet.</div>
+          ) : (
+            reports.map((r: any) => (
+              <div key={r.id} className="border border-ink-border rounded-lg p-3 bg-white shadow-sm">
+                <div className="flex justify-between items-start mb-1">
+                  <div className="font-medium text-ink text-[13.5px]">{r.task?.title || 'Unknown Task'}</div>
+                  <span className="text-[11px] text-ink-muted bg-gray-100 px-2 py-0.5 rounded border border-ink-border">
+                    {r.task?.assignedTo?.name || 'Employee'}
+                  </span>
+                </div>
+                <p className="text-[12.5px] text-ink-muted mt-1 whitespace-pre-wrap font-mono bg-gray-50 p-2 rounded">{r.workCompleted}</p>
+                {r.blockers && <p className="text-[11px] text-red-500 mt-2 font-medium">⚠️ Blocker: {r.blockers}</p>}
+                {r.timeSpent && <p className="text-[11px] text-ink-muted mt-1">⏱ {r.timeSpent} hours spent</p>}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
