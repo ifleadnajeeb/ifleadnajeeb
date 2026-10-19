@@ -258,6 +258,7 @@ function TeamOperationsWidget() {
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ['daily-reports'],
     queryFn: operationsService.listDailyReports,
+    enabled: user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO',
   });
 
   const { data: allTasks } = useQuery({
@@ -361,6 +362,7 @@ function OPManagerDashboard() {
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ['daily-reports'],
     queryFn: operationsService.listDailyReports,
+    enabled: user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO',
   });
 
   const { data: allTasks } = useQuery({
