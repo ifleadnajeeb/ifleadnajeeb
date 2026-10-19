@@ -1,6 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Users, Clock, Flame, TrendingUp, Calendar, CheckSquare, AlertCircle, Activity, ArrowRight } from 'lucide-react';
+import { Users, Clock, Flame, TrendingUp, Calendar, CheckSquare, AlertCircle, Activity, ArrowRight,
+  Briefcase,
+} from 'lucide-react';
 import { api } from '@/shared/api/client';
 import EmployeeDashboard from './EmployeeDashboard';
 import { operationsService } from '@/features/operations/services/operations.service';
