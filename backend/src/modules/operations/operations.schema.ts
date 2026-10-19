@@ -18,6 +18,7 @@ export const CreateDailyReportSchema = z.object({
   taskId: z.string(),
   workCompleted: z.string().min(2),
   timeSpent: z.number().optional(),
+  progress: z.number().min(0).max(100).optional(),
   blockers: z.string().optional(),
   nextPlan: z.string().optional(),
 });

@@ -28,6 +28,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
   const [newComment, setNewComment] = useState('');
   const [deliverableUrl, setDeliverableUrl] = useState('');
   const [editOpen, setEditOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const { data: task, isLoading } = useQuery({
@@ -149,6 +150,11 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
             <div className="bg-white border border-ink-border rounded-xl p-5">
               <div className="flex justify-between items-start mb-3">
                 <h1 className="text-xl font-bold text-ink">{task.title}</h1>
+                {isDev && (
+                  <button onClick={() => setReportModalOpen(true)} className="inline-flex items-center gap-1 text-[12px] text-blue-600 font-medium hover:underline bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
+                    <Calendar className="w-3.5 h-3.5" /> Log Daily Report
+                  </button>
+                )}
                 {isOp && (
                   <button onClick={() => setEditOpen(true)} className="inline-flex items-center gap-1 text-[12px] text-brand font-medium hover:underline bg-brand-light px-2.5 py-1 rounded">
                     <Edit className="w-3.5 h-3.5" /> Edit
@@ -325,6 +331,14 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
           </div>
         )}
       </aside>
+      {reportModalOpen && (
+        <LogReportModal 
+          taskId={task.id} 
+          onClose={() => setReportModalOpen(false)} 
+          onSuccess={() => { setReportModalOpen(false); invalidate(); }} 
+        />
+      )}
+
       {editOpen && (
         <EditTaskModal 
           task={task} 
@@ -431,3 +445,79 @@ function EditTaskModal({ task, onClose, onSuccess }: { task: any, onClose: () =>
   );
 }
 
+
+
+function LogReportModal({ taskId, onClose, onSuccess }: { taskId: string, onClose: () => void, onSuccess: () => void }) {
+  const [workCompleted, setWorkCompleted] = useState('');
+  const [timeSpent, setTimeSpent] = useState('');
+  const [progress, setProgress] = useState(50);
+  const [blockers, setBlockers] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    if (!workCompleted.trim()) return;
+    setSubmitting(true);
+    try {
+      await operationsService.createDailyReport({
+        taskId,
+        workCompleted,
+        timeSpent: timeSpent ? Number(timeSpent) : undefined,
+        progress: Number(progress),
+        blockers
+      });
+      onSuccess();
+    } catch (e) {
+      alert('Failed to submit report');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[70] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-[520px] w-full" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-border">
+          <h2 className="text-[16px] font-semibold text-ink">Log Daily Report</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-md text-ink-muted hover:bg-brand-light">
+            <X className="w-4 h-4 mx-auto" />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5 font-medium">What was done today? *</label>
+            <textarea value={workCompleted} onChange={e => setWorkCompleted(e.target.value)} rows={3} autoFocus
+              className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px] resize-none focus:outline-none focus:border-brand" />
+          </div>
+          
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5 font-medium">Progress: {progress}%</label>
+            <input type="range" min="0" max="100" step="10" value={progress} onChange={e => setProgress(Number(e.target.value))} className="w-full accent-brand" />
+            <div className="flex justify-between text-[11px] text-ink-muted mt-1">
+              <span>0%</span><span>50%</span><span>100%</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Hours Spent</label>
+              <input type="number" value={timeSpent} onChange={e => setTimeSpent(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+            </div>
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Blockers (if any)</label>
+              <input value={blockers} onChange={e => setBlockers(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-ink-border">
+          <button onClick={onClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] hover:bg-brand-light">Cancel</button>
+          <button onClick={submit} disabled={submitting || !workCompleted.trim()}
+            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50">
+            {submitting ? 'Submitting…' : 'Submit Report'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

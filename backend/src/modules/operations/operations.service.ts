@@ -78,6 +78,7 @@ export const operationsService = {
         taskId: input.taskId,
         workCompleted: input.workCompleted,
         timeSpent: input.timeSpent,
+        progress: input.progress || 0,
         blockers: input.blockers,
         nextPlan: input.nextPlan,
       },

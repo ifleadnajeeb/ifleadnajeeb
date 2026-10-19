@@ -74,7 +74,19 @@ export default function DailyReportsPage() {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 font-mono text-[13px] text-ink whitespace-pre-wrap">
+                {/* Progress Bar */}
+                <div className="mb-3">
+                  <div className="flex justify-between text-[12px] font-medium text-ink mb-1">
+                    <span>Progress</span>
+                    <span>{r.progress ?? 0}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-brand h-2 rounded-full transition-all" style={{ width: `${r.progress ?? 0}%` }}></div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-[13px] text-ink whitespace-pre-wrap">
+                  <div className="font-semibold text-ink-muted mb-1 text-[11px] uppercase tracking-wider">Work Done:</div>
                   {r.workCompleted}
                 </div>
 

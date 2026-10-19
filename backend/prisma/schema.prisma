@@ -512,6 +512,7 @@ model DailyReport {
   date           DateTime @default(now())
   workCompleted  String
   timeSpent      Float?
+  progress       Int      @default(0)
   blockers       String?
   nextPlan       String?
   createdAt      DateTime @default(now())
