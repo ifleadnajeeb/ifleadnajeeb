@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Plus, Trash2, MessageSquare, CheckSquare, Calendar, User, Send, CheckCircle, XCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import { X, Plus, Trash2, Edit, MessageSquare, CheckSquare, Calendar, User, Send, CheckCircle, XCircle, AlertCircle, Link as LinkIcon } from 'lucide-react';
 import {
   tasksService, TaskStatus,
   STATUS_LABEL, STATUS_COLOR, PRIORITY_COLOR,
 } from '../services/tasks.service';
 import { cn } from '@/shared/utils/cn';
+import { useQuery } from '@tanstack/react-query';
+import { usersService } from '@/features/users/services/users.service';
+import { operationsService } from '@/features/operations/services/operations.service';
 import { useAuth } from '@/app/providers/auth-provider';
 
 const COLUMNS: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
@@ -24,6 +27,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
   const [newChecklist, setNewChecklist] = useState('');
   const [newComment, setNewComment] = useState('');
   const [deliverableUrl, setDeliverableUrl] = useState('');
+  const [editOpen, setEditOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const { data: task, isLoading } = useQuery({
@@ -143,7 +147,14 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
             
             {/* Header & Workflow Actions */}
             <div className="bg-white border border-ink-border rounded-xl p-5">
-              <h1 className="text-xl font-bold text-ink mb-3">{task.title}</h1>
+              <div className="flex justify-between items-start mb-3">
+                <h1 className="text-xl font-bold text-ink">{task.title}</h1>
+                {isOp && (
+                  <button onClick={() => setEditOpen(true)} className="inline-flex items-center gap-1 text-[12px] text-brand font-medium hover:underline bg-brand-light px-2.5 py-1 rounded">
+                    <Edit className="w-3.5 h-3.5" /> Edit
+                  </button>
+                )}
+              </div>
               
               {/* Workflow Buttons */}
               <div className="mb-4 pb-4 border-b border-ink-border">
@@ -314,6 +325,109 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
           </div>
         )}
       </aside>
+      {editOpen && (
+        <EditTaskModal 
+          task={task} 
+          onClose={() => setEditOpen(false)} 
+          onSuccess={() => { setEditOpen(false); invalidate(); }} 
+        />
+      )}
     </>
   );
 }
+
+function EditTaskModal({ task, onClose, onSuccess }: { task: any, onClose: () => void, onSuccess: () => void }) {
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description || '');
+  const [priority, setPriority] = useState(task.priority);
+  const [status, setStatus] = useState(task.status);
+  const [dueAt, setDueAt] = useState(task.dueAt ? new Date(task.dueAt).toISOString().split('T')[0] : '');
+  const [assignedToId, setAssignedToId] = useState(task.assignedToId || '');
+  const [projectId, setProjectId] = useState(task.projectId || '');
+  const [departmentId, setDepartmentId] = useState(task.departmentId || '');
+  const [saving, setSaving] = useState(false);
+
+  const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
+  const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: operationsService.listProjects });
+  const { data: departments } = useQuery({ queryKey: ['departments'], queryFn: operationsService.listDepartments });
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await tasksService.update(task.id, {
+        title, description, priority, status,
+        dueAt: dueAt ? new Date(dueAt).toISOString() : undefined,
+        assignedToId, projectId: projectId || undefined, departmentId: departmentId || undefined
+      } as any);
+      onSuccess();
+    } catch (err) {
+      alert('Failed to update task');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={onClose}>
+      <form onSubmit={submit} className="bg-white rounded-2xl shadow-2xl max-w-[520px] w-full" onClick={e => e.stopPropagation()}>
+        <div className="px-5 py-3.5 border-b border-ink-border flex justify-between items-center">
+          <h2 className="text-[16px] font-semibold text-ink">Edit Task</h2>
+          <button type="button" onClick={onClose}><X className="w-5 h-5 text-ink-muted" /></button>
+        </div>
+        <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
+          <div><label className="block text-[13px] text-ink-muted mb-1.5">Title</label><input required value={title} onChange={e => setTitle(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]" /></div>
+          <div><label className="block text-[13px] text-ink-muted mb-1.5">Description</label><textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px] resize-none" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Assign To</label>
+              <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]">
+                <option value="">— Unassigned —</option>
+                {users?.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Department</label>
+              <select value={departmentId} onChange={e => setDepartmentId(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]">
+                <option value="">— None —</option>
+                {departments?.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Project</label>
+            <select value={projectId} onChange={e => setProjectId(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]">
+              <option value="">— None —</option>
+              {projects?.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Priority</label>
+              <select value={priority} onChange={e => setPriority(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]">
+                {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Status</label>
+              <select value={status} onChange={e => setStatus(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]">
+                {['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Due Date</label>
+              <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]" />
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-ink-border">
+          <button type="button" onClick={onClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] hover:bg-gray-50">Cancel</button>
+          <button type="submit" disabled={saving} className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
