@@ -45,8 +45,16 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
 
   const changeStatus = async (status: TaskStatus) => {
     if (!task) return;
-    await tasksService.move(task.id, status);
-    invalidate();
+    setBusy(true);
+    try {
+      await tasksService.move(task.id, status);
+      invalidate();
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to update status: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const handleAccept = async () => {
