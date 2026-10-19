@@ -43,6 +43,7 @@ const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     'projects:*', 'documents:*', 'activities:*', 'reports:*',
     'performance:read', 'notifications:*', 'ai:*',
     'users:read', 'users:create', 'roles:read', 'permissions:read',
+    'audit:read',
   ],
   BDM: [
     'dashboard:read', 'leads:*', 'customers:*', 'customer360:*',
