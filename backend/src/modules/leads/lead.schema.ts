@@ -7,13 +7,15 @@ export const CreateLeadSchema = z.object({
   phone: z.string().min(6).max(20).optional().or(z.literal('')),
   company: z.string().max(120).optional(),
   source: z.string().max(40).optional(),
+  projectName: z.string().max(200).optional(),
+  service: z.string().max(100).optional(),
   status: z.nativeEnum(LeadStatus).optional(),
   priority: z.nativeEnum(LeadPriority).optional(),
-  value: z.coerce.number().nonnegative().optional(),
+  value: z.coerce.number().nonnegative().optional().nullable(),
   notes: z.string().max(5000).optional(),
   tags: z.array(z.string()).optional(),
   assignedToId: z.string().optional(),
-  nextFollowupAt: z.string().datetime().optional(),
+  nextFollowupAt: z.string().optional().nullable(),
 });
 
 export const UpdateLeadSchema = CreateLeadSchema.partial();
@@ -85,7 +87,7 @@ export const BulkCreateLeadsSchema = z.object({
       source: z.string().max(50).optional(),
       status: z.string().max(50).optional(),
       priority: z.string().max(20).optional(),
-      value: z.coerce.number().nonnegative().optional(),
+      value: z.coerce.number().nonnegative().optional().nullable(),
       notes: z.string().max(2000).optional(),
     })
   ).min(1).max(1000),
