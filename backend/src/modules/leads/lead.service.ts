@@ -228,14 +228,20 @@ export const leadService = {
       baseScope.assignedToId = query.userId;
     }
 
+    // Ensure KPI counts strictly respect the target user's panel
+    const baseCountWhere: any = { ...scope.where };
+    if (query.view === 'user' && query.userId) {
+      baseCountWhere.assignedToId = query.userId;
+    }
+
     const [allCount, mineCount, hotCount, todayCount, overdueCount, wonCount, lostCount] = await Promise.all([
-      prisma.lead.count({ where: { ...baseScope, status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...baseScope, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...baseScope, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...baseScope, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { gte: startOfToday, lt: endOfToday } } } } }),
-      prisma.lead.count({ where: { ...baseScope, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
-      prisma.lead.count({ where: { ...baseScope, status: 'WON' } }),
-      prisma.lead.count({ where: { ...baseScope, status: 'LOST' } }),
+      prisma.lead.count({ where: { ...baseCountWhere, status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { gte: startOfToday, lt: endOfToday } } } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, status: 'WON' } }),
+      prisma.lead.count({ where: { ...baseCountWhere, status: 'LOST' } }),
     ]);
 
     return {
