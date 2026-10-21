@@ -64,7 +64,7 @@ export default function LeadsPage() {
   const counts = data?.meta?.counts;
   const countFor = (id: View) =>
     id === 'all' ? counts?.all ?? 0
-    : id === 'mine' ? counts?.mine ?? 0
+    : id === 'mine' ? counts?.today ?? 0
     : id === 'hot' ? counts?.hot ?? 0
     : id === 'overdue' ? counts?.overdue ?? 0
     : id === 'won' ? counts?.won ?? 0
