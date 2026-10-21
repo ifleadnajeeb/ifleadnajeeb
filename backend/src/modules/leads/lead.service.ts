@@ -218,10 +218,15 @@ export const leadService = {
     ]);
 
     // Calculate counts for KPI cards
-    const [allCount, mineCount, hotCount, overdueCount, wonCount, lostCount] = await Promise.all([
+    const now = new Date();
+    const startOfToday = new Date(now); startOfToday.setHours(0,0,0,0);
+    const endOfToday = new Date(startOfToday); endOfToday.setDate(endOfToday.getDate() + 1);
+
+    const [allCount, mineCount, hotCount, todayCount, overdueCount, wonCount, lostCount] = await Promise.all([
       prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] } } }),
       prisma.lead.count({ where: { ...scope.where, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
       prisma.lead.count({ where: { ...scope.where, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] }, nextFollowupAt: { gte: startOfToday, lt: endOfToday } } }),
       prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
       prisma.lead.count({ where: { ...scope.where, status: 'WON' } }),
       prisma.lead.count({ where: { ...scope.where, status: 'LOST' } }),
@@ -238,6 +243,7 @@ export const leadService = {
           all: allCount,
           mine: mineCount,
           hot: hotCount,
+          today: todayCount,
           overdue: overdueCount,
           won: wonCount,
           lost: lostCount
