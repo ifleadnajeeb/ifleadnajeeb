@@ -261,7 +261,7 @@ export function AddLeadModal({
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
             >
               <option value="">— Select service —</option>
-              {services?.map((s: any) => (
+              {displayServices.map((s: any) => (
                 <option key={s.id} value={s.name}>{s.name}</option>
               ))}</select>
             {services.length === 0 && (
