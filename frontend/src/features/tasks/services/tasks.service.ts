@@ -24,6 +24,11 @@ export interface ListResponse { data: Task[]; meta: { page: number; pageSize: nu
 export interface KanbanResponse { columns: Record<TaskStatus, Task[]>; meta: { total: number } }
 
 export const tasksService = {
+  update: async (id: string, input: any): Promise<Task> => {
+    const res = await api.patch<{ data: Task }>(`/tasks/${id}`, input);
+    return res.data.data;
+  },
+
   accept: async (id: string): Promise<void> => {
     await api.post(`/tasks/${id}/accept`);
   },
