@@ -33,7 +33,9 @@ export function AddLeadModal({
   const [phone, setPhone] = useState('');
   const [projectName, setProjectName] = useState('');
   const [source, setSource] = useState('manual');
-  const [status, setStatus] = useState('NEW');
+  const [status,
+        tags: tag ? [tag] : [], setStatus] = useState('PENDING');
+  const [tag, setTag] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [value, setValue] = useState('');
   const [nextFollowupDate, setNextFollowupDate] = useState('');
@@ -105,7 +107,8 @@ export function AddLeadModal({
         name: name.trim(),
         phone: normalizedPhone,
         company: projectName.trim() || undefined,   // backend keeps "company" field, UI shows "Project name"
-        source, status, priority,
+        source, status,
+        tags: tag ? [tag] : [], priority,
         value: value ? Number(value) : undefined,
         notes: notes.trim() || undefined,
       };
@@ -209,12 +212,31 @@ export function AddLeadModal({
                 className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand capitalize">
                 {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
+          <div className="col-span-1">
+            <label className="block text-[13px] text-ink-muted mb-1.5">Tag</label>
+            <select value={tag} onChange={e => setTag(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white">
+              <option value="">— Select Tag —</option>
+              <option value="Hot">Hot</option>
+              <option value="Very interested">Very interested</option>
+              <option value="Slight interested">Slight interested</option>
+              <option value="Not interested">Not interested</option>
+              <option value="Busy call back">Busy call back</option>
+              <option value="Pending">Pending</option>
+              <option value="Work on progress">Work on progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
             </div>
             <div>
               <label className="block text-[13px] text-ink-muted mb-1.5">Status</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value)}
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
-                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              <select value={status} onChange={e => setStatus(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white">
+                <option value="LOST">Lost</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="PROPOSAL_REQUESTED">Proposal Requested</option>
+                <option value="PROPOSAL_GIVEN">Proposal Given</option>
+                <option value="PENDING">Pending</option>
+                <option value="FIRST_FOLLOWUP">First Followup</option>
+                <option value="LATER_FOLLOWUP">Later Follow Up</option>
               </select>
             </div>
           </div>
