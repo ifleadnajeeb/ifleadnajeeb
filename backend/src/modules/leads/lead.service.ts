@@ -162,9 +162,9 @@ export const leadService = {
   async list(req: AuthRequest, query: ListLeadsQuery) {
     const actor = req.user!;
     const scope = await buildScopeFilter(req);
-    
-    // FORCE HIDE WON/LOST LEADS
     let where: any = { ...scope.where };
+
+    // 1. Filter the main table data
     if (query.view === 'won') {
       where.status = 'WON';
     } else if (query.view === 'lost') {
@@ -217,35 +217,28 @@ export const leadService = {
       prisma.lead.count({ where }),
     ]);
 
-    // Calculate counts for KPI cards
-    const now = new Date();
-    const startOfToday = new Date(now); startOfToday.setHours(0,0,0,0);
-    const endOfToday = new Date(startOfToday); endOfToday.setDate(endOfToday.getDate() + 1);
-
-    // If viewing a specific user's panel, the KPI cards must match that user's data
-    const baseScope = { ...scope.where };
-    if (query.view === 'user' && query.userId) {
-      baseScope.assignedToId = query.userId;
-    }
-
-    // Ensure KPI counts strictly respect the target user's panel
-    const baseCountWhere: any = { ...scope.where };
+    // 2. Filter the KPI counts (MUST respect query.userId)
+    const baseCountWhere: any = { ...scope.where, status: { notIn: ['WON', 'LOST'] } };
     if (query.view === 'user' && query.userId) {
       baseCountWhere.assignedToId = query.userId;
     }
 
+    const now = new Date();
+    const startOfToday = new Date(now); startOfToday.setHours(0,0,0,0);
+    const endOfToday = new Date(startOfToday); endOfToday.setDate(endOfToday.getDate() + 1);
+
     const [allCount, mineCount, hotCount, todayCount, overdueCount, wonCount, lostCount] = await Promise.all([
-      prisma.lead.count({ where: { ...baseCountWhere, status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...baseCountWhere, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...baseCountWhere, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...baseCountWhere, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { gte: startOfToday, lt: endOfToday } } } } }),
-      prisma.lead.count({ where: { ...baseCountWhere, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
+      prisma.lead.count({ where: baseCountWhere }),
+      prisma.lead.count({ where: { ...baseCountWhere, assignedToId: actor.id } }),
+      prisma.lead.count({ where: { ...baseCountWhere, priority: 'HOT' } }),
+      prisma.lead.count({ where: { ...baseCountWhere, followups: { some: { status: 'PENDING', dueAt: { gte: startOfToday, lt: endOfToday } } } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
       prisma.lead.count({ where: { ...baseCountWhere, status: 'WON' } }),
       prisma.lead.count({ where: { ...baseCountWhere, status: 'LOST' } }),
     ]);
 
     return {
-      data: data.map(d => toDTO(d)),
+      data: data.map((d: any) => toDTO(d)),
       meta: { 
         page, 
         pageSize, 
@@ -263,6 +256,7 @@ export const leadService = {
       },
     };
   },
+
 async getById(req: AuthRequest, id: string) {
     const scope = await buildScopeFilter(req);
     const lead = await prisma.lead.findFirst({
