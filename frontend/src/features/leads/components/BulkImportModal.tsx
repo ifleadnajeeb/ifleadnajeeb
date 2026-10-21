@@ -31,7 +31,6 @@ const HEADER_MAP: Record<string, keyof ParsedRow> = {
   status: 'status', stage: 'status',
   priority: 'priority', urgency: 'priority',
   value: 'value', amount: 'value', budget: 'value', price: 'value',
-  value: 'value', amount: 'value', budget: 'value', price: 'value',
   'next follow-up': 'nextFollowupDate', 'next followup': 'nextFollowupDate',
   'next follow-up date': 'nextFollowupDate', 'follow-up date': 'nextFollowupDate',
   'follow up date': 'nextFollowupDate', 'nextfollowup': 'nextFollowupDate',
