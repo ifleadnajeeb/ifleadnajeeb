@@ -222,14 +222,20 @@ export const leadService = {
     const startOfToday = new Date(now); startOfToday.setHours(0,0,0,0);
     const endOfToday = new Date(startOfToday); endOfToday.setDate(endOfToday.getDate() + 1);
 
+    // If viewing a specific user's panel, the KPI cards must match that user's data
+    const baseScope = { ...scope.where };
+    if (query.view === 'user' && query.userId) {
+      baseScope.assignedToId = query.userId;
+    }
+
     const [allCount, mineCount, hotCount, todayCount, overdueCount, wonCount, lostCount] = await Promise.all([
-      prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...scope.where, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...scope.where, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { gte: startOfToday, lt: endOfToday } } } } }),
-      prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
-      prisma.lead.count({ where: { ...scope.where, status: 'WON' } }),
-      prisma.lead.count({ where: { ...scope.where, status: 'LOST' } }),
+      prisma.lead.count({ where: { ...baseScope, status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...baseScope, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...baseScope, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...baseScope, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { gte: startOfToday, lt: endOfToday } } } } }),
+      prisma.lead.count({ where: { ...baseScope, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
+      prisma.lead.count({ where: { ...baseScope, status: 'WON' } }),
+      prisma.lead.count({ where: { ...baseScope, status: 'LOST' } }),
     ]);
 
     return {

@@ -19,7 +19,7 @@ type View = 'all' | 'mine' | 'hot' | 'overdue' | 'won' | 'lost';
 
 const TABS: { id: View; label: string; sub: string }[] = [
   { id: 'all',     label: 'Leads',              sub: 'Total leads' },
-  { id: 'mine',    label: "Today's follow-ups", sub: 'Need attention today' },
+  { id: 'today',   label: "Today's follow-ups", sub: 'Need attention today' },
   { id: 'hot',     label: 'Hot leads',          sub: 'Active & priority hot' },
   { id: 'overdue', label: 'Backlogs',           sub: 'Follow-ups overdue' },
   { id: 'won',     label: 'Converted',          sub: 'Won leads' },
@@ -64,7 +64,7 @@ export default function LeadsPage() {
   const counts = data?.meta?.counts;
   const countFor = (id: View) =>
     id === 'all' ? counts?.all ?? 0
-    : id === 'mine' ? counts?.today ?? 0
+    : id === 'today' ? counts?.today ?? 0
     : id === 'hot' ? counts?.hot ?? 0
     : id === 'overdue' ? counts?.overdue ?? 0
     : id === 'won' ? counts?.won ?? 0
