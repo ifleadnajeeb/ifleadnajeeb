@@ -42,7 +42,6 @@ const NAV: NavItem[] = [
   { label: 'Appointments',  href: '/appointments', icon: CalendarCheck,   permission: 'appointments:read' },
   { label: 'Calendar',      href: '/calendar',     icon: Calendar,        permission: 'calendar:read' },
   { label: 'Tasks',         href: '/tasks',        icon: CheckSquare,     permission: 'tasks:read' },
-  { label: 'Documents',     href: '/documents',    icon: FileText,        permission: 'documents:read' },
   { label: 'Reports',       href: '/reports',      icon: BarChart3,       permission: 'reports:read' },
   { label: 'Daily Reports', href: '/daily-reports',icon: FileText,        permission: 'reports:read' },
   { label: 'Configuration', href: '/config',       icon: Settings,        permission: 'settings:read' },
