@@ -202,7 +202,7 @@ export function AddLeadModal({
           </div>
 
           {/* Source / Status */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <div>
               <label className="block text-[13px] text-ink-muted mb-1.5">Source</label>
               <select value={source} onChange={(e) => setSource(e.target.value)}
@@ -220,7 +220,7 @@ export function AddLeadModal({
           </div>
 
           {/* Priority / Value */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <div>
               <label className="block text-[13px] text-ink-muted mb-1.5">Priority</label>
               <select value={priority} onChange={(e) => setPriority(e.target.value)}
@@ -228,11 +228,7 @@ export function AddLeadModal({
                 {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-[13px] text-ink-muted mb-1.5">Value (₹)</label>
-              <input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder="50000"
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
-            </div>
+            
           </div>
 
           {/* Service */}
@@ -261,7 +257,7 @@ export function AddLeadModal({
               Next Follow-up
               <span className="text-ink-muted font-normal">(optional)</span>
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <input
                 type="date"
                 value={nextFollowupDate}
