@@ -383,14 +383,20 @@ async getById(req: AuthRequest, id: string) {
 
     if (existing.status === status) return this.getById(req, id);
 
-    const allowedTransitions: Record<LeadStatus, LeadStatus[]> = {
-      NEW: ['CONTACTED', 'LOST'],
-      CONTACTED: ['QUALIFIED', 'LOST'],
-      QUALIFIED: ['PROPOSAL', 'LOST'],
-      PROPOSAL: ['NEGOTIATION', 'WON', 'LOST'],
-      NEGOTIATION: ['WON', 'LOST'],
-      WON: [],
+        const allowedTransitions: Record<LeadStatus, LeadStatus[]> = {
+      NEW: ['CONTACTED', 'LOST', 'PENDING', 'FIRST_FOLLOWUP', 'LATER_FOLLOWUP', 'PROPOSAL_REQUESTED'],
+      CONTACTED: ['QUALIFIED', 'LOST', 'PENDING', 'FIRST_FOLLOWUP', 'LATER_FOLLOWUP', 'PROPOSAL_REQUESTED'],
+      QUALIFIED: ['PROPOSAL', 'LOST', 'PENDING', 'PROPOSAL_REQUESTED', 'PROPOSAL_GIVEN'],
+      PROPOSAL: ['NEGOTIATION', 'WON', 'LOST', 'PROPOSAL_GIVEN', 'PENDING'],
+      NEGOTIATION: ['WON', 'LOST', 'COMPLETED'],
+      WON: ['COMPLETED'],
       LOST: ['NEW'],
+      COMPLETED: [],
+      PROPOSAL_REQUESTED: ['PROPOSAL_GIVEN', 'LOST', 'PENDING'],
+      PROPOSAL_GIVEN: ['WON', 'LOST', 'NEGOTIATION'],
+      PENDING: ['FIRST_FOLLOWUP', 'LATER_FOLLOWUP', 'CONTACTED', 'LOST'],
+      FIRST_FOLLOWUP: ['CONTACTED', 'QUALIFIED', 'LOST', 'PENDING'],
+      LATER_FOLLOWUP: ['CONTACTED', 'QUALIFIED', 'LOST', 'PENDING'],
     };
     if (!allowedTransitions[existing.status].includes(status)) {
       throw new ValidationError(
