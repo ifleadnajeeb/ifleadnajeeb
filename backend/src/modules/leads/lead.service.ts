@@ -217,9 +217,32 @@ export const leadService = {
       prisma.lead.count({ where }),
     ]);
 
+    // Calculate counts for KPI cards
+    const [allCount, mineCount, hotCount, overdueCount, wonCount, lostCount] = await Promise.all([
+      prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...scope.where, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...scope.where, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
+      prisma.lead.count({ where: { ...scope.where, status: 'WON' } }),
+      prisma.lead.count({ where: { ...scope.where, status: 'LOST' } }),
+    ]);
+
     return {
       data: data.map(d => toDTO(d)),
-      meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
+      meta: { 
+        page, 
+        pageSize, 
+        total, 
+        totalPages: Math.ceil(total / pageSize),
+        counts: {
+          all: allCount,
+          mine: mineCount,
+          hot: hotCount,
+          overdue: overdueCount,
+          won: wonCount,
+          lost: lostCount
+        }
+      },
     };
   },
 async getById(req: AuthRequest, id: string) {
