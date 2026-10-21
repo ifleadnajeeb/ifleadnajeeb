@@ -244,17 +244,9 @@ export function AddLeadModal({
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
             >
               <option value="">— Select service —</option>
-              <option value="website">Website</option>
-              <option value="software">Software</option>
-              <option value="app">Mobile App</option>
-              <option value="logo">Logo Design</option>
-              <option value="digital_marketing">Digital Marketing</option>
-              <option value="video">Video Editing</option>
-              <option value="seo">SEO</option>
-              {services.map((s) => (
+              {services?.map((s: any) => (
                 <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
+              ))}</select>
             {services.length === 0 && (
               <p className="text-[12px] text-ink-muted mt-1">
                 No services yet. Add them in Configuration → Service.
