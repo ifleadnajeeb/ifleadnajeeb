@@ -40,7 +40,6 @@ export function AddLeadModal({
     { id: '6', name: 'Video Editing' },
     { id: '7', name: 'SEO' },
   ];
-  const displayServices = (services && services.length > 0) ? services : FALLBACK_SERVICES;
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -56,6 +55,7 @@ export function AddLeadModal({
   const [notes, setNotes] = useState('');
   const [service, setService] = useState('');
   const [services, setServices] = useState<ConfigItem[]>([]);
+  const displayServices = (services && services.length > 0) ? services : FALLBACK_SERVICES;
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
