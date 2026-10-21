@@ -26,7 +26,7 @@ router.delete('/:id', requirePermission('tasks:delete'), audit('task.delete', 'T
 
 // Detail & Sub-resources
 router.get('/:id', taskController.detail);
-router.get('/:id/reminders/due', taskController.dueReminders);
+router.get('/reminders/due', taskController.dueReminders);
 router.post('/:id/reminder-fired', taskController.markReminderFired);
 router.post('/:id/comments', taskController.addComment);
 router.post('/:id/checklist', taskController.addChecklist);
