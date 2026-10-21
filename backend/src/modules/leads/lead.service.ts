@@ -226,7 +226,7 @@ export const leadService = {
       prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] } } }),
       prisma.lead.count({ where: { ...scope.where, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
       prisma.lead.count({ where: { ...scope.where, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
-      prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] }, nextFollowupAt: { gte: startOfToday, lt: endOfToday } } }),
+      prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { gte: startOfToday, lt: endOfToday } } } } }),
       prisma.lead.count({ where: { ...scope.where, status: { notIn: ['WON', 'LOST'] }, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
       prisma.lead.count({ where: { ...scope.where, status: 'WON' } }),
       prisma.lead.count({ where: { ...scope.where, status: 'LOST' } }),
