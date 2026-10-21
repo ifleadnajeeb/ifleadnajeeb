@@ -29,6 +29,19 @@ function cleanPhone(raw: string): { ok: true; phone: string } | { ok: false; msg
 export function AddLeadModal({
   open, onClose, onSuccess, defaultAssignedToId, ownerName,
 }: Props) {
+
+  // Fallback services in case the backend is temporarily down
+  const FALLBACK_SERVICES = [
+    { id: '1', name: 'Website Development' },
+    { id: '2', name: 'Software Development' },
+    { id: '3', name: 'Mobile App' },
+    { id: '4', name: 'Logo Design' },
+    { id: '5', name: 'Digital Marketing' },
+    { id: '6', name: 'Video Editing' },
+    { id: '7', name: 'SEO' },
+  ];
+  const displayServices = (services && services.length > 0) ? services : FALLBACK_SERVICES;
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [projectName, setProjectName] = useState('');
