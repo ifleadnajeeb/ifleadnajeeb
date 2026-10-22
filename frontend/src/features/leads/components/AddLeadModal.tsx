@@ -154,11 +154,18 @@ export function AddLeadModal({
       onSuccess?.();
     } catch (err: any) {
       console.error('[AddLeadModal] error:', err?.response?.data || err.message);
-      setError(
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        'Could not create lead.'
-      );
+      const data = err?.response?.data;
+      let errorMsg = 'Could not create lead.';
+      
+      if (data) {
+        errorMsg = data.message || data.error || errorMsg;
+        // If Zod provides detailed field errors, append them
+        if (data.details && Array.isArray(data.details)) {
+          errorMsg += ': ' + data.details.map((d: any) => `${d.path.join('.')} is invalid`).join(', ');
+        }
+      }
+      
+      setError(errorMsg);
     } finally {
       setSubmitting(false);
     }
