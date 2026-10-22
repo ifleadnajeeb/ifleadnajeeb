@@ -1,4 +1,5 @@
 // @ts-nocheck — TODO: fix types
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { X, CheckCircle2, Sparkles } from 'lucide-react';
 import { leadsService, FollowupResult } from '../services/leads.service';
@@ -34,6 +35,17 @@ const RESULTS: {
 
 const METHODS = ['Phone', 'WhatsApp', 'Email', 'Meeting', 'Other'] as const;
 
+const NEXT_ACTIONS = [
+  'Call customer',
+  'Send quotation',
+  'Check quotation status',
+  'Follow up later',
+  'Attend meeting',
+  'Send WhatsApp',
+  'Send Email',
+  'Other (Manual)'
+];
+
 function addDays(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -41,10 +53,13 @@ function addDays(days: number): string {
 }
 
 export function FollowUpModal({ lead, onClose, onSuccess }: Props) {
+  const queryClient = useQueryClient();
   const [method, setMethod] = useState<(typeof METHODS)[number]>('Phone');
   const [result, setResult] = useState('Interested');
   const [note, setNote] = useState('');
   const [nextAction, setNextAction] = useState('Send quotation');
+  const [isManualAction, setIsManualAction] = useState(false);
+  const [manualAction, setManualAction] = useState('');
   const [nextDate, setNextDate] = useState(addDays(2));
   const [nextTime, setNextTime] = useState('10:30');
   const [submitting, setSubmitting] = useState(false);
@@ -58,6 +73,9 @@ export function FollowUpModal({ lead, onClose, onSuccess }: Props) {
     setResult(newResult);
     const rule = RESULTS.find((r) => r.value === newResult);
     if (!rule) return;
+    setIsManualAction(false);
+    setManualAction('');
+
     if (rule.closes) {
       setNextAction('');
     } else {
@@ -82,11 +100,12 @@ export function FollowUpModal({ lead, onClose, onSuccess }: Props) {
         method,
         result,
         note: note.trim() || undefined,
-        nextAction: closesLead ? undefined : nextAction,
+        nextAction: closesLead ? undefined : (isManualAction ? manualAction : nextAction),
         nextDate: closesLead ? null : nextDate,
         nextTime: closesLead ? null : nextTime,
       });
       setSuccess(res);
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
       onSuccess?.();
     } catch (err: any) {
       setError(
@@ -257,12 +276,31 @@ export function FollowUpModal({ lead, onClose, onSuccess }: Props) {
                 <label className="block text-[13px] text-ink-muted mb-1.5">
                   Next action
                 </label>
-                <input
-                  value={nextAction}
-                  onChange={(e) => setNextAction(e.target.value)}
-                  className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]
-                             bg-white focus:outline-none focus:border-brand"
-                />
+                <select
+                  value={isManualAction ? 'Other (Manual)' : nextAction}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'Other (Manual)') {
+                      setIsManualAction(true);
+                    } else {
+                      setIsManualAction(false);
+                      setNextAction(val);
+                    }
+                  }}
+                  className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
+                >
+                  {NEXT_ACTIONS.map((action) => (
+                    <option key={action} value={action}>{action}</option>
+                  ))}
+                </select>
+                {isManualAction && (
+                  <input
+                    value={manualAction}
+                    onChange={(e) => setManualAction(e.target.value)}
+                    placeholder="Type your custom next action..."
+                    className="w-full h-10 px-3 mt-2 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
+                  />
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
