@@ -47,7 +47,7 @@ export function AddLeadModal({
   const [phone, setPhone] = useState('');
   const [projectName, setProjectName] = useState('');
   const [source, setSource] = useState('manual');
-  const [status: 'NEW', setStatus] = useState('PENDING');
+  const [status, setStatus] = useState('NEW');
   const [tag, setTag] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [value, setValue] = useState('');
