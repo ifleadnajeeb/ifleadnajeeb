@@ -220,14 +220,27 @@ export const userService = {
       data: { managerId: actor.id },
     });
 
-    // Delete in a transaction so FK cascades run cleanly
+    // Delete in a transaction so FK constraints don't block the deletion
     await prisma.$transaction([
-      // Null out lead assignments so we don't lose leads
+      // 1. Delete chat messages sent by this user (RESTRICT constraint)
+      prisma.chatMessage.deleteMany({ where: { senderId: id } }),
+
+      // 2. Reassign createdBy fields to the actor (RESTRICT constraints)
+      prisma.followup.updateMany({ where: { createdById: id }, data: { createdById: actor.id } }),
+      prisma.lead.updateMany({ where: { createdById: id }, data: { createdById: actor.id } }),
+      prisma.task.updateMany({ where: { createdById: id }, data: { createdById: actor.id } }),
+      
+      // 3. Reassign TimeBlocks
+      prisma.timeBlock.updateMany({ where: { createdById: id }, data: { createdById: actor.id } }),
+      prisma.timeBlock.updateMany({ where: { userId: id }, data: { userId: actor.id } }),
+
+      // 4. Null out lead assignments so we don't lose leads (SET NULL constraint)
       prisma.lead.updateMany({
         where: { assignedToId: id },
         data: { assignedToId: null },
       }),
-      // Remove the user
+
+      // 5. Remove the user
       prisma.user.delete({ where: { id } }),
     ]);
   },
