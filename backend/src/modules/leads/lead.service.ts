@@ -212,12 +212,15 @@ export const leadService = {
         skip: (page - 1) * pageSize,
         take: pageSize,
         orderBy: { [query.sortBy ?? 'createdAt']: query.sortDir ?? 'desc' },
-        include: { 
-          assignedTo: { select: { id: true, name: true } }, 
-          customer: true, 
+        include: {
+          assignedTo: { select: { id: true, name: true } },
+          customer: true,
           _count: { select: { followups: true } },
-        
-          
+          followups: {
+            where: { status: 'PENDING' },
+            orderBy: { dueAt: 'asc' },
+            take: 1
+          }
         },
       }),
       prisma.lead.count({ where }),
