@@ -132,7 +132,23 @@ export function AddLeadModal({
 
       console.log('[AddLeadModal] POST /leads payload:', JSON.stringify(payload, null, 2));
 
-      const res = await api.post('/leads', payload);
+      const sanitizedPayload = {
+        name: name.trim(),
+        phone: phone.trim() || undefined,
+        company: projectName.trim() || undefined,
+        source: source || 'manual',
+        status: status,
+        priority: priority,
+        value: value ? Number(value) : undefined, // Converts "" to undefined
+        notes: notes.trim() || undefined,
+        assignedToId: assignedToId || undefined, // Converts "" to undefined
+        service: service || undefined,
+        tags: tag ? [tag] : [],
+        nextFollowupAt: nextFollowupDate 
+          ? new Date(`${nextFollowupDate}T${nextFollowupTime || '09:00'}:00`).toISOString() 
+          : undefined, // Combines date and time into ISO string
+      };
+      const res = await api.post('/leads', sanitizedPayload);
       console.log('[AddLeadModal] response:', res.data);
       setSuccess(true);
       onSuccess?.();
