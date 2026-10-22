@@ -258,6 +258,8 @@ model AuditLog {
 }
 
 model Lead {
+  service       String?
+  projectName   String?
   id             String       @id @default(cuid())
   organizationId String
   name           String
@@ -285,7 +287,6 @@ model Lead {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  service   String?
 
   @@index([organizationId])
   @@index([assignedToId])
