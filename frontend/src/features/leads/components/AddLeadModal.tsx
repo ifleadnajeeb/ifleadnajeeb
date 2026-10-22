@@ -47,7 +47,7 @@ export function AddLeadModal({
   const [phone, setPhone] = useState('');
   const [projectName, setProjectName] = useState('');
   const [source, setSource] = useState('manual');
-  const [status, setStatus] = useState('PENDING');
+  const [status: 'NEW', setStatus] = useState('PENDING');
   const [tag, setTag] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [value, setValue] = useState('');
@@ -121,7 +121,7 @@ export function AddLeadModal({
         name: name.trim(),
         phone: normalizedPhone,
         company: projectName.trim() || undefined,   // backend keeps "company" field, UI shows "Project name"
-        source, status,
+        source, status: 'NEW',
         tags: tag ? [tag] : [], priority,
         value: value ? Number(value) : undefined,
         notes: notes.trim() || undefined,
@@ -137,7 +137,7 @@ export function AddLeadModal({
         phone: phone.trim() || undefined,
         company: projectName.trim() || undefined,
         source: source || 'manual',
-        status: status,
+        status: 'NEW',
         priority: priority,
         value: value ? Number(value) : undefined, // Converts "" to undefined
         notes: notes.trim() || undefined,
@@ -264,18 +264,7 @@ export function AddLeadModal({
             </select>
           </div>
             </div>
-            <div>
-              <label className="block text-[13px] text-ink-muted mb-1.5">Status</label>
-              <select value={status} onChange={e => setStatus(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white">
-                <option value="LOST">Lost</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="PROPOSAL_REQUESTED">Proposal Requested</option>
-                <option value="PROPOSAL_GIVEN">Proposal Given</option>
-                <option value="PENDING">Pending</option>
-                <option value="FIRST_FOLLOWUP">First Followup</option>
-                <option value="LATER_FOLLOWUP">Later Follow Up</option>
-              </select>
-            </div>
+            
           </div>
 
           {/* Priority / Value */}
@@ -370,7 +359,7 @@ export function AddLeadModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-[13px] text-ink-muted mb-1.5">Notes</label>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Description</label>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="What did the customer ask for?"
               className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand resize-none" />
           </div>
