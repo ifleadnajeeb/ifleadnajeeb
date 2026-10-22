@@ -13,7 +13,7 @@ interface Props {
 }
 
 const SOURCES = ['manual', 'website', 'facebook', 'instagram', 'whatsapp', 'referral', 'walk-in'];
-const PRIORITIES = ['COLD', 'MEDIUM', 'HOT'];   // ✅ LOW → COLD, removed HIGH
+const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];   // ✅ LOW → COLD, removed HIGH
 const STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION'];
 
 function cleanPhone(raw: string): { ok: true; phone: string } | { ok: false; msg: string } {
@@ -31,14 +31,16 @@ export function AddLeadModal({
 }: Props) {
 
   // Fallback services in case the backend is temporarily down
-  const FALLBACK_SERVICES = [
+    const FALLBACK_SERVICES = [
     { id: '1', name: 'Website Development' },
-    { id: '2', name: 'Software Development' },
-    { id: '3', name: 'Mobile App' },
-    { id: '4', name: 'Logo Design' },
+    { id: '2', name: 'Logo Brandkit' },
+    { id: '3', name: 'Trademark Registration' },
+    { id: '4', name: 'Company Registration' },
     { id: '5', name: 'Digital Marketing' },
-    { id: '6', name: 'Video Editing' },
-    { id: '7', name: 'SEO' },
+    { id: '6', name: 'Posters' },
+    { id: '7', name: '20 K Website' },
+    { id: '8', name: 'If Leads' },
+    { id: '9', name: 'K Swift' },
   ];
 
   const [name, setName] = useState('');
