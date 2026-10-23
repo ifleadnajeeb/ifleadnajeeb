@@ -64,13 +64,14 @@ export default function LeadsPage() {
   const filterId = isAdmin ? undefined : user?.id;
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['leads', view, search, page, filterId],
-    queryFn: () => leadsService.list({ 
-      view, 
-      search: search || undefined, 
-      page, 
+    queryKey: ['leads', view, search, page, user?.id],
+    queryFn: () => leadsService.list({
+      view,
+      search: search || undefined,
+      page,
       pageSize: 20,
-      assignedToId: filterId // 👈 This forces the KPI cards and Table to only show your data
+      assignedToId: view === 'mine' ? user?.id : undefined,
+      createdById: view === 'all' ? user?.id : undefined,
     }),
   });
 
