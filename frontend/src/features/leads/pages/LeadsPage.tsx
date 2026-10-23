@@ -495,13 +495,16 @@ function LeadRow({
         <Badge color={statusColor(lead.status)}>{lead.status}</Badge>
       </td>
       <td className="px-2 py-2.5 text-[13px] text-ink">{lead.company ?? '—'}</td>
-      <td className="px-2 py-2.5">
-        <div className="flex items-center gap-1.5 max-w-[140px]" title={lead.notes || ''}>
-          <span className="truncate text-[13px] text-ink">{lead.notes || '—'}</span>
+      <td className="px-2 py-2.5 max-w-[160px] w-[160px]">
+        <div className="flex items-center justify-between gap-1.5">
+          <span className="truncate text-[13px] text-ink flex-1">{lead.notes || '—'}</span>
           {lead.notes && (
-            <span className="text-brand font-bold text-[10px] border border-brand rounded-full w-4 h-4 flex items-center justify-center cursor-help shrink-0">
+            <button
+              onClick={(e) => { e.stopPropagation(); onDescClick(lead); }}
+              className="text-brand font-bold text-[10px] border border-brand rounded-full w-4 h-4 flex items-center justify-center hover:bg-brand hover:text-white transition-colors shrink-0"
+            >
               i
-            </span>
+            </button>
           )}
         </div>
       </td>
