@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Clock, AlertCircle, Calendar as CalIcon, CheckCircle2 } from 'lucide-react';
 import { followupsService, Followup } from '../services/followups.service';
 import { cn } from '@/shared/utils/cn';
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 type Group = 'overdue' | 'today' | 'upcoming' | 'completed';
 
@@ -15,6 +16,8 @@ const TABS: { id: Group; label: string; sub: string; icon: any; tint: string }[]
 
 export default function FollowupsPage() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const [showMine, setShowMine] = useState(false);
   const [group, setGroup] = useState<Group>('today');
   const [page, setPage] = useState(1);
   const [completing, setCompleting] = useState<string | null>(null);
@@ -26,6 +29,13 @@ export default function FollowupsPage() {
   });
 
   const counts = data?.meta.counts;
+
+  // Filter by current user if showMine is true
+  const filteredData = (data?.data || []).filter((f: any) => {
+    if (!showMine) return true;
+    const assigneeName = f.assignedTo?.name || f.assignedTo;
+    return assigneeName === user?.name;
+  });
 
   const onComplete = async (f: Followup) => {
     const result = prompt(`Mark "${f.title}" as done.\n\nResult (e.g. Interested, Call back later):`);
@@ -43,9 +53,20 @@ export default function FollowupsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold text-ink">Follow-ups</h1>
-        <p className="text-[13.5px] text-ink-muted mt-0.5">Track scheduled calls and reminders</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-ink">Follow-ups</h1>
+          <p className="text-[13.5px] text-ink-muted mt-0.5">Track scheduled calls and reminders</p>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer text-[13px] font-medium text-ink bg-white border border-ink-border px-3 py-2 rounded-lg shadow-sm hover:border-brand/40 transition-colors">
+          <input
+            type="checkbox"
+            checked={showMine}
+            onChange={(e) => setShowMine(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-brand focus:ring-brand"
+          />
+          Only My Follow-ups
+        </label>
       </div>
 
       {/* KPI tabs */}
@@ -78,13 +99,13 @@ export default function FollowupsPage() {
         {isLoading && <div className="py-12 text-center text-ink-muted text-sm">Loading…</div>}
         {error && <div className="py-12 text-center text-danger text-sm">Failed to load follow-ups.</div>}
 
-        {data && data.data.length === 0 && (
+        {data && filteredData.length === 0 && (
           <div className="py-16 text-center">
             <p className="text-ink-muted text-sm">No follow-ups in this group.</p>
           </div>
         )}
 
-        {data && data.data.length > 0 && (
+        {data && filteredData.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
               <thead className="bg-ink-bg">
