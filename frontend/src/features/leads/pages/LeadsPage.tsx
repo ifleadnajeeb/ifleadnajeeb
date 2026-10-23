@@ -261,7 +261,7 @@ export default function LeadsPage() {
                       onOpen={() => setOpenClient(lead.id)}
                       onFollowup={() => setFollowupLead(lead.id)}
                       onWhatsApp={() => setWaLead({ id: lead.id, name: lead.name, phone: lead.phone })}
-                    />
+                    onDescClick={setSelectedLeadForDesc} />
                   ))}
                 </tbody>
               </table>
@@ -411,6 +411,7 @@ export default function LeadsPage() {
 // ─────────── LeadRow ───────────
 function LeadRow({
   lead, isSelected, onToggleSelect, onOpen, onFollowup, onWhatsApp,
+  onDescClick,
 }: {
   lead: Lead;
   isSelected: boolean;
@@ -418,6 +419,7 @@ function LeadRow({
   onOpen: () => void;
   onFollowup: () => void;
   onWhatsApp: () => void;
+  onDescClick: (lead: any) => void;
 }) {
   const overdue = lead.nextFollowupAt && daysUntil(lead.nextFollowupAt) < 0;
   const isHot = lead.priority === 'HOT';
