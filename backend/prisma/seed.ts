@@ -59,6 +59,8 @@ const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     'users:read', 'users:create',
   ],
   BDE: [
+    'tasks:create',
+    'tasks:update',
     'dashboard:read', 'leads:read', 'leads:create', 'leads:update',
     'customers:read', 'followups:read', 'followups:create',
     'followups:update', 'appointments:read', 'appointments:create',
