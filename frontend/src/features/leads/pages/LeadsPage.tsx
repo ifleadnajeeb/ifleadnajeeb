@@ -239,7 +239,7 @@ export default function LeadsPage() {
                     </th>
                     {[
                       'PRIORITY', 'NAME', 'NEXT FOLLOW-UP', 'PHONE · ACTIONS',
-                      'STATUS', 'COMPANY', 'SOURCE', 'ACTION',
+                      'STATUS', 'COMPANY', 'DESCRIPTION', 'SOURCE', 'ACTION',
                     ].map((h) => (
                       <th
                         key={h}
@@ -459,6 +459,16 @@ function LeadRow({
         <Badge color={statusColor(lead.status)}>{lead.status}</Badge>
       </td>
       <td className="px-2 py-2.5 text-[13px] text-ink">{lead.company ?? '—'}</td>
+      <td className="px-2 py-2.5">
+        <div className="flex items-center gap-1.5 max-w-[140px]" title={lead.notes || ''}>
+          <span className="truncate text-[13px] text-ink">{lead.notes || '—'}</span>
+          {lead.notes && (
+            <span className="text-brand font-bold text-[10px] border border-brand rounded-full w-4 h-4 flex items-center justify-center cursor-help shrink-0">
+              i
+            </span>
+          )}
+        </div>
+      </td>
       
       <td className="px-2 py-2.5 text-[13px] text-ink">{lead.source ?? '—'}</td>
       <td className="px-2 py-2.5 whitespace-nowrap">
