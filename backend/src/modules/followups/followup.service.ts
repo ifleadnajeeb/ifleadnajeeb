@@ -98,7 +98,7 @@ export const followupService = {
       prisma.followup.findMany({
         where,
         include: {
-          lead: { select: { id: true, name: true, phone: true } },
+          lead: { select: { id: true, name: true, phone: true, notes: true } },
           assignedTo: { select: { id: true, name: true } },
           createdBy: { select: { id: true, name: true } },
         },
@@ -119,7 +119,7 @@ export const followupService = {
         completedAt: f.completedAt,
         result: f.result,
         lead: f.lead,
-    description: f.lead?.notes,
+    description: (f.lead as any)?.notes,
         assignedTo: f.assignedTo,
         createdBy: f.createdBy,
         createdAt: f.createdAt,
