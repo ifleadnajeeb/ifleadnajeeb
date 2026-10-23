@@ -119,7 +119,7 @@ export const followupService = {
         completedAt: f.completedAt,
         result: f.result,
         lead: f.lead,
-    description: (f.lead as any)?.notes,
+    description: (f as any).note || (f.lead as any)?.notes,
         assignedTo: f.assignedTo,
         createdBy: f.createdBy,
         createdAt: f.createdAt,

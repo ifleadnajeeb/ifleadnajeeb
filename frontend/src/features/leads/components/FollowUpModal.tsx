@@ -257,13 +257,13 @@ export function FollowUpModal({ lead, onClose, onSuccess }: Props) {
           {/* Note */}
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">
-              Note (optional)
+              Description
             </label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              placeholder="What did the customer say?"
+              placeholder="Describe the conversation..."
               className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px]
                          bg-white focus:outline-none focus:border-brand resize-none"
             />
