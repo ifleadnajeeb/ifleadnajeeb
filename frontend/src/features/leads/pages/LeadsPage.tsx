@@ -14,6 +14,8 @@ import { cn } from '@/shared/utils/cn';
 import { api } from '@/shared/api/client';
 import { BulkImportModal } from '../components/BulkImportModal';
 import * as XLSX from 'xlsx';
+// 👇 Make sure this import path matches where your AuthContext is located
+import { useAuth } from '@/features/auth/context/AuthContext'; 
 
 type View = 'all' | 'mine' | 'hot' | 'overdue' | 'won' | 'lost';
 
@@ -42,10 +44,9 @@ function daysUntil(d: string) {
 
 export default function LeadsPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth(); // 👈 Get the logged-in user
   
-  // 👇 DEFAULT CHANGED TO 'mine' SO IT OPENS ON YOUR LEADS
   const [view, setView] = useState<View>('mine');
-  
   const [search, setSearch] = useState('');
   const [selectedLeadForDesc, setSelectedLeadForDesc] = useState<any>(null);
   const [page, setPage] = useState(1);
@@ -58,9 +59,19 @@ export default function LeadsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
 
+  // 👇 Forced to filter by your ID unless you are an Admin
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const filterId = isAdmin ? undefined : user?.id;
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['leads', view, search, page],
-    queryFn: () => leadsService.list({ view, search: search || undefined, page, pageSize: 20 }),
+    queryKey: ['leads', view, search, page, filterId],
+    queryFn: () => leadsService.list({ 
+      view, 
+      search: search || undefined, 
+      page, 
+      pageSize: 20,
+      assignedToId: filterId // 👈 This forces the KPI cards and Table to only show your data
+    }),
   });
 
   const isForbidden = (error as any)?.response?.status === 403;
@@ -101,11 +112,11 @@ export default function LeadsPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await leadsService.list({ page: 1, pageSize: 100 });
+      const res = await leadsService.list({ page: 1, pageSize: 100, assignedToId: filterId });
       const allLeads: any[] = res.data ?? [];
       let page = 2;
       while (page <= (res.meta?.totalPages ?? 1) && allLeads.length < 5000) {
-        const next = await leadsService.list({ page, pageSize: 100 });
+        const next = await leadsService.list({ page, pageSize: 100, assignedToId: filterId });
         allLeads.push(...(next.data ?? []));
         page++;
       }
