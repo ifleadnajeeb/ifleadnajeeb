@@ -34,7 +34,7 @@ function analyzePhone(raw: string): {
       if (!/^[6-9]/.test(d)) return { ok: false, msg: 'Indian mobiles start with 6, 7, 8 or 9' };
       d = '91' + d;
     } else if (!(d.length === 12 && d.startsWith('91'))) {
-      return { ok: false, msg: `${d.length} digits – India needs 10 (or add + and country code)` };
+      return { ok: false, msg: `${d.length} digits – India needs 10 (or check International)` };
     }
   }
   if (d.startsWith('91')) {
@@ -80,6 +80,7 @@ export function AddLeadModal({
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [isInternational, setIsInternational] = useState(false); // 👈 NEW STATE
   const [checkingPhone, setCheckingPhone] = useState(false);
   const [duplicateMatches, setDuplicateMatches] = useState<{ id: string; name: string }[]>([]);
   const [forceDuplicate, setForceDuplicate] = useState(false);
@@ -157,6 +158,7 @@ export function AddLeadModal({
 
   const reset = () => {
     setName(''); setPhone(''); setProjectName('');
+    setIsInternational(false); // Reset toggle
     setSource('manual'); setStatus('NEW'); setPriority('MEDIUM');
     setValue(''); setNextFollowupDate(''); setNextFollowupTime('');
     setAssignedToId(defaultAssignedToId ?? '');
@@ -192,21 +194,6 @@ export function AddLeadModal({
 
     setSubmitting(true);
     try {
-      const payload: Record<string, any> = {
-        name: name.trim(),
-        phone: normalizedPhone,
-        company: projectName.trim() || undefined,
-        source, status: 'NEW',
-        tags: tag ? [tag] : [], priority,
-        value: value ? Number(value) : undefined,
-        notes: notes.trim() || undefined,
-      };
-      if (assignedToId) payload.assignedToId = assignedToId;
-      if (service) payload.service = service;
-      if (nextFollowupAt) payload.nextFollowupAt = nextFollowupAt;
-
-      console.log('[AddLeadModal] POST /leads payload:', JSON.stringify(payload, null, 2));
-
       const sanitizedPayload = {
         name: name.trim(),
         phone: normalizedPhone || undefined,
@@ -222,8 +209,7 @@ export function AddLeadModal({
         nextFollowupAt: nextFollowupAt,
       };
       
-      const res = await api.post('/leads', sanitizedPayload);
-      console.log('[AddLeadModal] response:', res.data);
+      await api.post('/leads', sanitizedPayload);
       setSuccess(true);
       onSuccess?.();
     } catch (err: any) {
@@ -304,20 +290,40 @@ export function AddLeadModal({
 
           {/* Phone */}
           <div>
-            <label className="block text-[13px] text-ink-muted mb-1.5">Phone</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-[13px] text-ink-muted">Phone</label>
+              <label className="flex items-center gap-1 cursor-pointer text-[12px] font-medium text-brand hover:underline">
+                <input
+                  type="checkbox"
+                  checked={isInternational}
+                  onChange={(e) => {
+                    setIsInternational(e.target.checked);
+                    setPhone(''); // clear field when toggling
+                  }}
+                  className="w-3.5 h-3.5 rounded border-gray-300 text-brand focus:ring-brand"
+                />
+                🌍 International
+              </label>
+            </div>
+            
             <input 
               value={phone} 
               onChange={(e) => {
                 setForceDuplicate(false);
-                if (e.target.value.length < phone.length) {
-                  setPhone(e.target.value);
+                if (isInternational) {
+                  // Allow only + and digits for international
+                  setPhone(e.target.value.replace(/[^\d+]/g, ''));
                 } else {
-                  setPhone(formatPhoneNumber(e.target.value));
+                  if (e.target.value.length < phone.length) {
+                    setPhone(e.target.value);
+                  } else {
+                    setPhone(formatPhoneNumber(e.target.value));
+                  }
                 }
               }} 
               inputMode="tel" 
-              maxLength={15}
-              placeholder="98765 43210"
+              maxLength={isInternational ? 18 : 15}
+              placeholder={isInternational ? "+971 50 123 4567" : "98765 43210"}
               className={`w-full h-10 px-3 border rounded-md text-[14px] bg-white focus:outline-none transition-colors ${
                 phone && !analyzePhone(phone).ok 
                   ? 'border-danger focus:border-danger' 
