@@ -177,6 +177,10 @@ export const leadService = {
       where.assignedToId = actor.id;
     } else if (query.view === 'hot') {
       where.priority = 'HOT';
+    } else if (query.view === 'today') {
+      const start = new Date(); start.setHours(0,0,0,0);
+      const end = new Date(start); end.setDate(end.getDate() + 1);
+      where.followups = { some: { status: 'PENDING', dueAt: { gte: start, lt: end } } };
     } else if (query.view === 'overdue') {
       where.followups = { some: { status: 'PENDING', dueAt: { lt: new Date() } } };
     } else if (query.view === 'user' && query.userId) {

@@ -59,7 +59,7 @@ export const ListLeadsQuerySchema = z.object({
     .enum(['createdAt', 'updatedAt', 'value', 'name', 'priority'])
     .default('createdAt'),
   sortDir: z.enum(['asc', 'desc']).default('desc'),
-  view: z.enum(['all', 'mine', 'hot', 'overdue', 'user', 'won', 'lost']).default('all'),
+  view: z.enum(['all', 'mine', 'hot', 'overdue', 'user', 'won', 'lost', 'today']).default('all'),
   userId: z.string().optional(),
 });
 
