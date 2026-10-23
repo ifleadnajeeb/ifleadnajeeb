@@ -224,13 +224,22 @@ export function AddLeadModal({
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Name <span className="text-danger">*</span></label>
             <input value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="John Smith"
-              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
+              className={`w-full h-10 px-3 border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white ${
+                error && !name.trim() ? 'border-danger ring-1 ring-danger' : 'border-ink-border'
+              }`} />
           </div>
 
           {/* Phone — Email removed */}
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Phone</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" placeholder="98765 43210"
+            <input 
+              value={phone} 
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^\d+\- ()]/g, '');
+                setPhone(sanitized);
+              }} 
+              inputMode="tel" 
+              placeholder="+91 98765 43210"
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
           </div>
 
