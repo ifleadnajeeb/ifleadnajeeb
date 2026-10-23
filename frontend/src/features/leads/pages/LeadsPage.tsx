@@ -42,7 +42,10 @@ function daysUntil(d: string) {
 
 export default function LeadsPage() {
   const queryClient = useQueryClient();
-  const [view, setView] = useState<View>('all');
+  
+  // 👇 DEFAULT CHANGED TO 'mine' SO IT OPENS ON YOUR LEADS
+  const [view, setView] = useState<View>('mine');
+  
   const [search, setSearch] = useState('');
   const [selectedLeadForDesc, setSelectedLeadForDesc] = useState<any>(null);
   const [page, setPage] = useState(1);
@@ -352,7 +355,7 @@ export default function LeadsPage() {
       <BulkImportModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        onSuccess={() => { setImportOpen(false); qc.invalidateQueries({ queryKey: ['leads'] }); }}
+        onSuccess={() => { setImportOpen(false); queryClient.invalidateQueries({ queryKey: ['leads'] }); }}
       />
 
       <AddLeadModal
@@ -533,7 +536,8 @@ function LeadRow({
 // ─────────── BulkAssignModal ───────────
 function BulkAssignModal({
   leadIds, onClose, onSuccess,
-}: { leadIds: string[]; onClose: () => void; onSuccess: () => void }) {
+}: {
+  leadIds: string[]; onClose: () => void; onSuccess: () => void }) {
   const [userId, setUserId] = useState('');
   const [users, setUsers] = useState<{ id: string; name: string; role: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -590,39 +594,6 @@ function BulkAssignModal({
           </button>
         </div>
       </div>
-
-      {selectedLeadForDesc && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={() => setSelectedLeadForDesc(null)}>
-          <div className="bg-white rounded-xl shadow-xl max-w-[420px] w-full overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 bg-blue-600 text-center">
-              <h3 className="font-semibold text-white text-[16px]">Description</h3>
-            </div>
-            <div className="p-6">
-              <div className="bg-[#e0f7f4] border border-[#b2e6dd] rounded-lg p-5 relative overflow-hidden">
-                <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-300"></div>
-                <div className="absolute left-[13px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-gray-400 border border-white"></div>
-                
-                <div className="ml-6">
-                  <p className="text-[14px] font-bold text-blue-800 mb-3 leading-snug">
-                    {selectedLeadForDesc.notes || 'No description provided.'}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2 text-[12px]">
-                    <span className="bg-teal-700 text-white px-2 py-0.5 rounded-full font-medium">Assigned</span>
-                    <span className="text-teal-800 font-bold">{selectedLeadForDesc.assignedTo?.name || 'Unassigned'}</span>
-                    <span className="text-gray-500 font-medium">{new Date(selectedLeadForDesc.createdAt).toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="px-5 py-3 bg-gray-50 flex justify-end">
-              <button onClick={() => setSelectedLeadForDesc(null)} className="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
