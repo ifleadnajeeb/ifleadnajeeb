@@ -18,6 +18,7 @@ export default function FollowupsPage() {
   const [group, setGroup] = useState<Group>('today');
   const [page, setPage] = useState(1);
   const [completing, setCompleting] = useState<string | null>(null);
+  const [selectedFollowup, setSelectedFollowup] = useState<Followup | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['followups', group, page],
@@ -90,6 +91,7 @@ export default function FollowupsPage() {
                 <tr className="text-left text-[12px] uppercase tracking-wider text-brand font-semibold">
                   <th className="px-5 py-3">Title</th>
                   <th className="px-5 py-3">Lead</th>
+                  <th className="px-5 py-3">Description</th>
                   <th className="px-5 py-3">Due</th>
                   <th className="px-5 py-3">Assigned to</th>
                   <th className="px-5 py-3">Status</th>
@@ -103,6 +105,19 @@ export default function FollowupsPage() {
                     <tr key={f.id} className="border-t border-ink-border hover:bg-brand-light/40">
                       <td className="px-5 py-3 font-medium text-ink">{f.title}</td>
                       <td className="px-5 py-3 text-ink-muted">{f.lead?.name ?? '—'}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-1.5 max-w-[140px]" title={f.description || ''}>
+                          <span className="truncate text-[13px] text-ink-muted">{f.description || '—'}</span>
+                          {f.description && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setSelectedFollowup(f); }}
+                              className="text-brand font-bold text-[10px] border border-brand rounded-full w-4 h-4 flex items-center justify-center hover:bg-brand hover:text-white transition-colors shrink-0"
+                            >
+                              i
+                            </button>
+                          )}
+                        </div>
+                      </td>
                       <td className={cn('px-5 py-3 whitespace-nowrap', overdue ? 'text-danger font-medium' : 'text-ink-muted')}>
                         {new Date(f.dueAt).toLocaleDateString('en-GB')}{' '}
                         {new Date(f.dueAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
@@ -151,6 +166,39 @@ export default function FollowupsPage() {
           </div>
         )}
       </div>
+
+      {selectedFollowup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={() => setSelectedFollowup(null)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-[420px] w-full overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 bg-blue-600 text-center">
+              <h3 className="font-semibold text-white text-[16px]">Description</h3>
+            </div>
+            <div className="p-6">
+              <div className="bg-[#e0f7f4] border border-[#b2e6dd] rounded-lg p-5 relative overflow-hidden">
+                <div className="absolute left-4 top-4 bottom-4 w-0.5 bg-gray-300"></div>
+                <div className="absolute left-[13px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-gray-400 border border-white"></div>
+                
+                <div className="ml-6">
+                  <p className="text-[14px] font-bold text-blue-800 mb-3 leading-snug">
+                    {selectedFollowup.description || 'No description provided.'}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2 text-[12px]">
+                    <span className="bg-teal-700 text-white px-2 py-0.5 rounded-full font-medium">Assigned</span>
+                    <span className="text-teal-800 font-bold">{selectedFollowup.assignedTo?.name || 'Unassigned'}</span>
+                    <span className="text-gray-500 font-medium">{new Date(selectedFollowup.createdAt).toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-3 bg-gray-50 flex justify-end">
+              <button onClick={() => setSelectedFollowup(null)} className="px-5 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

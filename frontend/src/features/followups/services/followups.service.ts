@@ -1,6 +1,7 @@
 import { api } from '@/shared/api/client';
 
 export interface Followup {
+  description?: string;
   id: string;
   title: string;
   notes: string | null;
