@@ -19,6 +19,7 @@ type View = 'all' | 'mine' | 'hot' | 'overdue' | 'won' | 'lost';
 
 const TABS: { id: View; label: string; sub: string }[] = [
   { id: 'all',     label: 'Leads',              sub: 'Total leads' },
+  { id: 'mine',    label: 'My Leads',           sub: 'Assigned to me' },
   { id: 'today',   label: "Today's follow-ups", sub: 'Need attention today' },
   { id: 'hot',     label: 'Hot leads',          sub: 'Active & priority hot' },
   { id: 'overdue', label: 'Backlogs',           sub: 'Follow-ups overdue' },
@@ -69,6 +70,7 @@ export default function LeadsPage() {
     : id === 'hot' ? counts?.hot ?? 0
     : id === 'overdue' ? counts?.overdue ?? 0
     : id === 'won' ? counts?.won ?? 0
+    : id === 'mine' ? counts?.mine ?? 0
     : counts?.lost ?? 0;
 
   const followupLeadObj = followupLead
