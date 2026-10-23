@@ -26,6 +26,26 @@ function cleanPhone(raw: string): { ok: true; phone: string } | { ok: false; msg
   return { ok: false, msg: 'Invalid phone number' };
 }
 
+
+function formatPhoneNumber(value: string) {
+  // Remove all non-digits
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+
+  // If it's 10 digits or less, format as "XXXXX XXXXX"
+  if (digits.length <= 10) {
+    if (digits.length > 5) {
+      return `${digits.slice(0, 5)} ${digits.slice(5)}`;
+    }
+    return digits;
+  }
+
+  // If more than 10 digits, assume country code. Format as "+CC XXXXX XXXXX"
+  const countryCode = digits.slice(0, digits.length - 10);
+  const number = digits.slice(-10);
+  return `+${countryCode} ${number.slice(0, 5)} ${number.slice(5)}`;
+}
+
 export function AddLeadModal({
   open, onClose, onSuccess, defaultAssignedToId, ownerName,
 }: Props) {
@@ -235,11 +255,16 @@ export function AddLeadModal({
             <input 
               value={phone} 
               onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^\d+\- ()]/g, '');
-                setPhone(sanitized);
+                // Allow backspace/delete to clear the field
+                if (e.target.value.length < phone.length) {
+                  setPhone(e.target.value);
+                } else {
+                  setPhone(formatPhoneNumber(e.target.value));
+                }
               }} 
               inputMode="tel" 
-              placeholder="+91 98765 43210"
+              maxLength={15}
+              placeholder="98765 43210"
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
           </div>
 
