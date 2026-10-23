@@ -47,3 +47,5 @@ prisma/*.db-journal
 # ─── Prisma ───
 prisma/*.db
 prisma/*.db-journal
+.vercel
+.env*

@@ -13,26 +13,43 @@ interface Props {
 }
 
 const SOURCES = ['manual', 'website', 'facebook', 'instagram', 'whatsapp', 'referral', 'walk-in'];
-const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];   // ✅ LOW → COLD, removed HIGH
+const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION'];
 
-function cleanPhone(raw: string): { ok: true; phone: string } | { ok: false; msg: string } {
-  const d = raw.replace(/\D/g, '');
+function analyzePhone(raw: string): { 
+  ok: boolean; 
+  e164?: string; 
+  pretty?: string; 
+  msg?: string 
+} {
+  let d = String(raw || '').trim();
+  const intl = d.startsWith('+');
+  d = d.replace(/\D/g, '');
   if (!d) return { ok: false, msg: 'Enter a phone number' };
-  if (d.length === 10 && /^[6-9]/.test(d)) return { ok: true, phone: d };
-  if (d.length === 11 && d[0] === '0') return { ok: true, phone: d.slice(1) };
-  if (d.length === 12 && d.startsWith('91')) return { ok: true, phone: d };
-  if (d.length >= 8 && d.length <= 15) return { ok: true, phone: d };
-  return { ok: false, msg: 'Invalid phone number' };
+  
+  if (d.startsWith('00')) d = d.slice(2);
+  if (!intl) {
+    if (d.length === 11 && d[0] === '0') d = d.slice(1);
+    if (d.length === 10) {
+      if (!/^[6-9]/.test(d)) return { ok: false, msg: 'Indian mobiles start with 6, 7, 8 or 9' };
+      d = '91' + d;
+    } else if (!(d.length === 12 && d.startsWith('91'))) {
+      return { ok: false, msg: `${d.length} digits – India needs 10 (or add + and country code)` };
+    }
+  }
+  if (d.startsWith('91')) {
+    const n = d.slice(2);
+    if (!/^[6-9]\d{9}$/.test(n)) return { ok: false, msg: 'Not a valid Indian mobile number' };
+    return { ok: true, e164: '+' + d, pretty: '+91 ' + n.slice(0, 5) + ' ' + n.slice(5) };
+  }
+  if (d.length < 8 || d.length > 15) return { ok: false, msg: 'International numbers have 8–15 digits' };
+  return { ok: true, e164: '+' + d, pretty: '+' + d };
 }
 
-
 function formatPhoneNumber(value: string) {
-  // Remove all non-digits
   const digits = value.replace(/\D/g, '');
   if (!digits) return '';
 
-  // If it's 10 digits or less, format as "XXXXX XXXXX"
   if (digits.length <= 10) {
     if (digits.length > 5) {
       return `${digits.slice(0, 5)} ${digits.slice(5)}`;
@@ -40,7 +57,6 @@ function formatPhoneNumber(value: string) {
     return digits;
   }
 
-  // If more than 10 digits, assume country code. Format as "+CC XXXXX XXXXX"
   const countryCode = digits.slice(0, digits.length - 10);
   const number = digits.slice(-10);
   return `+${countryCode} ${number.slice(0, 5)} ${number.slice(5)}`;
@@ -50,8 +66,7 @@ export function AddLeadModal({
   open, onClose, onSuccess, defaultAssignedToId, ownerName,
 }: Props) {
 
-  // Fallback services in case the backend is temporarily down
-    const FALLBACK_SERVICES = [
+  const FALLBACK_SERVICES = [
     { id: '1', name: 'Website Development' },
     { id: '2', name: 'Logo Brandkit' },
     { id: '3', name: 'Trademark Registration' },
@@ -65,6 +80,9 @@ export function AddLeadModal({
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [checkingPhone, setCheckingPhone] = useState(false);
+  const [duplicateMatches, setDuplicateMatches] = useState<{ id: string; name: string }[]>([]);
+  const [forceDuplicate, setForceDuplicate] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [source, setSource] = useState('manual');
   const [status, setStatus] = useState('NEW');
@@ -98,6 +116,35 @@ export function AddLeadModal({
       .finally(() => setLoadingUsers(false));
   }, [open, defaultAssignedToId]);
 
+  // Check for duplicate phone numbers
+  useEffect(() => {
+    if (!phone || !open) {
+      setDuplicateMatches([]);
+      return;
+    }
+    const check = analyzePhone(phone);
+    if (!check.ok) {
+      setDuplicateMatches([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setCheckingPhone(true);
+      try {
+        const res = await api.get(`/leads/check-phone?phone=${check.e164}`);
+        if (res.data.duplicate) {
+          setDuplicateMatches(res.data.matches || []);
+        } else {
+          setDuplicateMatches([]);
+        }
+      } catch (err) {
+        console.error('Failed to check phone', err);
+      } finally {
+        setCheckingPhone(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [phone, open]);
+
   useEffect(() => {
     if (!open) return;
     configService
@@ -114,20 +161,28 @@ export function AddLeadModal({
     setValue(''); setNextFollowupDate(''); setNextFollowupTime('');
     setAssignedToId(defaultAssignedToId ?? '');
     setNotes(''); setService(''); setError(''); setSuccess(false);
+    setDuplicateMatches([]); setForceDuplicate(false); setCheckingPhone(false);
   };
 
   const handleSubmit = async () => {
+    const dupCheck = analyzePhone(phone);
+    if (phone && !dupCheck.ok) {
+      setError(dupCheck.msg || 'Invalid phone number');
+      return;
+    }
+    if (duplicateMatches.length > 0 && !forceDuplicate) {
+      setError('This phone number is a duplicate. Please check the box to proceed.');
+      return;
+    }
+
     setError('');
     if (name.trim().length < 2) { setError('Name must be at least 2 characters.'); return; }
 
     let normalizedPhone: string | undefined;
     if (phone.trim()) {
-      const r = cleanPhone(phone);
-      if (!r.ok) { setError(r.msg); return; }
-      normalizedPhone = r.phone;
+      normalizedPhone = dupCheck.e164; 
     }
 
-    // Build combined follow-up timestamp
     let nextFollowupAt: string | undefined;
     if (nextFollowupDate && nextFollowupTime) {
       nextFollowupAt = new Date(`${nextFollowupDate}T${nextFollowupTime}`).toISOString();
@@ -140,7 +195,7 @@ export function AddLeadModal({
       const payload: Record<string, any> = {
         name: name.trim(),
         phone: normalizedPhone,
-        company: projectName.trim() || undefined,   // backend keeps "company" field, UI shows "Project name"
+        company: projectName.trim() || undefined,
         source, status: 'NEW',
         tags: tag ? [tag] : [], priority,
         value: value ? Number(value) : undefined,
@@ -154,20 +209,19 @@ export function AddLeadModal({
 
       const sanitizedPayload = {
         name: name.trim(),
-        phone: phone.trim() || undefined,
+        phone: normalizedPhone || undefined,
         company: projectName.trim() || undefined,
         source: source || 'manual',
         status: 'NEW',
         priority: priority,
-        value: value ? Number(value) : undefined, // Converts "" to undefined
+        value: value ? Number(value) : undefined,
         notes: notes.trim() || undefined,
-        assignedToId: assignedToId || undefined, // Converts "" to undefined
+        assignedToId: assignedToId || undefined,
         service: service || undefined,
         tags: tag ? [tag] : [],
-        nextFollowupAt: nextFollowupDate 
-          ? new Date(`${nextFollowupDate}T${nextFollowupTime || '09:00'}:00`).toISOString() 
-          : undefined, // Combines date and time into ISO string
+        nextFollowupAt: nextFollowupAt,
       };
+      
       const res = await api.post('/leads', sanitizedPayload);
       console.log('[AddLeadModal] response:', res.data);
       setSuccess(true);
@@ -179,7 +233,6 @@ export function AddLeadModal({
       
       if (data) {
         errorMsg = data.message || data.error || errorMsg;
-        // If Zod provides detailed field errors, append them
         if (data.details && Array.isArray(data.details)) {
           errorMsg += ': ' + data.details.map((d: any) => `${d.path.join('.')} is invalid`).join(', ');
         }
@@ -249,13 +302,13 @@ export function AddLeadModal({
               }`} />
           </div>
 
-          {/* Phone — Email removed */}
+          {/* Phone */}
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Phone</label>
             <input 
               value={phone} 
               onChange={(e) => {
-                // Allow backspace/delete to clear the field
+                setForceDuplicate(false);
                 if (e.target.value.length < phone.length) {
                   setPhone(e.target.value);
                 } else {
@@ -265,10 +318,48 @@ export function AddLeadModal({
               inputMode="tel" 
               maxLength={15}
               placeholder="98765 43210"
-              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
+              className={`w-full h-10 px-3 border rounded-md text-[14px] bg-white focus:outline-none transition-colors ${
+                phone && !analyzePhone(phone).ok 
+                  ? 'border-danger focus:border-danger' 
+                  : 'border-ink-border focus:border-brand'
+              }`} 
+            />
+            
+            {phone && !analyzePhone(phone).ok && (
+              <span className="text-[12px] text-danger mt-1 block">
+                ✗ {analyzePhone(phone).msg}
+              </span>
+            )}
+            
+            {checkingPhone && (
+              <span className="text-[12px] text-ink-muted mt-1 block">
+                Checking availability…
+              </span>
+            )}
+            
+            {!checkingPhone && duplicateMatches.length > 0 && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 mt-2 text-[13px] text-amber-800">
+                <div className="font-semibold mb-1">⚠️ Duplicate number detected</div>
+                <div className="mb-2">
+                  This number is already used by:{' '}
+                  {duplicateMatches.map((m) => (
+                    <span key={m.id} className="font-medium">{m.name} </span>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer mt-1">
+                  <input
+                    type="checkbox"
+                    checked={forceDuplicate}
+                    onChange={(e) => setForceDuplicate(e.target.checked)}
+                    className="rounded border-gray-300 text-brand focus:ring-brand"
+                  />
+                  <span>Add anyway (same person, new enquiry)</span>
+                </label>
+              </div>
+            )}
           </div>
 
-          {/* Project name (was Company) */}
+          {/* Project name */}
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Project name</label>
             <input value={projectName} onChange={(e) => setProjectName(e.target.value)} placeholder="Acme website redesign"
@@ -283,22 +374,21 @@ export function AddLeadModal({
                 className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand capitalize">
                 {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
-          <div className="col-span-1">
-            <label className="block text-[13px] text-ink-muted mb-1.5">Tag</label>
-            <select value={tag} onChange={e => setTag(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white">
-              <option value="">— Select Tag —</option>
-              <option value="Hot">Hot</option>
-              <option value="Very interested">Very interested</option>
-              <option value="Slight interested">Slight interested</option>
-              <option value="Not interested">Not interested</option>
-              <option value="Busy call back">Busy call back</option>
-              <option value="Pending">Pending</option>
-              <option value="Work on progress">Work on progress</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
             </div>
-            
+            <div className="col-span-1">
+              <label className="block text-[13px] text-ink-muted mb-1.5">Tag</label>
+              <select value={tag} onChange={e => setTag(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white">
+                <option value="">— Select Tag —</option>
+                <option value="Hot">Hot</option>
+                <option value="Very interested">Very interested</option>
+                <option value="Slight interested">Slight interested</option>
+                <option value="Not interested">Not interested</option>
+                <option value="Busy call back">Busy call back</option>
+                <option value="Pending">Pending</option>
+                <option value="Work on progress">Work on progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
           </div>
 
           {/* Priority / Value */}
@@ -310,7 +400,6 @@ export function AddLeadModal({
                 {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
-            
           </div>
 
           {/* Service */}
@@ -332,7 +421,7 @@ export function AddLeadModal({
             )}
           </div>
 
-          {/* Next Follow-up — NEW */}
+          {/* Next Follow-up */}
           <div className="border-t border-ink-border pt-4">
             <label className="flex items-center gap-2 text-[13px] font-medium text-ink mb-2">
               <CalendarClock className="w-4 h-4 text-brand" />
@@ -361,7 +450,7 @@ export function AddLeadModal({
             )}
           </div>
 
-          {/* Assign Lead — NEW */}
+          {/* Assign Lead */}
           <div className="border-t border-ink-border pt-4">
             <label className="flex items-center gap-2 text-[13px] font-medium text-ink mb-2">
               <UserCheck className="w-4 h-4 text-brand" />
