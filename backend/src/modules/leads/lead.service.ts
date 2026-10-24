@@ -233,14 +233,16 @@ export const leadService = {
 
     // 2. Filter the KPI counts (MUST respect query.userId)
     const baseCountWhere: any = { ...scope.where, status: { notIn: ['WON', 'LOST'] } };
-    if (query.view === 'mine') {
+    if (query.createdById) {
+      baseCountWhere.createdById = query.createdById;
+    }
+    if (query.assignedToId) {
+      baseCountWhere.assignedToId = query.assignedToId;
+    } else if (query.view === 'mine') {
       baseCountWhere.assignedToId = actor.id;
     } else if (query.view === 'user' && query.userId) {
       baseCountWhere.assignedToId = query.userId;
-    } else if (query.assignedToId) {
-      baseCountWhere.assignedToId = query.assignedToId;
     }
-
     const now = new Date();
     const startOfToday = new Date(now); startOfToday.setHours(0,0,0,0);
     const endOfToday = new Date(startOfToday); endOfToday.setDate(endOfToday.getDate() + 1);
