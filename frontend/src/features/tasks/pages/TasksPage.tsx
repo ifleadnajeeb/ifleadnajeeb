@@ -1,3 +1,4 @@
+import { usersService } from '@/features/users/services/users.service';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
