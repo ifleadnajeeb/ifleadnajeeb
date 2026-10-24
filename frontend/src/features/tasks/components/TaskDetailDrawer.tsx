@@ -536,8 +536,10 @@ function LogReportModal({ taskId, onClose, onSuccess }: { taskId: string, onClos
         blockers
       });
       onSuccess();
-    } catch (e) {
-      alert('Failed to submit report');
+    } catch (e: any) {
+      console.error("REPORT ERROR:", e.response?.data || e);
+      const msg = e.response?.data?.message || e.response?.data?.error || e.message || 'Failed to submit report';
+      alert(msg);
     } finally {
       setSubmitting(false);
     }
