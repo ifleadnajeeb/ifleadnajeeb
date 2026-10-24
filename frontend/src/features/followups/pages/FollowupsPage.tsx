@@ -24,18 +24,19 @@ export default function FollowupsPage() {
   const [selectedFollowup, setSelectedFollowup] = useState<Followup | null>(null);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['followups', group, page],
-    queryFn: () => followupsService.list({ group, page, pageSize: 20 }),
+    queryKey: ['followups', group, page, showMine, user?.id],
+    queryFn: () => followupsService.list({ 
+      group, 
+      page, 
+      pageSize: 20,
+      assignedToId: showMine ? user?.id : undefined 
+    }),
   });
 
   const counts = data?.meta.counts;
 
   // Filter by current user if showMine is true
-  const filteredData = (data?.data || []).filter((f: any) => {
-    if (!showMine) return true;
-    const assigneeName = f.assignedTo?.name || f.assignedTo;
-    return assigneeName === user?.name;
-  });
+  
 
   const onComplete = async (f: Followup) => {
     const result = prompt(`Mark "${f.title}" as done.\n\nResult (e.g. Interested, Call back later):`);
@@ -99,13 +100,13 @@ export default function FollowupsPage() {
         {isLoading && <div className="py-12 text-center text-ink-muted text-sm">Loading…</div>}
         {error && <div className="py-12 text-center text-danger text-sm">Failed to load follow-ups.</div>}
 
-        {data && filteredData.length === 0 && (
+        {data && data.data.length === 0 && (
           <div className="py-16 text-center">
             <p className="text-ink-muted text-sm">No follow-ups in this group.</p>
           </div>
         )}
 
-        {data && filteredData.length > 0 && (
+        {data && data.data.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
               <thead className="bg-ink-bg">
