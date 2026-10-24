@@ -27,6 +27,13 @@ function isOverdue(iso: string | null) {
 
 export default function TasksPage() {
   const { user } = useAuth();
+  const isOpManager = user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO';
+  
+  const [viewMode, setViewMode] = useState<'all' | 'mine' | 'review'>('all');
+  const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
+  const { user } = useAuth();
   const qc = useQueryClient();
   const isOpsRole = ['OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '');
   const pageTitle = isOpsRole ? 'Works' : 'Tasks';
@@ -77,7 +84,15 @@ export default function TasksPage() {
     }
   };
 
-  return (
+    const displayTasks = (data?.data || []).filter((task: any) => {
+    if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
+    if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
+    if (assigneeFilter !== 'all' && task.assignedToId !== assigneeFilter) return false;
+    if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
+    return true;
+  });
+
+return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
