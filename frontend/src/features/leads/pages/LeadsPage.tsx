@@ -14,7 +14,7 @@ import { cn } from '@/shared/utils/cn';
 import { api } from '@/shared/api/client';
 import { BulkImportModal } from '../components/BulkImportModal';
 import * as XLSX from 'xlsx';
-import { useAuth } from '@/features/auth/context/AuthContext';
+import { useAuth } from '@/app/providers/auth-provider';
 
 // 👇 Removed 'all' from the View type
 type View = 'mine' | 'today' | 'hot' | 'overdue' | 'won' | 'lost';

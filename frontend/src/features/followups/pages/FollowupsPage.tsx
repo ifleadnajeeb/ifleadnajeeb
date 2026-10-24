@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Clock, AlertCircle, Calendar as CalIcon, CheckCircle2 } from 'lucide-react';
 import { followupsService, Followup } from '../services/followups.service';
 import { cn } from '@/shared/utils/cn';
-import { useAuth } from '@/features/auth/context/AuthContext';
+import { useAuth } from '@/app/providers/auth-provider';
 
 type Group = 'overdue' | 'today' | 'upcoming' | 'completed';
 
