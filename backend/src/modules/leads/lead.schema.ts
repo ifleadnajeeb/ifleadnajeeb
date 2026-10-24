@@ -15,6 +15,7 @@ export const CreateLeadSchema = z.object({
   notes: z.string().max(5000).optional(),
   tags: z.array(z.string()).optional(),
   assignedToId: z.string().optional(),
+  createdById: z.string().optional(),
   nextFollowupAt: z.string().optional().nullable(),
 });
 
