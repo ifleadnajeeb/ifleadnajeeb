@@ -14,8 +14,7 @@ import { cn } from '@/shared/utils/cn';
 import { api } from '@/shared/api/client';
 import { BulkImportModal } from '../components/BulkImportModal';
 import * as XLSX from 'xlsx';
-// 👇 Make sure this import path matches where your AuthContext is located
-import { useAuth } from '@/features/auth/context/AuthContext'; 
+import { useAuth } from '@/features/auth/context/AuthContext';
 
 type View = 'all' | 'mine' | 'hot' | 'overdue' | 'won' | 'lost';
 
@@ -44,7 +43,7 @@ function daysUntil(d: string) {
 
 export default function LeadsPage() {
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // 👈 Get the logged-in user
+  const { user } = useAuth();
   
   const [view, setView] = useState<View>('mine');
   const [search, setSearch] = useState('');
@@ -59,16 +58,12 @@ export default function LeadsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
 
-  // 👇 Forced to filter by your ID unless you are an Admin
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-  const filterId = isAdmin ? undefined : user?.id;
-
   const { data, isLoading, error } = useQuery({
     queryKey: ['leads', view, search, page, user?.id],
-    queryFn: () => leadsService.list({
-      view,
-      search: search || undefined,
-      page,
+    queryFn: () => leadsService.list({ 
+      view, 
+      search: search || undefined, 
+      page, 
       pageSize: 20,
       assignedToId: view === 'mine' ? user?.id : undefined,
       createdById: view === 'all' ? user?.id : undefined,
@@ -113,11 +108,16 @@ export default function LeadsPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await leadsService.list({ page: 1, pageSize: 100, assignedToId: filterId });
+      const res = await leadsService.list({ 
+        page: 1, 
+        pageSize: 100,
+        assignedToId: view === 'mine' ? user?.id : undefined,
+        createdById: view === 'all' ? user?.id : undefined,
+      });
       const allLeads: any[] = res.data ?? [];
       let page = 2;
       while (page <= (res.meta?.totalPages ?? 1) && allLeads.length < 5000) {
-        const next = await leadsService.list({ page, pageSize: 100, assignedToId: filterId });
+        const next = await leadsService.list({ page, pageSize: 100 });
         allLeads.push(...(next.data ?? []));
         page++;
       }
@@ -152,7 +152,6 @@ export default function LeadsPage() {
 
   const clearSelection = () => setSelected(new Set());
 
-  // ── Bulk actions ──
   const doBulkDelete = async () => {
     if (!confirm(`Delete ${selected.size} selected leads? This cannot be undone.`)) return;
     try {
@@ -176,7 +175,6 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-ink">Leads</h1>
         <CanDo permission="leads:create">
@@ -202,7 +200,6 @@ export default function LeadsPage() {
         </CanDo>
       </div>
 
-      {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {TABS.map((t) => (
           <button
@@ -220,7 +217,6 @@ export default function LeadsPage() {
         ))}
       </div>
 
-      {/* Panel */}
       <div className="bg-white border border-ink-border rounded-xl p-3.5 shadow-sm">
         <div className="flex flex-wrap gap-2.5 mb-3">
           <input
@@ -309,7 +305,6 @@ export default function LeadsPage() {
         )}
       </div>
 
-      {/* ═══ FLOATING BULK ACTION BAR ═══ */}
       {someSelected && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white border border-ink-border rounded-xl shadow-2xl px-4 py-3 flex items-center gap-3 flex-wrap max-w-[90vw]">
           <div className="flex items-center gap-2 pr-3 border-r border-ink-border">
@@ -357,7 +352,6 @@ export default function LeadsPage() {
         </div>
       )}
 
-      {/* Modals */}
       <ClientProfile leadId={openClient} onClose={() => setOpenClient(null)} />
       <FollowUpModal
         lead={followupLeadObj}
@@ -420,12 +414,10 @@ export default function LeadsPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
 
-// ─────────── LeadRow ───────────
 function LeadRow({
   lead, isSelected, onToggleSelect, onOpen, onFollowup, onWhatsApp,
   onDescClick,
@@ -537,7 +529,24 @@ function LeadRow({
               isClosed ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-brand text-white hover:bg-brand-hover'
             )}
           >
-            {isClosed ? 'Closed' : 'Follow-up'}
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+           {isClosed ? 'Closed' : 'Follow-up'}
           </button>
         </CanDo>
       </td>
@@ -545,7 +554,6 @@ function LeadRow({
   );
 }
 
-// ─────────── BulkAssignModal ───────────
 function BulkAssignModal({
   leadIds, onClose, onSuccess,
 }: {
