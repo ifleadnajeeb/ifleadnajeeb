@@ -200,6 +200,7 @@ export const leadService = {
       ];
     }
     if (query.assignedToId) where.assignedToId = query.assignedToId;
+    if (query.createdById) where.createdById = query.createdById;
     if (query.status) where.status = query.status;
     if (query.priority) where.priority = query.priority;
     if (query.source) where.source = query.source;
