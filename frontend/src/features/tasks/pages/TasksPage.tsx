@@ -84,7 +84,8 @@ export default function TasksPage() {
     }
   };
 
-    const displayTasks = (data?.data || []).filter((task: any) => {
+    const rawTasks = view === 'kanban' ? (kanbanQ.data || []) : (listQ.data?.data || []);
+  const displayTasks = rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
     if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
     if (assigneeFilter !== 'all' && task.assignedToId !== assigneeFilter) return false;
