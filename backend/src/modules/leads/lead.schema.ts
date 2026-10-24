@@ -52,6 +52,7 @@ export const ListLeadsQuerySchema = z.object({
   priority: z.nativeEnum(LeadPriority).optional(),
   source: z.string().optional(),
   assignedToId: z.string().optional(),
+  createdById: z.string().optional(), // 👈 ADDED THIS LINE
   customerId: z.string().optional(),
   tag: z.string().optional(),
   from: z.string().optional(),
