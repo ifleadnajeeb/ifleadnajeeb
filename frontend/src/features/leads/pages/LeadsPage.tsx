@@ -16,10 +16,11 @@ import { BulkImportModal } from '../components/BulkImportModal';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/features/auth/context/AuthContext';
 
-type View = 'all' | 'mine' | 'hot' | 'overdue' | 'won' | 'lost';
+// 👇 Removed 'all' from the View type
+type View = 'mine' | 'today' | 'hot' | 'overdue' | 'won' | 'lost';
 
+// 👇 Removed the 'all' tab from the menu
 const TABS: { id: View; label: string; sub: string }[] = [
-  { id: 'all',     label: 'Leads',              sub: 'Total leads' },
   { id: 'mine',    label: 'My Leads',           sub: 'Assigned to me' },
   { id: 'today',   label: "Today's follow-ups", sub: 'Need attention today' },
   { id: 'hot',     label: 'Hot leads',          sub: 'Active & priority hot' },
@@ -66,7 +67,7 @@ export default function LeadsPage() {
       page, 
       pageSize: 20,
       assignedToId: view === 'mine' ? user?.id : undefined,
-      createdById: view === 'all' ? user?.id : undefined,
+      createdById: user?.id, // 👈 Strictly limit to this user's created leads
     }),
   });
 
@@ -75,8 +76,7 @@ export default function LeadsPage() {
 
   const counts = data?.meta?.counts;
   const countFor = (id: View) =>
-    id === 'all' ? counts?.all ?? 0
-    : id === 'today' ? counts?.today ?? 0
+    id === 'today' ? counts?.today ?? 0
     : id === 'hot' ? counts?.hot ?? 0
     : id === 'overdue' ? counts?.overdue ?? 0
     : id === 'won' ? counts?.won ?? 0
@@ -112,7 +112,7 @@ export default function LeadsPage() {
         page: 1, 
         pageSize: 100,
         assignedToId: view === 'mine' ? user?.id : undefined,
-        createdById: view === 'all' ? user?.id : undefined,
+        createdById: user?.id,
       });
       const allLeads: any[] = res.data ?? [];
       let page = 2;
@@ -200,6 +200,7 @@ export default function LeadsPage() {
         </CanDo>
       </div>
 
+      {/* KPI Cards - Adjusted grid for 6 cards instead of 7 */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {TABS.map((t) => (
           <button
@@ -529,24 +530,7 @@ function LeadRow({
               isClosed ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-brand text-white hover:bg-brand-hover'
             )}
           >
- 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-           {isClosed ? 'Closed' : 'Follow-up'}
+            {isClosed ? 'Closed' : 'Follow-up'}
           </button>
         </CanDo>
       </td>
