@@ -520,6 +520,9 @@ function LeadRow({
       </td>
       
       <td className="px-2 py-2.5 text-[13px] text-ink">{lead.source ?? '—'}</td>
+      <td className="px-2 py-2.5 text-ink-muted whitespace-nowrap text-[13px]">
+        {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB') : '—'}
+      </td>
       <td className="px-2 py-2.5 whitespace-nowrap">
         <CanDo permission="followups:create">
           <button

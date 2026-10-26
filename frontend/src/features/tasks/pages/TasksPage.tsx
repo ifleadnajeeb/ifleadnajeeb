@@ -84,14 +84,22 @@ export default function TasksPage() {
     }
   };
 
-    const rawTasks = view === 'kanban' ? (kanbanQ.data || []) : (listQ.data?.data || []);
-  const displayTasks = rawTasks.filter((task: any) => {
+    const rawKanban = kanbanQ.data || {};
+  const flatKanbanTasks = Array.isArray(rawKanban) 
+    ? rawKanban 
+    : (rawKanban as any)?.data && Array.isArray((rawKanban as any).data)
+      ? (rawKanban as any).data
+      : Object.values(rawKanban).flat();
+
+  const rawTasks = view === 'kanban' ? flatKanbanTasks : (listQ.data?.data || []);
+  
+  const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
     if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
     if (assigneeFilter !== 'all' && task.assignedToId !== assigneeFilter) return false;
     if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
     return true;
-  });
+  }) : [];
 
 return (
     <div className="space-y-4">
