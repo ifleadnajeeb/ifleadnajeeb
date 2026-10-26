@@ -59,7 +59,7 @@ export const operationsService = {
     });
   },
 
-  async listDailyReports(actor: AuthUser) {
+  async listDailyReports(actor: AuthUser, query: any = {}) {
     return prisma.dailyReport.findMany({
       where: { organizationId: actor.organizationId },
       include: { 
