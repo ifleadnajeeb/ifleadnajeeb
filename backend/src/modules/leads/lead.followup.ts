@@ -119,10 +119,13 @@ export async function completeFollowup(
 
     // Create the next follow-up if not closed
     if (!rule.closes && nextDate) {
+      // ✅ Use custom next action from frontend if provided, else fallback to rule
+      const actualNextAction = body.nextAction || rule.nextAction || 'Follow up';
+      
       await tx.followup.create({
         data: {
           organizationId: actor.organizationId,
-          title: rule.nextAction || 'Follow up',
+          title: actualNextAction,
           notes: body.note,
           dueAt: nextDate,
           status: 'PENDING',
@@ -151,7 +154,7 @@ export async function completeFollowup(
     statusChanged,
     oldStatus: lead.status,
     newStatus: rule.status,
-    suggestedNextAction: rule.nextAction,
+    suggestedNextAction: body.nextAction || rule.nextAction,
     suggestedNextDate: nextDate,
   };
 }
