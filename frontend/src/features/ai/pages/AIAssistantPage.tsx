@@ -32,18 +32,32 @@ function renderMarkdown(text: string): React.ReactNode {
   return lines.map((line, i) => {
     const isBullet = /^[•\-*]\s/.test(line);
     const content = isBullet ? line.replace(/^[•\-*]\s/, '') : line;
+    
+    // Match both **bold** and *italic*
+    const regex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
     const parts: React.ReactNode[] = [];
-    let remaining = content;
     let lastIndex = 0;
     let key = 0;
-    const boldRegex = /\*\*([^*]+)\*\*/g;
     let match;
-    while ((match = boldRegex.exec(remaining)) !== null) {
-      if (match.index > lastIndex) parts.push(remaining.slice(lastIndex, match.index));
-      parts.push(<strong key={`b${key++}`} className="font-semibold">{match[1]}</strong>);
-      lastIndex = match.index + match[0].length;
+    
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(content.slice(lastIndex, match.index));
+      }
+      
+      const matchText = match[0];
+      if (matchText.startsWith('**')) {
+        parts.push(<strong key={`b${key++}`} className="font-semibold">{matchText.slice(2, -2)}</strong>);
+      } else {
+        parts.push(<em key={`i${key++}`}>{matchText.slice(1, -1)}</em>);
+      }
+      lastIndex = match.index + matchText.length;
     }
-    if (lastIndex < remaining.length) parts.push(remaining.slice(lastIndex));
+    
+    if (lastIndex < content.length) {
+      parts.push(content.slice(lastIndex));
+    }
+
     return (
       <div key={i} className={isBullet ? 'flex gap-1.5 pl-2 my-1' : 'my-1'}>
         {isBullet && <span className="text-brand shrink-0">•</span>}

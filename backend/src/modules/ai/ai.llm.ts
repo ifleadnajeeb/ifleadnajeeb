@@ -15,7 +15,7 @@ export interface LLMReply {
  * Build a compact snapshot of the user's CRM data to give the LLM context.
  * Only safe fields — no passwords, no raw Prisma models.
  */
-async function buildCrmContext(req: AuthRequest): Promise<string> {
+async function buildCrmContext(req: AuthRequest, userMessage: string = ''): Promise<string> {
   const actor = req.user!;
   const orgId = actor.organizationId;
 
@@ -133,8 +133,48 @@ async function buildCrmContext(req: AuthRequest): Promise<string> {
   });
   const nowTimeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 
+
+  // ── NEW: Dynamic search based on user message ──
+  const ignoredWords = ['what', 'is', 'the', 'about', 'tell', 'me', 'show', 'details', 'description', 'for', 'lead', 'this', 'that', 'and', 'with', 'from', 'have', 'has', 'recent', 'activity', 'today', 'yesterday', 'status', 'follow-up'];
+  const searchWords = userMessage.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ').filter(w => w.length > 2 && !ignoredWords.includes(w));
+  
+  let matchedLeads: any[] = [];
+  if (searchWords.length > 0) {
+    const orConditions = searchWords.flatMap(w => [
+      { name: { contains: w, mode: 'insensitive' } },
+      { company: { contains: w, mode: 'insensitive' } }
+    ]);
+    matchedLeads = await prisma.lead.findMany({
+      where: { ...leadFilter, OR: orConditions },
+      take: 5,
+      include: {
+        assignedTo: { select: { name: true } },
+        followups: { where: { status: 'PENDING' }, orderBy: { dueAt: 'asc' }, take: 1 }
+      }
+    });
+  }
+
   const lines: string[] = [];
+
+  // ── NEW: Add dynamically matched leads to context ──
+  if (matchedLeads.length > 0) {
+    lines.push('=== SPECIFIC LEADS MATCHING USER QUERY ===');
+    matchedLeads.forEach((l) => {
+      lines.push(`Lead Name: ${l.name}`);
+      lines.push(`- Project/Company: ${l.company || 'N/A'}`);
+      lines.push(`- Status: ${l.status} | Priority: ${l.priority}`);
+      lines.push(`- Phone: ${l.phone || 'N/A'}`);
+      lines.push(`- Description/Notes: ${l.notes || 'N/A'}`);
+      lines.push(`- Assigned to: ${l.assignedTo?.name || 'Unassigned'}`);
+      if (l.followups && l.followups.length > 0) {
+        lines.push(`- Next Follow-up Due: ${l.followups[0].dueAt.toLocaleString('en-IN')}`);
+      }
+      lines.push('');
+    });
+  }
+
   lines.push(`CURRENT DATE: ${todayStr}`);
+
   lines.push(`CURRENT TIME: ${nowTimeStr}`);
   lines.push(`User: ${actor.name} (role: ${actor.role})`);
   lines.push('');
@@ -209,7 +249,7 @@ export const aiLlm = {
   async ask(req: AuthRequest, userMessage: string): Promise<LLMReply | null> {
     if (!this.isEnabled()) return null;
 
-    const ctx = await buildCrmContext(req);
+    const ctx = await buildCrmContext(req, userMessage);
 
     const systemPrompt = `You are "CRM Assistant" inside a business CRM called iF LEADS.
 
@@ -227,7 +267,8 @@ You can answer ANY question, just like ChatGPT:
 ${ctx}
 
 Rules:
-- For CRM questions (leads, tasks, follow-ups): use ONLY the snapshot. Never invent names or numbers.
+- For CRM questions (leads, tasks, follow-ups): use ONLY the data above. Never invent names or numbers.
+- If the user asks about a specific lead by name, ALWAYS look at the 'SPECIFIC LEADS MATCHING USER QUERY' section first. If they are there, use that data to answer.
 - For everything else: use your full knowledge - like ChatGPT.
 - If you genuinely do not know, say so honestly.
 - Match the user language (English, Malayalam, Hindi, etc.).
