@@ -166,7 +166,7 @@ export default function UserPanelPage() {
         {data && (data as any).data.length > 0 && (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-[14px] min-w-[1050px] border-collapse">
+              <table className="w-full text-[14px] min-w-[1200px] border-collapse">
                 <thead>
                   <tr>
                     {[
@@ -177,7 +177,7 @@ export default function UserPanelPage() {
                         key={h}
                         className={cn(
                           "text-left text-brand text-[13px] font-semibold px-2 py-2 border-b border-ink-border whitespace-nowrap",
-                          h === 'ACTION' && "sticky right-0 bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)] z-10"
+                          h === 'ACTION' && "text-right"
                         )}
                       >
                         {h}
@@ -387,11 +387,11 @@ function PanelLeadRow({
 
       <td className="px-2 py-2.5 text-[13px] text-ink">{lead.source ?? '—'}</td>
 
-      <td className="px-2 py-2.5 text-ink-muted whitespace-nowrap text-[13px]">
+      <td className="px-2 py-2.5 text-ink-muted whitespace-nowrap text-[13px] w-[90px]">
         {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB') : '—'}
       </td>
 
-      <td className="px-2 py-2.5 whitespace-nowrap sticky right-0 bg-white group-hover:bg-brand-light shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)] transition-colors z-10">
+      <td className="px-2 py-2.5 whitespace-nowrap text-right w-[100px]">
         <CanDo permission="followups:create">
           <button
             onClick={onFollowup}
