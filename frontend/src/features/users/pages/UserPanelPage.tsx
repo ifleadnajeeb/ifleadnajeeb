@@ -166,7 +166,7 @@ export default function UserPanelPage() {
         {data && (data as any).data.length > 0 && (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-[14px] min-w-[1200px] border-collapse">
+              <div className="w-full overflow-x-auto"><table className="w-full text-[14px] min-w-[1000px] border-collapse">
                 <thead>
                   <tr>
                     {[
@@ -200,7 +200,7 @@ export default function UserPanelPage() {
                     />
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </div>
 
             {(data as any).meta.totalPages > 1 && (

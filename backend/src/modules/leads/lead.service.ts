@@ -229,6 +229,14 @@ export const leadService = {
 
     // 2. Counts for KPI cards (base scope only)
     const baseCountWhere: any = { ...scope.where };
+    
+    // ✅ CRITICAL FIX: If viewing a specific user's panel, scope the counts to that user!
+    if (query.view === 'user' && query.userId) {
+      baseCountWhere.assignedToId = query.userId;
+    } else if (query.view === 'mine') {
+      baseCountWhere.assignedToId = actor.id;
+    }
+
     const now = new Date();
     const startOfToday = new Date(now); startOfToday.setHours(0,0,0,0);
     const endOfToday = new Date(startOfToday); endOfToday.setDate(endOfToday.getDate() + 1);
