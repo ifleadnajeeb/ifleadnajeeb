@@ -173,6 +173,30 @@ export const followupService = {
             leadId: existing.leadId,
           },
         });
+
+        // ✅ NEW: Update Lead's description if provided
+        if (input.notes) {
+          await tx.lead.update({
+            where: { id: existing.leadId },
+            data: { notes: input.notes },
+          });
+        }
+
+        // ✅ NEW: Create the Next Follow-up automatically
+        if (input.nextFollowupAt) {
+          await tx.followup.create({
+            data: {
+              organizationId: actor.organizationId,
+              title: input.nextAction ? `Follow up: ${input.nextAction}` : `Follow up: ${existing.title}`,
+              notes: input.nextAction ?? null,
+              dueAt: new Date(input.nextFollowupAt),
+              status: 'PENDING',
+              leadId: existing.leadId,
+              assignedToId: existing.assignedToId,
+              createdById: actor.id,
+            },
+          });
+        }
       }
     });
 

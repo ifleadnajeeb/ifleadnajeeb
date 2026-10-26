@@ -80,6 +80,8 @@ export async function completeFollowup(
         status: rule.status as any,
         priority:
           body.result === 'Very interested' ? 'HOT' : lead.priority,
+        // ✅ NEW: Save the description typed in the follow-up modal
+        notes: body.note !== undefined ? body.note : lead.notes,
       },
     });
 

@@ -12,6 +12,8 @@ export const ListFollowupsQuerySchema = z.object({
 export const CompleteFollowupSchema = z.object({
   result: z.string().max(500).optional(),
   notes: z.string().max(2000).optional(),
+  nextFollowupAt: z.string().datetime().optional(),
+  nextAction: z.string().optional(),
 });
 
 export type ListFollowupsQuery = z.infer<typeof ListFollowupsQuerySchema>;
