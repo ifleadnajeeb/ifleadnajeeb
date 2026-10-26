@@ -187,57 +187,21 @@ export const leadService = {
       const allowed = await canViewUserLeads(req, query.userId);
       if (!allowed) throw new NotFoundError('User not found in your scope');
       where.assignedToId = query.userId;
-    }
 
-    if (query.search) {
-      where.AND = [
-        { OR: [
-            { name: { contains: query.search, mode: 'insensitive' } },
-            { email: { contains: query.search, mode: 'insensitive' } },
-            { phone: { contains: query.search, mode: 'insensitive' } },
-            { company: { contains: query.search, mode: 'insensitive' } },
-        ] },
-      ];
-    }
-    if (query.assignedToId) where.assignedToId = query.assignedToId;
-    if (query.createdById) where.createdById = query.createdById;
-    if (query.status) where.status = query.status;
-    if (query.priority) where.priority = query.priority;
-    if (query.source) where.source = query.source;
-    if (query.tag) where.tags = { has: query.tag };
-    if (query.from) where.createdAt = { ...where.createdAt, gte: new Date(query.from) };
-    if (query.to) where.createdAt = { ...where.createdAt, lte: new Date(query.to) };
-
-    const page = query.page ?? 1;
-    const pageSize = query.pageSize ?? 20;
-
-    const [data, total] = await Promise.all([
-      prisma.lead.findMany({
-        where,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: { [query.sortBy ?? 'createdAt']: query.sortDir ?? 'desc' },
-        include: {
-          assignedTo: { select: { id: true, name: true } },
-          customer: true,
-          _count: { select: { followups: true } },
-          followups: {
-            where: { status: 'PENDING' },
-            orderBy: { dueAt: 'asc' },
-            take: 1
-          }
-        },
-      }),
-      prisma.lead.count({ where }),
-    ]);
-
-    // 2. Filter the KPI counts (MUST respect query.userId)
-    const baseCountWhere: any = { ...scope.where, status: { notIn: ['WON', 'LOST'] } };
-    if (query.createdById) {
-      baseCountWhere.createdById = query.createdById;
-    }
-    if (query.assignedToId) {
-      baseCountWhere.assignedToId = query.assignedToId;
+      // ✅ Filter by the tab clicked inside the User Panel
+      const tab = (query as any).tab;
+      if (tab === 'hot') {
+        where.priority = 'HOT';
+      } else if (tab === 'overdue') {
+        const start = new Date(); start.setHours(0,0,0,0);
+        where.nextFollowupAt = { lt: start };
+        where.status = { notIn: ['WON', 'LOST'] };
+      } else if (tab === 'mine') {
+        const start = new Date(); start.setHours(0,0,0,0);
+        const end = new Date(start); end.setDate(end.getDate() + 1);
+        where.nextFollowupAt = { gte: start, lt: end };
+        where.status = { notIn: ['WON', 'LOST'] };
+      }
     } else if (query.view === 'mine') {
       baseCountWhere.assignedToId = actor.id;
     } else if (query.view === 'user' && query.userId) {
