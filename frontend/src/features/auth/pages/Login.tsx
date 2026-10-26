@@ -40,141 +40,119 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-5 relative overflow-hidden"
+      className="min-h-screen flex items-center justify-center p-5 relative overflow-hidden bg-white"
       style={{
-        background:
-          'linear-gradient(180deg, #ffffff 0%, #ffffff 85%, #fefafb 100%)',
+        backgroundImage: 'url("/login-bg.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center bottom',
+        backgroundRepeat: 'no-repeat',
       }}
     >
-      {/* Ribbon SVG background */}
-      <svg
-        className="absolute bottom-0 left-0 w-full h-[25%] pointer-events-none opacity-40"
-        viewBox="0 0 1920 620"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden="true"
-      >
-        <defs>
-          <linearGradient id="lg1" x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0%" stopColor="#fde4e8" />
-            <stop offset="45%" stopColor="#fbc9d0" />
-            <stop offset="100%" stopColor="#f6c1c8" stopOpacity="0.15" />
-          </linearGradient>
-          <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-          </linearGradient>
-          <filter id="blur"><feGaussianBlur stdDeviation="1.2" /></filter>
-          <filter id="blur2"><feGaussianBlur stdDeviation="3" /></filter>
-        </defs>
-        <path
-          d="M -60 620 C 260 460, 640 440, 1000 380 C 1280 330, 1560 280, 1740 200 C 1860 150, 1950 130, 2020 120 L 2020 620 Z"
-          fill="url(#lg1)" opacity="0.15" filter="url(#blur2)"
-        />
-        <path
-          d="M -60 560 C 240 430, 560 415, 880 365 C 1180 315, 1480 275, 1660 205 C 1780 160, 1870 145, 1930 180 C 1990 220, 1980 310, 1900 370 C 1810 435, 1660 460, 1500 480 C 1280 505, 1020 520, 760 535 C 480 550, 180 575, -60 610 Z"
-          fill="url(#lg1)" opacity="0.20"
-        />
-        <path
-          d="M -60 610 C 220 500, 520 480, 820 430 C 1120 380, 1440 340, 1620 260 C 1750 200, 1850 195, 1930 250 C 2000 300, 1980 380, 1880 430 C 1760 490, 1560 510, 1360 525 C 1080 545, 780 555, 500 575 C 260 592, 80 608, -60 630 Z"
-          fill="url(#lg1)" opacity="0.15"
-        />
-        <path
-          d="M -60 520 C 220 420, 520 405, 820 355 C 1120 305, 1420 275, 1600 200 C 1720 150, 1830 155, 1900 210"
-          fill="none" stroke="url(#lg2)" strokeWidth="14" strokeLinecap="round" opacity="0.9"
-        />
-      </svg>
-
       <form
         onSubmit={onSubmit}
         noValidate
-        className="relative z-10 w-full max-w-[400px] bg-white border border-ink-border rounded-2xl px-6 py-7 shadow-lg"
+        className="relative z-10 w-full max-w-[440px] bg-white rounded-[20px] px-8 py-10 shadow-[0_8px_40px_rgb(0,0,0,0.06)] border border-gray-100"
       >
-        {/* Logo: if-LEADS inline */}
-        <div className="flex items-center justify-center gap-2 mb-5">
-          <div className="w-12 h-12 rounded-md bg-brand flex items-center justify-center shrink-0">
-            <span className="text-white font-black text-[32px] leading-none -mt-1">if</span>
+        {/* Logo */}
+        <div className="flex items-center justify-center gap-2.5 mb-6">
+          <div className="w-12 h-12 rounded-[10px] bg-[#E3001B] flex items-center justify-center shrink-0">
+            <span className="text-white font-black text-[30px] leading-none -mt-1 font-sans">if</span>
           </div>
-          <span className="text-[40px] font-black text-ink leading-none tracking-tight">LEADS</span>
+          <span className="text-[42px] font-black text-black leading-none tracking-tighter">LEADS</span>
         </div>
 
-        <h1 className="text-center text-[22px] font-bold text-ink leading-tight mb-1">
+        <h1 className="text-center text-[24px] font-bold text-black leading-tight mb-1.5">
           Welcome Back
         </h1>
-        <p className="text-center text-[14px] text-ink-muted mb-5">
+        <p className="text-center text-[14.5px] text-gray-500 mb-8">
           Sign in to continue
         </p>
 
-        <label htmlFor="email" className="block text-[13px] text-ink-muted mb-1">
-          Email
-        </label>
-        <input
-          id="email" type="email" value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="username" placeholder="name@company.com"
-          className="w-full px-3 py-2.5 border border-ink-border rounded-md text-[14px] bg-white text-ink focus:outline-none focus:border-brand"
-        />
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="email" className="block text-[13px] text-gray-600 mb-1.5">
+              Email
+            </label>
+            <input
+              id="email" type="email" value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username" placeholder="name@company.com"
+              className="w-full h-11 px-3.5 border border-gray-200 rounded-lg text-[14.5px] bg-white text-black focus:outline-none focus:border-[#E3001B] focus:ring-1 focus:ring-[#E3001B] transition-all"
+            />
+          </div>
 
-        <label htmlFor="pw" className="block text-[13px] text-ink-muted mb-1 mt-3">
-          Password
-        </label>
-        <div className="relative">
-          <input
-            id="pw" type={showPw ? 'text' : 'password'} value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password" placeholder="••••••••"
-            className="w-full px-3 py-2.5 pr-16 border border-ink-border rounded-md text-[14px] bg-white text-ink focus:outline-none focus:border-brand"
-          />
-          <button
-            type="button" onClick={() => setShowPw((v) => !v)}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 border-0 bg-transparent px-2 py-2 text-[13px] text-ink-muted hover:text-ink"
-          >
-            {showPw ? 'Hide' : 'Show'}
-          </button>
+          <div>
+            <label htmlFor="pw" className="block text-[13px] text-gray-600 mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="pw" type={showPw ? 'text' : 'password'} value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password" placeholder="••••••••"
+                className="w-full h-11 px-3.5 pr-16 border border-gray-200 rounded-lg text-[14.5px] bg-white text-black focus:outline-none focus:border-[#E3001B] focus:ring-1 focus:ring-[#E3001B] transition-all"
+              />
+              <button
+                type="button" onClick={() => setShowPw((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 border-0 bg-transparent px-2 py-2 text-[13px] text-gray-500 hover:text-black font-medium"
+              >
+                {showPw ? 'Hide' : 'Show'}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 my-3">
-          <label className="flex items-center gap-1.5 text-[13px] text-ink cursor-pointer">
-            <input
-              type="checkbox" checked={remember}
-              onChange={(e) => setRemember(e.target.checked)}
-              className="w-4 h-4 accent-brand"
-            />
+        <div className="flex items-center justify-between gap-2 mt-5 mb-5">
+          <label className="flex items-center gap-2 text-[13.5px] text-gray-700 cursor-pointer">
+            <div className="relative flex items-center justify-center w-[18px] h-[18px]">
+              <input
+                type="checkbox" checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                className="peer appearance-none w-[18px] h-[18px] border border-gray-300 rounded-[4px] checked:bg-[#E3001B] checked:border-[#E3001B] cursor-pointer transition-colors"
+              />
+              <svg className="absolute w-3 h-3 text-white pointer-events-none opacity-0 peer-checked:opacity-100" viewBox="0 0 14 14" fill="none">
+                <path d="M11.6666 3.5L5.24992 9.91667L2.33325 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
             Remember me
           </label>
           <button
             type="button"
             onClick={() => setError('Password reset links are sent by the server in production.')}
-            className="border-0 bg-transparent text-brand text-[13px] font-semibold hover:text-brand-hover"
+            className="border-0 bg-transparent text-[#E3001B] text-[13.5px] font-semibold hover:text-red-700 transition-colors"
           >
             Forgot password?
           </button>
         </div>
 
-        <div role="alert" className="min-h-[18px] text-[13px] text-danger mt-1 mb-2">
+        <div role="alert" className="min-h-[18px] text-[13px] text-red-500 mb-2 font-medium">
           {error}
         </div>
 
         <button
           type="submit" disabled={submitting}
-          className="w-full py-3 rounded-md bg-brand text-white font-semibold text-[15px] tracking-wide hover:bg-brand-hover active:bg-brand-press disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+          className="w-full h-12 rounded-lg bg-[#E3001B] text-white font-bold text-[15px] tracking-wide hover:bg-red-700 active:bg-red-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-red-500/20"
         >
           {submitting ? 'Signing in…' : 'LOGIN'}
         </button>
 
-        <details className="mt-4 text-[13px] text-ink-muted">
-          <summary className="cursor-pointer select-none">Demo accounts</summary>
-          <div className="mt-2 space-y-0.5 font-mono">
+        <details className="mt-6 text-[13.5px] text-gray-500 group">
+          <summary className="cursor-pointer select-none inline-flex items-center gap-1.5 font-medium hover:text-black transition-colors">
+            <svg className="w-3 h-3 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+            Demo accounts
+          </summary>
+          <div className="mt-3 space-y-1 font-mono bg-gray-50 p-3 rounded-lg border border-gray-100">
             {DEMO_ACCOUNTS.map((a) => (
               <button
                 key={a.email} type="button"
                 onClick={() => { setEmail(a.email); setPassword(a.password); setError(''); }}
-                className="block w-full text-left py-0.5 text-ink hover:text-brand transition-colors"
+                className="block w-full text-left py-1 text-gray-600 hover:text-[#E3001B] transition-colors"
               >
                 {a.email} · {a.password}
               </button>
             ))}
           </div>
-          <p className="mt-3 leading-snug">
+          <p className="mt-3 leading-snug text-[12.5px]">
             Your role is loaded from your account. You never choose it at login.
           </p>
         </details>
