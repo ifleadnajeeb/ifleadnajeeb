@@ -254,7 +254,7 @@ export default function LeadsPage() {
                     </th>
                     {[
                       'PRIORITY', 'NAME', 'NEXT FOLLOW-UP', 'PHONE · ACTIONS',
-                      'STATUS', 'COMPANY', 'DESCRIPTION', 'SOURCE', 'ACTION',
+                      'STATUS', 'COMPANY', 'DESCRIPTION', 'SOURCE', 'CREATED', 'ACTION',
                     ].map((h) => (
                       <th
                         key={h}
