@@ -21,7 +21,7 @@ export const operationsController = {
     res.json({ data });
   },
   async listDailyReports(req: AuthRequest, res: Response) {
-    const data = await operationsService.listDailyReports(req.user!);
+    const data = await operationsService.listDailyReports(req.user!, req.query);
     res.json({ data });
   },
   async createDailyReport(req: AuthRequest, res: Response) {

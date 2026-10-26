@@ -6,8 +6,8 @@ export const operationsService = {
     return res.data.data;
   },
 
-  listDailyReports: async (): Promise<any[]> => {
-    const res = await api.get<{ data: any[] }>('/operations/reports');
+  listDailyReports: async (params?: any): Promise<any[]> => {
+    const res = await api.get<{ data: any[] }>('/operations/reports', { params });
     return res.data.data;
   },
   createDailyReport: async (input: any): Promise<any> => {

@@ -6,15 +6,14 @@ import { operationsService } from '@/features/operations/services/operations.ser
 export default function DailyReportsPage() {
   const [search, setSearch] = useState('');
 
+  const [timeframe, setTimeframe] = useState('all');
+
   const { data: reports, isLoading } = useQuery({
-    queryKey: ['daily-reports'],
-    queryFn: operationsService.listDailyReports,
+    queryKey: ['daily-reports', timeframe, search],
+    queryFn: () => operationsService.listDailyReports({ timeframe, search }),
   });
 
-  const filteredReports = reports?.filter((r: any) => {
-    const searchString = `${r.task?.title} ${r.task?.assignedTo?.name} ${r.workCompleted}`.toLowerCase();
-    return searchString.includes(search.toLowerCase());
-  }) || [];
+  const filteredReports = reports || [];
 
   return (
     <div className="space-y-5">
@@ -28,8 +27,30 @@ export default function DailyReportsPage() {
       </div>
 
       <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-ink-border">
-          <div className="relative max-w-md">
+        <div className="p-4 border-b border-ink-border flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          
+          {/* Timeframe Tabs */}
+          <div className="flex bg-ink-bg p-1 rounded-lg w-full md:w-auto overflow-x-auto">
+            {[
+              { id: 'all', label: 'All Time' },
+              { id: 'today', label: 'Today' },
+              { id: 'week', label: 'This Week' },
+              { id: 'month', label: 'This Month' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTimeframe(t.id)}
+                className={cn(
+                  'px-4 py-1.5 rounded-md text-[13px] font-medium transition-colors whitespace-nowrap',
+                  timeframe === t.id ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
             <input
               type="text"
