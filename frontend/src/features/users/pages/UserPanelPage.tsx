@@ -77,7 +77,7 @@ export default function UserPanelPage() {
     "user's";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24">
       {/* Back */}
       <button
         onClick={() => navigate('/team-performance')}
@@ -170,7 +170,7 @@ export default function UserPanelPage() {
                   <tr>
                     {[
                       'PRIORITY', 'NAME', 'NEXT FOLLOW-UP', 'PHONE · ACTIONS',
-                      'STATUS', 'COMPANY', 'SOURCE', 'CHANGED BY', 'ACTION',
+                      'STATUS', 'COMPANY', 'DESCRIPTION', 'SOURCE', 'CREATED', 'ACTION',
                     ].map((h) => (
                       <th
                         key={h}
@@ -365,17 +365,26 @@ function PanelLeadRow({
 
       <td className="px-2 py-2.5 text-[13px] text-ink">{lead.company ?? '—'}</td>
 
+      <td className="px-2 py-2.5 max-w-[160px] w-[160px]">
+        <div className="flex items-center gap-1.5">
+          <span className="truncate text-[13px] text-ink" style={{ maxWidth: '130px' }}>
+            {lead.notes || '—'}
+          </span>
+          {lead.notes && (
+            <button
+              onClick={onOpen}
+              className="text-brand font-bold text-[10px] border border-brand rounded-full w-4 h-4 flex items-center justify-center hover:bg-brand hover:text-white transition-colors shrink-0"
+            >
+              i
+            </button>
+          )}
+        </div>
+      </td>
+
       <td className="px-2 py-2.5 text-[13px] text-ink">{lead.source ?? '—'}</td>
 
-      {/* Changed by — audit column */}
-      <td className="px-2 py-2.5 whitespace-nowrap">
-        {showChangedBy ? (
-          <span className="text-[12.5px] text-amber-700 font-medium">
-            {actor!.name ?? 'Unknown'}
-          </span>
-        ) : (
-          <span className="text-[12.5px] text-ink-muted">—</span>
-        )}
+      <td className="px-2 py-2.5 text-ink-muted whitespace-nowrap text-[13px]">
+        {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB') : '—'}
       </td>
 
       <td className="px-2 py-2.5 whitespace-nowrap">
