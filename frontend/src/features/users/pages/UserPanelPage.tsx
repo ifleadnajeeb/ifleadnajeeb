@@ -165,7 +165,7 @@ export default function UserPanelPage() {
         {data && (data as any).data.length > 0 && (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-[14px] min-w-[1200px] border-collapse">
+              <table className="w-full text-[14px] min-w-[1050px] border-collapse">
                 <thead>
                   <tr>
                     {[
@@ -174,7 +174,10 @@ export default function UserPanelPage() {
                     ].map((h) => (
                       <th
                         key={h}
-                        className="text-left text-brand text-[13px] font-semibold px-2 py-2 border-b border-ink-border whitespace-nowrap"
+                        className={cn(
+                          "text-left text-brand text-[13px] font-semibold px-2 py-2 border-b border-ink-border whitespace-nowrap",
+                          h === 'ACTION' && "sticky right-0 bg-white shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)] z-10"
+                        )}
                       >
                         {h}
                       </th>
@@ -280,7 +283,7 @@ function PanelLeadRow({
   const showChangedBy = actor && owner && actor.id !== owner.id;
 
   return (
-    <tr className="border-b border-ink-border last:border-0 hover:bg-brand-light transition-colors">
+    <tr className="group border-b border-ink-border last:border-0 hover:bg-brand-light transition-colors">
       <td className="px-2 py-2.5 whitespace-nowrap">
         <span className="inline-flex items-center gap-1.5">
           <span
@@ -387,7 +390,7 @@ function PanelLeadRow({
         {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB') : '—'}
       </td>
 
-      <td className="px-2 py-2.5 whitespace-nowrap">
+      <td className="px-2 py-2.5 whitespace-nowrap sticky right-0 bg-white group-hover:bg-brand-light shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)] transition-colors z-10">
         <CanDo permission="followups:create">
           <button
             onClick={onFollowup}
@@ -396,7 +399,7 @@ function PanelLeadRow({
               'px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors',
               isClosed
                 ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                : 'bg-brand text-white hover:bg-brand-hover'
+                : 'bg-brand text-white hover:bg-brand-hover shadow-sm'
             )}
           >
             {isClosed ? 'Closed' : 'Follow-up'}
