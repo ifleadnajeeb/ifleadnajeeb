@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { FileText, Search, Clock, User } from 'lucide-react';
+import { cn } from '@/shared/utils/cn';
 import { operationsService } from '@/features/operations/services/operations.service';
 
 export default function DailyReportsPage() {
