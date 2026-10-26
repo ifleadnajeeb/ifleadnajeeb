@@ -53,6 +53,7 @@ export default function UserPanelPage() {
       leadsService.list({
         view: 'user',
         userId,
+        tab: view, // ✅ Pass the active tab to the backend
         search: search || undefined,
         page,
         pageSize: 20,

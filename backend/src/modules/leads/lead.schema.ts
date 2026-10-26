@@ -63,6 +63,7 @@ export const ListLeadsQuerySchema = z.object({
   sortDir: z.enum(['asc', 'desc']).default('desc'),
   view: z.enum(['all', 'mine', 'hot', 'overdue', 'user', 'won', 'lost', 'today']).default('all'),
   userId: z.string().optional(),
+  tab: z.enum(['all', 'mine', 'hot', 'overdue']).optional(),
 });
 
 export type CreateLeadInput = z.infer<typeof CreateLeadSchema>;
