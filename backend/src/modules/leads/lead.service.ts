@@ -193,41 +193,63 @@ export const leadService = {
       if (tab === 'hot') {
         where.priority = 'HOT';
       } else if (tab === 'overdue') {
-        const start = new Date(); start.setHours(0,0,0,0);
-        where.nextFollowupAt = { lt: start };
-        where.status = { notIn: ['WON', 'LOST'] };
-      } else if (tab === 'mine') {
+        where.followups = { some: { status: 'PENDING', dueAt: { lt: new Date() } } };
+      } else if (tab === 'mine') { 
+        // In the User Panel, the 'mine' tab is labeled "Today's follow-ups"
         const start = new Date(); start.setHours(0,0,0,0);
         const end = new Date(start); end.setDate(end.getDate() + 1);
-        where.nextFollowupAt = { gte: start, lt: end };
-        where.status = { notIn: ['WON', 'LOST'] };
+        where.followups = { some: { status: 'PENDING', dueAt: { gte: start, lt: end } } };
       }
-    } else if (query.view === 'mine') {
-      baseCountWhere.assignedToId = actor.id;
-    } else if (query.view === 'user' && query.userId) {
-      baseCountWhere.assignedToId = query.userId;
     }
+
+    if (query.search) {
+      where.OR = [
+        { name: { contains: query.search, mode: 'insensitive' } },
+        { phone: { contains: query.search, mode: 'insensitive' } },
+        { company: { contains: query.search, mode: 'insensitive' } },
+        { notes: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const skip = (query.page - 1) * query.pageSize;
+
+    const [data, total] = await Promise.all([
+      prisma.lead.findMany({
+        where,
+        include: {
+          assignedTo: { select: { id: true, name: true } },
+          createdBy: { select: { id: true, name: true } },
+        },
+        orderBy: { [query.sortBy]: query.sortDir },
+        skip,
+        take: query.pageSize,
+      }),
+      prisma.lead.count({ where }),
+    ]);
+
+    // 2. Counts for KPI cards (base scope only)
+    const baseCountWhere: any = { ...scope.where };
     const now = new Date();
     const startOfToday = new Date(now); startOfToday.setHours(0,0,0,0);
     const endOfToday = new Date(startOfToday); endOfToday.setDate(endOfToday.getDate() + 1);
 
     const [allCount, mineCount, hotCount, todayCount, overdueCount, wonCount, lostCount] = await Promise.all([
-      prisma.lead.count({ where: baseCountWhere }),
-      prisma.lead.count({ where: { ...baseCountWhere, assignedToId: actor.id } }),
-      prisma.lead.count({ where: { ...baseCountWhere, priority: 'HOT' } }),
+      prisma.lead.count({ where: { ...baseCountWhere, status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, assignedToId: actor.id, status: { notIn: ['WON', 'LOST'] } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, priority: 'HOT', status: { notIn: ['WON', 'LOST'] } } }),
       prisma.lead.count({ where: { ...baseCountWhere, followups: { some: { status: 'PENDING', dueAt: { gte: startOfToday, lt: endOfToday } } } } }),
-      prisma.lead.count({ where: { ...baseCountWhere, followups: { some: { status: 'PENDING', dueAt: { lt: new Date() } } } } }),
+      prisma.lead.count({ where: { ...baseCountWhere, followups: { some: { status: 'PENDING', dueAt: { lt: startOfToday } } } } }),
       prisma.lead.count({ where: { ...baseCountWhere, status: 'WON' } }),
       prisma.lead.count({ where: { ...baseCountWhere, status: 'LOST' } }),
     ]);
 
     return {
       data: data.map((d: any) => toDTO(d)),
-      meta: { 
-        page, 
-        pageSize, 
-        total, 
-        totalPages: Math.ceil(total / pageSize),
+      meta: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        totalPages: Math.ceil(total / query.pageSize),
         counts: {
           all: allCount,
           mine: mineCount,
