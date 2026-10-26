@@ -3,20 +3,12 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/auth-provider';
 import { getErrorMessage } from '@/shared/api/client';
 
-const DEMO_ACCOUNTS = [
-  { email: 'admin@demo.com',     password: 'Admin@123', role: 'Admin' },
-  { email: 'ceo@demo.com',       password: 'Admin@123', role: 'CEO' },
-  { email: 'bdm@demo.com',       password: 'Admin@123', role: 'BDM' },
-  { email: 'saleshead@demo.com', password: 'Admin@123', role: 'Sales Head' },
-  { email: 'bde@demo.com',       password: 'Admin@123', role: 'BDE' },
-];
-
 export default function Login() {
   const { user, loading, login } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('admin@demo.com');
-  const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(false);
   const [error, setError] = useState('');
@@ -134,29 +126,7 @@ export default function Login() {
           className="w-full h-12 rounded-lg bg-[#E3001B] text-white font-bold text-[15px] tracking-wide hover:bg-red-700 active:bg-red-800 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-red-500/20"
         >
           {submitting ? 'Signing in…' : 'LOGIN'}
-        </button>
-
-        <details className="mt-6 text-[13.5px] text-gray-500 group">
-          <summary className="cursor-pointer select-none inline-flex items-center gap-1.5 font-medium hover:text-black transition-colors">
-            <svg className="w-3 h-3 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-            Demo accounts
-          </summary>
-          <div className="mt-3 space-y-1 font-mono bg-gray-50 p-3 rounded-lg border border-gray-100">
-            {DEMO_ACCOUNTS.map((a) => (
-              <button
-                key={a.email} type="button"
-                onClick={() => { setEmail(a.email); setPassword(a.password); setError(''); }}
-                className="block w-full text-left py-1 text-gray-600 hover:text-[#E3001B] transition-colors"
-              >
-                {a.email} · {a.password}
-              </button>
-            ))}
-          </div>
-          <p className="mt-3 leading-snug text-[12.5px]">
-            Your role is loaded from your account. You never choose it at login.
-          </p>
-        </details>
-      </form>
+        </button>      </form>
     </div>
   );
 }
