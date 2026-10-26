@@ -7,13 +7,19 @@ export default function DailyReportsPage() {
   const [search, setSearch] = useState('');
 
   const [timeframe, setTimeframe] = useState('all');
+  const [departmentId, setDepartmentId] = useState('');
 
   const { data: reports, isLoading } = useQuery({
-    queryKey: ['daily-reports', timeframe, search],
-    queryFn: () => operationsService.listDailyReports({ timeframe, search }),
+    queryKey: ['daily-reports', timeframe, search, departmentId],
+    queryFn: () => operationsService.listDailyReports({ timeframe, search, departmentId }),
   });
 
   const filteredReports = reports || [];
+
+  const { data: departments } = useQuery({
+    queryKey: ['departments'],
+    queryFn: operationsService.listDepartments,
+  });
 
   return (
     <div className="space-y-5">
@@ -50,15 +56,29 @@ export default function DailyReportsPage() {
             ))}
           </div>
 
-          <div className="relative max-w-md w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            {/* ✅ Department Dropdown */}
+            <select
+              value={departmentId}
+              onChange={(e) => setDepartmentId(e.target.value)}
+              className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand"
+            >
+              <option value="">All Departments</option>
+              {departments?.map((d: any) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+
+            <div className="relative w-full sm:w-[300px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by employee name, task, or content..."
               className="w-full h-10 pl-9 pr-3 border border-ink-border rounded-md text-[14px] bg-ink-bg focus:outline-none focus:border-brand focus:bg-white"
-            />
+              />
+            </div>
           </div>
         </div>
 

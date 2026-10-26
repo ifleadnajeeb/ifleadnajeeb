@@ -6,6 +6,10 @@ export const operationsService = {
     return res.data.data;
   },
 
+  listDepartments: async (): Promise<any[]> => {
+    const res = await api.get<{ data: any[] }>('/operations/departments');
+    return res.data.data;
+  },
   listDailyReports: async (params?: any): Promise<any[]> => {
     const res = await api.get<{ data: any[] }>('/operations/reports', { params });
     return res.data.data;
