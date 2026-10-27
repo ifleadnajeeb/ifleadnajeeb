@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Clock, CheckSquare, X } from 'lucide-react';
 import { tasksService } from '@/features/tasks/services/tasks.service';
 import { operationsService } from '@/features/operations/services/operations.service';
 import { useAuth } from '@/app/providers/auth-provider';
+import { LogDailyReportModal } from '@/features/operations/components/LogDailyReportModal';
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -253,6 +254,16 @@ function SubmitReviewModal({ taskId, onClose, onSuccess }: { taskId: string, onC
           </button>
         </div>
       </div>
+    
+      {/* ✅ New Log Daily Report Modal */}
+      <LogDailyReportModal
+        isOpen={!!reportTaskId}
+        onClose={() => setReportTaskId(null)}
+        task={{ id: reportTaskId }}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        }}
+      />
     </div>
   );
 }
