@@ -1,12 +1,24 @@
 import { z } from 'zod';
 
+export const CreateProjectSchema = z.object({
+  name: z.string().min(2),
+  description: z.string().optional(),
+  customerId: z.string().optional(),
+  status: z.enum(['PLANNING', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED']).default('PLANNING'),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
+export const CreateDepartmentSchema = z.object({
+  name: z.string().min(2),
+  description: z.string().optional(),
+});
+
 export const CreateDailyReportSchema = z.object({
   taskId: z.string(),
-  workCompleted: z.string().min(1),
-  progress: z.coerce.number().min(0).max(100).default(0),
-  timeSpent: z.coerce.number().min(0).optional(),
+  workCompleted: z.string().min(2),
+  timeSpent: z.number().optional(),
+  progress: z.number().min(0).max(100).optional(),
   blockers: z.string().optional(),
-  workStatus: z.string().optional(),
-  nextDayPlan: z.string().optional(),
-  attachments: z.array(z.string()).optional(),
+  nextPlan: z.string().optional(),
 });
