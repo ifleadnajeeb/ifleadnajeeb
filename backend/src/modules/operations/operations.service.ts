@@ -60,13 +60,41 @@ export const operationsService = {
   },
 
   async listDailyReports(actor: AuthUser, query: any = {}) {
+    const { timeframe = 'all', search = '' } = query;
+    const where: any = { organizationId: actor.organizationId };
+
+    // ✅ Bulletproof date filtering
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    if (timeframe === 'today') {
+      where.createdAt = { gte: startOfToday };
+    } else if (timeframe === 'week') {
+      const startOfWeek = new Date(startOfToday);
+      startOfWeek.setDate(startOfWeek.getDate() - 7);
+      where.createdAt = { gte: startOfWeek };
+    } else if (timeframe === 'month') {
+      const startOfMonth = new Date(startOfToday);
+      startOfMonth.setMonth(startOfMonth.getMonth() - 1);
+      where.createdAt = { gte: startOfMonth };
+    }
+
+    // ✅ Search filtering
+    if (search) {
+      where.OR = [
+        { workCompleted: { contains: search, mode: 'insensitive' } },
+        { task: { title: { contains: search, mode: 'insensitive' } } },
+        { task: { assignedTo: { name: { contains: search, mode: 'insensitive' } } } },
+      ];
+    }
+
     return prisma.dailyReport.findMany({
-      where: { organizationId: actor.organizationId },
-      include: { 
+      where,
+      include: {
         task: { select: { title: true, assignedTo: { select: { name: true } } } }
       },
       orderBy: { createdAt: 'desc' },
-      take: 20,
+      take: 100,
     });
   },
 
