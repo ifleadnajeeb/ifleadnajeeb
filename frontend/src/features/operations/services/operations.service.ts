@@ -12,7 +12,8 @@ export const operationsService = {
   },
   listDailyReports: async (params?: any): Promise<any> => {
     const res = await api.get<any>('/operations/reports', { params });
-    return res.data; // ✅ Return the full object { data, summary }
+    // ✅ FIX: Unwrap the double-nested data { data: { data: [], summary: {} } }
+    return res.data?.data || res.data;
   },
   createDailyReport: async (input: any): Promise<any> => {
     const res = await api.post<{ data: any }>('/operations/reports', input);
