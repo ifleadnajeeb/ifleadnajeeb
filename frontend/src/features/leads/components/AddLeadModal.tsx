@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { X, CheckCircle2, CalendarClock, UserCheck } from 'lucide-react';
+import { X, CheckCircle2, CalendarClock, UserCheck, AlertTriangle } from 'lucide-react';
 import { api } from '@/shared/api/client';
 import { usersService, type AppUser, ROLE_LABEL } from '@/features/users/services/users.service';
+import { leadsService } from '../services/leads.service';
 import { configService, type ConfigItem } from '@/features/config/services/config.service';
 
 interface Props {
@@ -79,11 +80,19 @@ export function AddLeadModal({
   ];
 
   const [name, setName] = useState('');
+  
+  // --- Name Duplicate State ---
+  const [duplicates, setDuplicates] = useState<any[]>([]);
+  const [ignoreDuplicate, setIgnoreDuplicate] = useState(false);
+
+  // --- Phone Duplicate State ---
   const [phone, setPhone] = useState('');
-  const [isInternational, setIsInternational] = useState(false); // 👈 NEW STATE
+  const [isInternational, setIsInternational] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
   const [duplicateMatches, setDuplicateMatches] = useState<{ id: string; name: string }[]>([]);
   const [forceDuplicate, setForceDuplicate] = useState(false);
+  
+  // --- Other Form State ---
   const [projectName, setProjectName] = useState('');
   const [source, setSource] = useState('manual');
   const [status, setStatus] = useState('NEW');
@@ -102,8 +111,29 @@ export function AddLeadModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Load available users when modal opens
+  // 1. Check for Name Duplicates (Debounced)
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (!name || name.trim().length < 3) { 
+        setDuplicates([]); 
+        return; 
+      }
+      try {
+        const res = await api.get(`/leads/check-duplicate?name=${encodeURIComponent(name)}`);
+        setDuplicates(res.data?.data?.duplicates || []);
+      } catch (err) { 
+        setDuplicates([]); 
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [name]);
+
+  const hasDuplicates = duplicates.length > 0;
+
+  // 2. Load available users when modal opens
   useEffect(() => {
     if (!open) return;
     if (defaultAssignedToId) {
@@ -117,7 +147,7 @@ export function AddLeadModal({
       .finally(() => setLoadingUsers(false));
   }, [open, defaultAssignedToId]);
 
-  // Check for duplicate phone numbers
+  // 3. Check for duplicate phone numbers
   useEffect(() => {
     if (!phone || !open) {
       setDuplicateMatches([]);
@@ -146,6 +176,7 @@ export function AddLeadModal({
     return () => clearTimeout(timer);
   }, [phone, open]);
 
+  // 4. Load Services
   useEffect(() => {
     if (!open) return;
     configService
@@ -154,16 +185,41 @@ export function AddLeadModal({
       .catch(() => setServices([]));
   }, [open]);
 
+  // ✅ Autocomplete & Duplicate Detection
+  useEffect(() => {
+    if (!open) return;
+    const search = name.trim() || phone.trim();
+    if (search.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        // Fetch up to 3 matching leads
+        const res = await leadsService.list({ search, pageSize: 3 });
+        setSuggestions(res.data || []);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 400); // 400ms debounce
+
+    return () => clearTimeout(timer);
+  }, [name, phone, open]);
+
   if (!open) return null;
 
   const reset = () => {
     setName(''); setPhone(''); setProjectName('');
-    setIsInternational(false); // Reset toggle
+    setIsInternational(false);
     setSource('manual'); setStatus('NEW'); setPriority('MEDIUM');
     setValue(''); setNextFollowupDate(''); setNextFollowupTime('');
     setAssignedToId(defaultAssignedToId ?? '');
     setNotes(''); setService(''); setError(''); setSuccess(false);
+    
+    // Clear duplicates
     setDuplicateMatches([]); setForceDuplicate(false); setCheckingPhone(false);
+    setDuplicates([]); setIgnoreDuplicate(false); 
   };
 
   const handleSubmit = async () => {
@@ -172,8 +228,16 @@ export function AddLeadModal({
       setError(dupCheck.msg || 'Invalid phone number');
       return;
     }
+    
+    // Check Phone Duplicate
     if (duplicateMatches.length > 0 && !forceDuplicate) {
       setError('This phone number is a duplicate. Please check the box to proceed.');
+      return;
+    }
+
+    // Check Name Duplicate
+    if (hasDuplicates && !ignoreDuplicate) {
+      setError('This lead name matches an existing record. Please check the box to proceed.');
       return;
     }
 
@@ -207,6 +271,9 @@ export function AddLeadModal({
         service: service || undefined,
         tags: tag ? [tag] : [],
         nextFollowupAt: nextFollowupAt,
+        
+        // 👇 THE MAGIC FLAG TO BYPASS BACKEND DUPLICATE ERROR 👇
+        forceCreate: ignoreDuplicate 
       };
       
       await api.post('/leads', sanitizedPayload);
@@ -282,10 +349,34 @@ export function AddLeadModal({
           {/* Name */}
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Name <span className="text-danger">*</span></label>
-            <input value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="John Smith"
+            <input value={name} onChange={(e) => { setName(e.target.value); setIgnoreDuplicate(false); }} autoFocus placeholder="John Smith"
               className={`w-full h-10 px-3 border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white ${
                 error && !name.trim() ? 'border-danger ring-1 ring-danger' : 'border-ink-border'
               }`} />
+            
+            {/* 👇 NAME DUPLICATE WARNING UI 👇 */}
+            {hasDuplicates && !ignoreDuplicate && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 mt-2 text-[13px] text-amber-800">
+                <div className="font-semibold mb-1 flex items-center gap-1">
+                  <AlertTriangle size={14} /> Duplicate name detected
+                </div>
+                <div className="mb-2">
+                  This name is already used by:{' '}
+                  {duplicates.map((d) => (
+                    <span key={d.id} className="font-medium">{d.name} </span>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer mt-1">
+                  <input
+                    type="checkbox"
+                    checked={ignoreDuplicate}
+                    onChange={(e) => setIgnoreDuplicate(e.target.checked)}
+                    className="rounded border-gray-300 text-brand focus:ring-brand"
+                  />
+                  <span>Add anyway (it's a different person or new enquiry)</span>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Phone */}
@@ -500,8 +591,11 @@ export function AddLeadModal({
           <button onClick={handleClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] text-ink hover:bg-brand-light transition-colors">
             Cancel
           </button>
-          <button onClick={handleSubmit} disabled={submitting}
-            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          <button 
+            onClick={handleSubmit} 
+            disabled={submitting || (hasDuplicates && !ignoreDuplicate)} 
+            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
             {submitting ? 'Saving…' : 'Create Lead'}
           </button>
         </div>
