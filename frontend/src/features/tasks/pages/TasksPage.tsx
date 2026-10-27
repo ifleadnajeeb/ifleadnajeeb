@@ -343,6 +343,7 @@ return (
 
 function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open: boolean; onClose: () => void; onSuccess: () => void; defaultCustomerName?: string }) {
   const [title, setTitle] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [status, setStatus] = useState<TaskStatus>('TODO');
@@ -367,7 +368,7 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
       await tasksService.create({
         title: title.trim(),
         description: description.trim() || undefined,
-        priority, status,
+        priority, status, assignedToId: assignedToId || undefined,
         dueAt: dueAt ? new Date(dueAt).toISOString() : undefined,
       });
       setTitle(''); setDescription(''); setPriority('MEDIUM'); setStatus('TODO'); setDueAt('');
@@ -381,34 +382,47 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
     <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-[520px] w-full" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-border">
-          <h2 className="text-[16px] font-semibold text-ink">New Task</h2>
+          <h2 className="text-[16px] font-semibold text-ink">Assign Work</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-md text-ink-muted hover:bg-brand-light">
             <X className="w-4 h-4 mx-auto" />
           </button>
         </div>
         <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
-            <label className="block text-[13px] text-ink-muted mb-1.5">Title *</label>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Work Title *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} autoFocus
-              placeholder="Build homepage"
+              placeholder="e.g. Work for Sebin"
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
           </div>
           <div>
-            <label className="block text-[13px] text-ink-muted mb-1.5">Description</label>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Instructions / Method</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
+              placeholder="What exactly should the staff do?"
               className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px] resize-none focus:outline-none focus:border-brand" />
           </div>
-          
-          
-
-          
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Assign To Staff *</label>
+            <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)}
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
+              <option value="">— Select Employee —</option>
+              {/* Ensure `users` is available in this component scope. If not, we may need to pass it as a prop. */}
+              {users?.map((u: any) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Due Date</label>
+            <input type="date" value={dueAt} onChange={e => setDueAt(e.target.value)}
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand" />
+          </div>
           {error && <div className="text-[13px] text-danger bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</div>}
         </div>
         <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-ink-border">
           <button onClick={onClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] hover:bg-brand-light">Cancel</button>
           <button onClick={submit} disabled={submitting}
             className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50">
-            {submitting ? 'Creating…' : 'Create Task'}
+            {submitting ? 'Assigning…' : 'Assign Work'}
           </button>
         </div>
       </div>
