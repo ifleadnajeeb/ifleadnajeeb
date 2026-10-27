@@ -1,6 +1,7 @@
 import type { Response, NextFunction } from 'express';
 import { leadService } from './lead.service.js';
 import { completeFollowup } from './lead.followup.js';
+import { getLeadFacts } from './lead.facts.js';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 
 export const leadController = {
@@ -63,6 +64,11 @@ export const leadController = {
 
   async followup(req: AuthRequest, res: Response) {
     const result = await completeFollowup(req, req.params.id, req.body);
+    res.json(result);
+  },
+
+  async getFacts(req: AuthRequest, res: Response) {
+    const result = await getLeadFacts(req, req.params.id);
     res.json(result);
   },
 };

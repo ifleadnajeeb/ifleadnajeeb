@@ -31,6 +31,8 @@ router.post(
   leadController.followup
 );
 
+router.get('/:id/facts', requirePermission('leads:read'), leadController.getFacts);
+
 router.patch('/:id', requirePermission('leads:update'), validate(UpdateLeadSchema), leadController.update);
 router.patch('/:id/status', requirePermission('leads:update'), validate(ChangeStatusSchema), leadController.changeStatus);
 router.patch('/:id/assign', requirePermission('leads:assign'), validate(AssignLeadSchema), leadController.assign);
