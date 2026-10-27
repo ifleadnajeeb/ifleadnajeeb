@@ -1,5 +1,6 @@
 import type { Response, NextFunction } from 'express';
 import { leadService } from './lead.service.js';
+import { completeFollowup } from './lead.followup.js';
 import type { AuthRequest } from '../../middleware/auth.middleware.js';
 
 export const leadController = {
@@ -58,5 +59,10 @@ export const leadController = {
       const result = await leadService.checkDuplicate(req, req.query as any);
       res.json({ ok: true, data: result });
     } catch (err) { next(err); }
+  },
+
+  async followup(req: AuthRequest, res: Response) {
+    const result = await completeFollowup(req, req.params.id, req.body);
+    res.json(result);
   },
 };
