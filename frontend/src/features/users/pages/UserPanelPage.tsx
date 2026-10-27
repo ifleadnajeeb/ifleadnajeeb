@@ -7,6 +7,7 @@ import { leadsService, Lead } from '@/features/leads/services/leads.service';
 import { ClientProfile } from '@/features/leads/components/ClientProfile';
 import { FollowUpModal } from '@/features/leads/components/FollowUpModal';
 import { AddLeadModal } from '@/features/leads/components/AddLeadModal';
+import { EditLeadModal } from '@/features/leads/components/EditLeadModal';
 import { WhatsAppModal } from '@/features/leads/components/WhatsAppModal';
 import { CanDo } from '@/shared/permissions/CanDo';
 import { cn } from '@/shared/utils/cn';
@@ -46,6 +47,7 @@ export default function UserPanelPage() {
   const [followupLead, setFollowupLead] = useState<string | null>(null);
   const [waLead, setWaLead] = useState<{ id: string; name: string; phone: string | null } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<any>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['user-panel-leads', userId, view, search, page],
@@ -192,6 +194,7 @@ export default function UserPanelPage() {
                       lead={lead}
                       onOpen={() => setOpenClient(lead.id)}
                       onFollowup={() => setFollowupLead(lead.id)}
+                      onEdit={() => setEditingLead(lead)}
                       onWhatsApp={() => setWaLead({
                         id: lead.id,
                         name: lead.name,
@@ -243,6 +246,8 @@ export default function UserPanelPage() {
         }}
       />
 
+      <EditLeadModal lead={editingLead} onClose={() => setEditingLead(null)} onSuccess={() => { queryClient.invalidateQueries({ queryKey: ['user-panel-leads'] }); setEditingLead(null); }} />
+
       <AddLeadModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -261,11 +266,12 @@ export default function UserPanelPage() {
 // PanelLeadRow — with "Changed by" column
 // ─────────────────────────────────────────────
 function PanelLeadRow({
-  lead, onOpen, onFollowup, onWhatsApp,
+  lead, onOpen, onFollowup, onEdit, onWhatsApp,
 }: {
   lead: Lead & { lastChangedBy?: { id: string; name: string | null } | null };
   onOpen: () => void;
   onFollowup: () => void;
+  onEdit: () => void;
   onWhatsApp: () => void;
 }) {
   const overdue = lead.nextFollowupAt && daysUntil(lead.nextFollowupAt) < 0;
@@ -393,6 +399,13 @@ function PanelLeadRow({
 
       <td className="px-2 py-2.5 whitespace-nowrap text-right w-[100px]">
         <CanDo permission="followups:create">
+          <button
+            onClick={() => onEdit()}
+            title="Edit Lead"
+            className="w-8 h-8 rounded-md inline-flex items-center justify-center text-ink-muted hover:text-brand hover:bg-brand-light transition-colors mr-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          </button>
           <button
             onClick={onFollowup}
             disabled={isClosed}

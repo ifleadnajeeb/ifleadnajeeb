@@ -7,6 +7,7 @@ import { leadsService, Lead } from '../services/leads.service';
 import { ClientProfile } from '../components/ClientProfile';
 import { FollowUpModal } from '../components/FollowUpModal';
 import { AddLeadModal } from '../components/AddLeadModal';
+import { EditLeadModal } from '../components/EditLeadModal';
 import { WhatsAppModal } from '../components/WhatsAppModal';
 import { CanDo } from '@/shared/permissions/CanDo';
 import { AccessDenied } from '@/shared/permissions/AccessDenied';
@@ -55,6 +56,7 @@ export default function LeadsPage() {
   const [followupLead, setFollowupLead] = useState<string | null>(null);
   const [waLead, setWaLead] = useState<{ id: string; name: string; phone: string | null } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<any>(null);
   const [exporting, setExporting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
@@ -274,6 +276,7 @@ export default function LeadsPage() {
                       onToggleSelect={() => toggleOne(lead.id)}
                       onOpen={() => setOpenClient(lead.id)}
                       onFollowup={() => setFollowupLead(lead.id)}
+                      onEdit={() => setEditingLead(lead)}
                       onWhatsApp={() => setWaLead({ id: lead.id, name: lead.name, phone: lead.phone })}
                     onDescClick={setSelectedLeadForDesc} />
                   ))}
@@ -365,6 +368,8 @@ export default function LeadsPage() {
         onSuccess={() => { setImportOpen(false); queryClient.invalidateQueries({ queryKey: ['leads'] }); }}
       />
 
+      <EditLeadModal lead={editingLead} onClose={() => setEditingLead(null)} onSuccess={() => { queryClient.invalidateQueries({ queryKey: ['leads'] }); setEditingLead(null); }} />
+
       <AddLeadModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -428,6 +433,7 @@ function LeadRow({
   onToggleSelect: () => void;
   onOpen: () => void;
   onFollowup: () => void;
+  onEdit: () => void;
   onWhatsApp: () => void;
   onDescClick: (lead: any) => void;
 }) {
@@ -525,6 +531,13 @@ function LeadRow({
       </td>
       <td className="px-2 py-2.5 whitespace-nowrap">
         <CanDo permission="followups:create">
+          <button
+            onClick={() => onEdit()}
+            title="Edit Lead"
+            className="w-8 h-8 rounded-md inline-flex items-center justify-center text-ink-muted hover:text-brand hover:bg-brand-light transition-colors mr-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          </button>
           <button
             onClick={onFollowup}
             disabled={isClosed}
