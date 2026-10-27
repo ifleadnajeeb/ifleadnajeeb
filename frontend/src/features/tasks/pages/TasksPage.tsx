@@ -342,6 +342,8 @@ return (
 }
 
 function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open: boolean; onClose: () => void; onSuccess: () => void; defaultCustomerName?: string }) {
+  const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
+
   const [title, setTitle] = useState('');
   const [assignedToId, setAssignedToId] = useState('');
   const [description, setDescription] = useState('');
