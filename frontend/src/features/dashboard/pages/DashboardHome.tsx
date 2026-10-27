@@ -145,11 +145,13 @@ function OPManagerDashboard() {
   const qc = useQueryClient();
 
   const { data: reports, isLoading: reportsLoading } = useQuery({
-    queryKey: ['daily-reports'],
+    queryKey: ['dashboard-daily-reports'],
     queryFn: async () => {
-    const res = await operationsService.listDailyReports();
-    return res.data || []; // ✅ Extract the array from the new API response format
-  },
+      const res = await operationsService.listDailyReports();
+      if (Array.isArray(res)) return res;
+      if (res && Array.isArray(res.data)) return res.data;
+      return [];
+    },
     enabled: ['OP_MANAGER', 'ADMIN', 'CEO'].includes(user?.role || ''),
   });
 
@@ -197,7 +199,7 @@ function OPManagerDashboard() {
   // Calculate progress for a task based on the latest daily report
   const getTaskProgress = (task: any) => {
     if (task.status === 'DONE') return 100;
-    const taskReports = reports?.filter((r: any) => r.taskId === task.id) || [];
+    const taskReports = (Array.isArray(reports) ? reports : []).filter((r: any) => r.taskId === task.id) || [];
     if (taskReports.length === 0) return task.acceptance === 'ACCEPTED' ? 10 : 0;
     // Get the latest report
     const latestReport = taskReports[0]; // Assuming reports are sorted by date desc
