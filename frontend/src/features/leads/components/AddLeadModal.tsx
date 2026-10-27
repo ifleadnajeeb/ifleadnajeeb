@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { X, CheckCircle2, CalendarClock, UserCheck, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 import { api } from '@/shared/api/client';
 import { usersService, type AppUser, ROLE_LABEL } from '@/features/users/services/users.service';
-import { leadsService } from '../services/leads.service';
-import { configService, type ConfigItem } from '@/features/config/services/config.service';
+import { leadsService, type Lead } from '../services/leads.service';
 
 interface Props {
   open: boolean;
@@ -14,203 +13,90 @@ interface Props {
 }
 
 const SOURCES = ['manual', 'website', 'facebook', 'instagram', 'whatsapp', 'referral', 'walk-in'];
-const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+const PRIORITIES = ['COLD', 'MEDIUM', 'HOT'];
 const STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL', 'NEGOTIATION'];
 
-function analyzePhone(raw: string): { 
-  ok: boolean; 
-  e164?: string; 
-  pretty?: string; 
-  msg?: string 
-} {
-  let d = String(raw || '').trim();
-  const intl = d.startsWith('+');
-  d = d.replace(/\D/g, '');
+function cleanPhone(raw: string): { ok: true; phone: string } | { ok: false; msg: string } {
+  const d = raw.replace(/\D/g, '');
   if (!d) return { ok: false, msg: 'Enter a phone number' };
-  
-  if (d.startsWith('00')) d = d.slice(2);
-  if (!intl) {
-    if (d.length === 11 && d[0] === '0') d = d.slice(1);
-    if (d.length === 10) {
-      if (!/^[6-9]/.test(d)) return { ok: false, msg: 'Indian mobiles start with 6, 7, 8 or 9' };
-      d = '91' + d;
-    } else if (!(d.length === 12 && d.startsWith('91'))) {
-      return { ok: false, msg: `${d.length} digits – India needs 10 (or check International)` };
-    }
-  }
-  if (d.startsWith('91')) {
-    const n = d.slice(2);
-    if (!/^[6-9]\d{9}$/.test(n)) return { ok: false, msg: 'Not a valid Indian mobile number' };
-    return { ok: true, e164: '+' + d, pretty: '+91 ' + n.slice(0, 5) + ' ' + n.slice(5) };
-  }
-  if (d.length < 8 || d.length > 15) return { ok: false, msg: 'International numbers have 8–15 digits' };
-  return { ok: true, e164: '+' + d, pretty: '+' + d };
-}
-
-function formatPhoneNumber(value: string) {
-  const digits = value.replace(/\D/g, '');
-  if (!digits) return '';
-
-  if (digits.length <= 10) {
-    if (digits.length > 5) {
-      return `${digits.slice(0, 5)} ${digits.slice(5)}`;
-    }
-    return digits;
-  }
-
-  const countryCode = digits.slice(0, digits.length - 10);
-  const number = digits.slice(-10);
-  return `+${countryCode} ${number.slice(0, 5)} ${number.slice(5)}`;
+  if (d.length === 10 && /^[6-9]/.test(d)) return { ok: true, phone: d };
+  if (d.length === 11 && d[0] === '0') return { ok: true, phone: d.slice(1) };
+  if (d.length === 12 && d.startsWith('91')) return { ok: true, phone: d };
+  if (d.length >= 8 && d.length <= 15) return { ok: true, phone: d };
+  return { ok: false, msg: 'Invalid phone number' };
 }
 
 export function AddLeadModal({
   open, onClose, onSuccess, defaultAssignedToId, ownerName,
 }: Props) {
-
-  const FALLBACK_SERVICES = [
-    { id: '1', name: 'Website Development' },
-    { id: '2', name: 'Logo Brandkit' },
-    { id: '3', name: 'Trademark Registration' },
-    { id: '4', name: 'Company Registration' },
-    { id: '5', name: 'Digital Marketing' },
-    { id: '6', name: 'Posters' },
-    { id: '7', name: '20 K Website' },
-    { id: '8', name: 'If Leads' },
-    { id: '9', name: 'K Swift' },
-  ];
-
   const [name, setName] = useState('');
-  
-  // --- Name Duplicate State ---
-  const [duplicates, setDuplicates] = useState<any[]>([]);
-  const [ignoreDuplicate, setIgnoreDuplicate] = useState(false);
-
-  // --- Phone Duplicate State ---
   const [phone, setPhone] = useState('');
-  const [isInternational, setIsInternational] = useState(false);
-  const [checkingPhone, setCheckingPhone] = useState(false);
-  const [duplicateMatches, setDuplicateMatches] = useState<{ id: string; name: string }[]>([]);
-  const [forceDuplicate, setForceDuplicate] = useState(false);
-  
-  // --- Other Form State ---
   const [projectName, setProjectName] = useState('');
   const [source, setSource] = useState('manual');
   const [status, setStatus] = useState('NEW');
-  const [tag, setTag] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [value, setValue] = useState('');
   const [nextFollowupDate, setNextFollowupDate] = useState('');
   const [nextFollowupTime, setNextFollowupTime] = useState('');
   const [assignedToId, setAssignedToId] = useState(defaultAssignedToId ?? '');
   const [notes, setNotes] = useState('');
-  const [service, setService] = useState('');
-  const [services, setServices] = useState<ConfigItem[]>([]);
-  const displayServices = (services && services.length > 0) ? services : FALLBACK_SERVICES;
+  
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+
+  // Autocomplete & Duplicate state
+  const [suggestions, setSuggestions] = useState<Lead[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isDuplicatePhone, setIsDuplicatePhone] = useState(false);
 
-  // 1. Check for Name Duplicates (Debounced)
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (!name || name.trim().length < 3) { 
-        setDuplicates([]); 
-        return; 
-      }
-      try {
-        const res = await api.get(`/leads/check-duplicate?name=${encodeURIComponent(name)}`);
-        setDuplicates(res.data?.data?.duplicates || []);
-      } catch (err) { 
-        setDuplicates([]); 
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [name]);
-
-  const hasDuplicates = duplicates.length > 0;
-
-  // 2. Load available users when modal opens
+  // Load available users when modal opens
   useEffect(() => {
     if (!open) return;
-    if (defaultAssignedToId) {
-      setAssignedToId(defaultAssignedToId);
-    }
+    if (defaultAssignedToId) setAssignedToId(defaultAssignedToId);
     setLoadingUsers(true);
     usersService
-      .assignable()
-      .then((list) => setUsers(list))
+      .list({ page: 1, pageSize: 200 })
+      .then((r) => setUsers(r.data))
       .catch(() => setUsers([]))
       .finally(() => setLoadingUsers(false));
   }, [open, defaultAssignedToId]);
-
-  // 3. Check for duplicate phone numbers
-  useEffect(() => {
-    if (!phone || !open) {
-      setDuplicateMatches([]);
-      return;
-    }
-    const check = analyzePhone(phone);
-    if (!check.ok) {
-      setDuplicateMatches([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setCheckingPhone(true);
-      try {
-        const res = await api.get(`/leads/check-phone?phone=${check.e164}`);
-        if (res.data.duplicate) {
-          setDuplicateMatches(res.data.matches || []);
-        } else {
-          setDuplicateMatches([]);
-        }
-      } catch (err) {
-        console.error('Failed to check phone', err);
-      } finally {
-        setCheckingPhone(false);
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [phone, open]);
-
-  // 4. Load Services
-  useEffect(() => {
-    if (!open) return;
-    configService
-      .list('service')
-      .then(setServices)
-      .catch(() => setServices([]));
-  }, [open]);
 
   // ✅ Autocomplete & Duplicate Detection
   useEffect(() => {
     if (!open) return;
     
-    // Check if name OR phone is at least 3 characters
     const nameQuery = name.trim().length >= 3 ? name.trim() : '';
     const phoneQuery = phone.trim().length >= 3 ? phone.trim() : '';
     
     if (!nameQuery && !phoneQuery) {
       setSuggestions([]);
+      setIsDuplicatePhone(false);
       return;
     }
 
     const timer = setTimeout(async () => {
       try {
-        // Search by whichever field has enough characters
         const search = nameQuery || phoneQuery;
-        const res = await leadsService.list({ search, pageSize: 3 });
-        
-        // Filter out exact match if we want, but showing it is better
-        setSuggestions(res.data || []);
+        const res = await leadsService.list({ search, pageSize: 5 });
+        const matches = res.data || [];
+        setSuggestions(matches);
+
+        // Check if the phone number is an EXACT match to prevent saving
+        if (phoneQuery) {
+          const exactPhoneMatch = matches.find(
+            (l) => l.phone && l.phone.replace(/\D/g, '') === phoneQuery.replace(/\D/g, '')
+          );
+          setIsDuplicatePhone(!!exactPhoneMatch);
+        } else {
+          setIsDuplicatePhone(false);
+        }
       } catch (err) {
         console.error('Duplicate check failed:', err);
-        setSuggestions([]);
       }
-    }, 400);
+    }, 400); // 400ms debounce
 
     return () => clearTimeout(timer);
   }, [name, phone, open]);
@@ -219,42 +105,27 @@ export function AddLeadModal({
 
   const reset = () => {
     setName(''); setPhone(''); setProjectName('');
-    setIsInternational(false);
     setSource('manual'); setStatus('NEW'); setPriority('MEDIUM');
     setValue(''); setNextFollowupDate(''); setNextFollowupTime('');
-    setAssignedToId(defaultAssignedToId ?? '');
-    setNotes(''); setService(''); setError(''); setSuccess(false);
-    
-    // Clear duplicates
-    setDuplicateMatches([]); setForceDuplicate(false); setCheckingPhone(false);
-    setDuplicates([]); setIgnoreDuplicate(false); 
+    setAssignedToId(defaultAssignedToId ?? ''); setNotes('');
+    setError(''); setSuccess(false); setSuggestions([]);
   };
 
   const handleSubmit = async () => {
-    const dupCheck = analyzePhone(phone);
-    if (phone && !dupCheck.ok) {
-      setError(dupCheck.msg || 'Invalid phone number');
-      return;
-    }
-    
-    // Check Phone Duplicate
-    if (duplicateMatches.length > 0 && !forceDuplicate) {
-      setError('This phone number is a duplicate. Please check the box to proceed.');
-      return;
-    }
-
-    // Check Name Duplicate
-    if (hasDuplicates && !ignoreDuplicate) {
-      setError('This lead name matches an existing record. Please check the box to proceed.');
-      return;
-    }
-
     setError('');
     if (name.trim().length < 2) { setError('Name must be at least 2 characters.'); return; }
+    
+    // 🛑 Prevent duplicate phone number
+    if (isDuplicatePhone) {
+      setError('This phone number belongs to an existing lead. Please check before saving.');
+      return;
+    }
 
     let normalizedPhone: string | undefined;
     if (phone.trim()) {
-      normalizedPhone = dupCheck.e164; 
+      const r = cleanPhone(phone);
+      if (!r.ok) { setError(r.msg); return; }
+      normalizedPhone = r.phone;
     }
 
     let nextFollowupAt: string | undefined;
@@ -266,40 +137,26 @@ export function AddLeadModal({
 
     setSubmitting(true);
     try {
-      const sanitizedPayload = {
+      const payload: Record<string, any> = {
         name: name.trim(),
-        phone: normalizedPhone || undefined,
+        phone: normalizedPhone,
         company: projectName.trim() || undefined,
-        source: source || 'manual',
-        status: 'NEW',
-        priority: priority,
+        source, status, priority,
         value: value ? Number(value) : undefined,
         notes: notes.trim() || undefined,
-        assignedToId: assignedToId || undefined,
-        service: service || undefined,
-        tags: tag ? [tag] : [],
-        nextFollowupAt: nextFollowupAt,
-        
-        // 👇 THE MAGIC FLAG TO BYPASS BACKEND DUPLICATE ERROR 👇
-        forceCreate: ignoreDuplicate 
       };
-      
-      await api.post('/leads', sanitizedPayload);
+      if (assignedToId) payload.assignedToId = assignedToId;
+      if (nextFollowupAt) payload.nextFollowupAt = nextFollowupAt;
+
+      await api.post('/leads', payload);
       setSuccess(true);
       onSuccess?.();
     } catch (err: any) {
-      console.error('[AddLeadModal] error:', err?.response?.data || err.message);
-      const data = err?.response?.data;
-      let errorMsg = 'Could not create lead.';
-      
-      if (data) {
-        errorMsg = data.message || data.error || errorMsg;
-        if (data.details && Array.isArray(data.details)) {
-          errorMsg += ': ' + data.details.map((d: any) => `${d.path.join('.')} is invalid`).join(', ');
-        }
-      }
-      
-      setError(errorMsg);
+      setError(
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        'Could not create lead.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -316,18 +173,8 @@ export function AddLeadModal({
           </div>
           <h2 className="text-xl font-bold text-ink mb-1">Lead Created!</h2>
           <p className="text-[14px] text-ink-muted mb-5">
-            <strong>{name}</strong>{' '}
-            {assignedToId && ownerName
-              ? `has been added to ${ownerName}'s leads.`
-              : assignedToId
-                ? 'has been assigned.'
-                : 'has been added to your leads.'}
+            <strong>{name}</strong>{' '}has been added.
           </p>
-          {nextFollowupDate && (
-            <p className="text-[13px] text-amber-700 mb-4">
-              📅 Follow-up scheduled for {nextFollowupDate} {nextFollowupTime || '09:00'}
-            </p>
-          )}
           <button onClick={handleClose} className="w-full h-11 rounded-lg bg-brand text-white font-medium hover:bg-brand-hover transition-colors">
             Continue
           </button>
@@ -342,11 +189,6 @@ export function AddLeadModal({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-border">
           <div>
             <h2 className="text-[16px] font-semibold text-ink">Add New Lead</h2>
-            {defaultAssignedToId && ownerName && (
-              <p className="text-[12px] text-amber-700 mt-0.5">
-                ⚡ Will be assigned to <strong>{ownerName}</strong>
-              </p>
-            )}
           </div>
           <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-md text-ink-muted hover:bg-brand-light hover:text-brand transition-colors" aria-label="Close">
             <X className="w-4 h-4" />
@@ -354,115 +196,65 @@ export function AddLeadModal({
         </div>
 
         <div className="px-5 py-4 space-y-4 max-h-[72vh] overflow-y-auto">
-          {/* Name */}
-          <div>
-            <label className="block text-[13px] text-ink-muted mb-1.5">Name <span className="text-danger">*</span></label>
-            <input value={name} onChange={(e) => { setName(e.target.value); setIgnoreDuplicate(false); }} autoFocus placeholder="John Smith"
-              className={`w-full h-10 px-3 border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white ${
-                error && !name.trim() ? 'border-danger ring-1 ring-danger' : 'border-ink-border'
-              }`} />
-            
-            {/* 👇 NAME DUPLICATE WARNING UI 👇 */}
-            {hasDuplicates && !ignoreDuplicate && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 mt-2 text-[13px] text-amber-800">
-                <div className="font-semibold mb-1 flex items-center gap-1">
-                  <AlertTriangle size={14} /> Duplicate name detected
-                </div>
-                <div className="mb-2">
-                  This name is already used by:{' '}
-                  {duplicates.map((d) => (
-                    <span key={d.id} className="font-medium">{d.name} </span>
-                  ))}
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer mt-1">
-                  <input
-                    type="checkbox"
-                    checked={ignoreDuplicate}
-                    onChange={(e) => setIgnoreDuplicate(e.target.checked)}
-                    className="rounded border-gray-300 text-brand focus:ring-brand"
-                  />
-                  <span>Add anyway (it's a different person or new enquiry)</span>
-                </label>
+          
+          {/* ⚠️ Duplicate Warning Banner */}
+          {isDuplicatePhone && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 text-red-700">
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-[13px]">Duplicate Phone Number</div>
+                <div className="text-[12.5px]">A lead with this phone number already exists. Please check the suggestions below.</div>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Name */}
+          <div className="relative">
+            <label className="block text-[13px] text-ink-muted mb-1.5">Name <span className="text-danger">*</span></label>
+            <input 
+              value={name} 
+              onChange={(e) => { setName(e.target.value); setShowSuggestions(true); }} 
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              autoFocus 
+              placeholder="John Smith"
+              className={`w-full h-10 px-3 border rounded-md text-[14px] bg-white focus:outline-none ${isDuplicatePhone ? 'border-red-400 focus:border-red-500' : 'border-ink-border focus:border-brand'}`} 
+            />
           </div>
 
           {/* Phone */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-[13px] text-ink-muted">Phone</label>
-              <label className="flex items-center gap-1 cursor-pointer text-[12px] font-medium text-brand hover:underline">
-                <input
-                  type="checkbox"
-                  checked={isInternational}
-                  onChange={(e) => {
-                    setIsInternational(e.target.checked);
-                    setPhone(''); // clear field when toggling
-                  }}
-                  className="w-3.5 h-3.5 rounded border-gray-300 text-brand focus:ring-brand"
-                />
-                🌍 International
-              </label>
-            </div>
-            
+          <div className="relative">
+            <label className="block text-[13px] text-ink-muted mb-1.5">Phone</label>
             <input 
               value={phone} 
-              onChange={(e) => {
-                setForceDuplicate(false);
-                if (isInternational) {
-                  // Allow only + and digits for international
-                  setPhone(e.target.value.replace(/[^\d+]/g, ''));
-                } else {
-                  if (e.target.value.length < phone.length) {
-                    setPhone(e.target.value);
-                  } else {
-                    setPhone(formatPhoneNumber(e.target.value));
-                  }
-                }
-              }} 
+              onChange={(e) => { setPhone(e.target.value); setShowSuggestions(true); }} 
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               inputMode="tel" 
-              maxLength={isInternational ? 18 : 15}
-              placeholder={isInternational ? "+971 50 123 4567" : "98765 43210"}
-              className={`w-full h-10 px-3 border rounded-md text-[14px] bg-white focus:outline-none transition-colors ${
-                phone && !analyzePhone(phone).ok 
-                  ? 'border-danger focus:border-danger' 
-                  : 'border-ink-border focus:border-brand'
-              }`} 
+              placeholder="98765 43210"
+              className={`w-full h-10 px-3 border rounded-md text-[14px] bg-white focus:outline-none ${isDuplicatePhone ? 'border-red-400 focus:border-red-500' : 'border-ink-border focus:border-brand'}`} 
             />
-            
-            {phone && !analyzePhone(phone).ok && (
-              <span className="text-[12px] text-danger mt-1 block">
-                ✗ {analyzePhone(phone).msg}
-              </span>
-            )}
-            
-            {checkingPhone && (
-              <span className="text-[12px] text-ink-muted mt-1 block">
-                Checking availability…
-              </span>
-            )}
-            
-            {!checkingPhone && duplicateMatches.length > 0 && (
-              <div className="rounded-md border border-amber-300 bg-amber-50 p-3 mt-2 text-[13px] text-amber-800">
-                <div className="font-semibold mb-1">⚠️ Duplicate number detected</div>
-                <div className="mb-2">
-                  This number is already used by:{' '}
-                  {duplicateMatches.map((m) => (
-                    <span key={m.id} className="font-medium">{m.name} </span>
-                  ))}
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer mt-1">
-                  <input
-                    type="checkbox"
-                    checked={forceDuplicate}
-                    onChange={(e) => setForceDuplicate(e.target.checked)}
-                    className="rounded border-gray-300 text-brand focus:ring-brand"
-                  />
-                  <span>Add anyway (same person, new enquiry)</span>
-                </label>
-              </div>
-            )}
           </div>
+
+          {/* Autocomplete Dropdown (Shared for Name & Phone) */}
+          {showSuggestions && suggestions.length > 0 && (name.trim().length >= 3 || phone.trim().length >= 3) && (
+            <div className="absolute z-[100] mt-[-8px] w-full max-w-[520px] bg-white border border-ink-border rounded-md shadow-xl overflow-hidden">
+              <div className="bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800 border-b border-amber-200 flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5" /> Potential Duplicates Found
+              </div>
+              {suggestions.map((l) => (
+                <div key={l.id} className="px-3 py-2 border-b border-ink-border last:border-0 hover:bg-gray-50 cursor-default">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-[13.5px] font-semibold text-ink">{l.name}</div>
+                      <div className="text-[12px] text-ink-muted">{l.phone || 'No phone'} · {l.status}</div>
+                    </div>
+                    <span className="text-[11px] text-brand font-medium bg-brand-light px-2 py-0.5 rounded-full">Exists</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Project name */}
           <div>
@@ -471,8 +263,8 @@ export function AddLeadModal({
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
           </div>
 
-          {/* Source / Status */}
-          <div className="grid grid-cols-1 gap-3">
+          {/* Source / Status / Priority */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[13px] text-ink-muted mb-1.5">Source</label>
               <select value={source} onChange={(e) => setSource(e.target.value)}
@@ -480,24 +272,6 @@ export function AddLeadModal({
                 {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div className="col-span-1">
-              <label className="block text-[13px] text-ink-muted mb-1.5">Tag</label>
-              <select value={tag} onChange={e => setTag(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand bg-white">
-                <option value="">— Select Tag —</option>
-                <option value="Hot">Hot</option>
-                <option value="Very interested">Very interested</option>
-                <option value="Slight interested">Slight interested</option>
-                <option value="Not interested">Not interested</option>
-                <option value="Busy call back">Busy call back</option>
-                <option value="Pending">Pending</option>
-                <option value="Work on progress">Work on progress</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Priority / Value */}
-          <div className="grid grid-cols-1 gap-3">
             <div>
               <label className="block text-[13px] text-ink-muted mb-1.5">Priority</label>
               <select value={priority} onChange={(e) => setPriority(e.target.value)}
@@ -507,89 +281,21 @@ export function AddLeadModal({
             </div>
           </div>
 
-          {/* Service */}
-          <div>
-            <label className="block text-[13px] text-ink-muted mb-1.5">Service</label>
-            <select
-              value={service}
-              onChange={(e) => setService(e.target.value)}
-              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
-            >
-              <option value="">— Select service —</option>
-              {displayServices.map((s: any) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}</select>
-            {services.length === 0 && (
-              <p className="text-[12px] text-ink-muted mt-1">
-                No services yet. Add them in Configuration → Service.
-              </p>
-            )}
-          </div>
-
-          {/* Next Follow-up */}
-          <div className="border-t border-ink-border pt-4">
-            <label className="flex items-center gap-2 text-[13px] font-medium text-ink mb-2">
-              <CalendarClock className="w-4 h-4 text-brand" />
-              Next Follow-up
-              <span className="text-ink-muted font-normal">(optional)</span>
-            </label>
-            <div className="grid grid-cols-1 gap-3">
-              <input
-                type="date"
-                value={nextFollowupDate}
-                onChange={(e) => setNextFollowupDate(e.target.value)}
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
-              />
-              <input
-                type="time"
-                value={nextFollowupTime}
-                onChange={(e) => setNextFollowupTime(e.target.value)}
-                disabled={!nextFollowupDate}
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand disabled:bg-ink-bg disabled:text-ink-muted"
-              />
+          {/* Assign Lead & Next Follow-up */}
+          <div className="grid grid-cols-2 gap-3 border-t border-ink-border pt-4">
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Next Follow-up</label>
+              <input type="date" value={nextFollowupDate} onChange={(e) => setNextFollowupDate(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
             </div>
-            {nextFollowupDate && (
-              <p className="text-[12px] text-brand mt-1.5">
-                📅 Follow-up on {new Date(nextFollowupDate).toLocaleDateString('en-GB')} at {nextFollowupTime || '09:00'}
-              </p>
-            )}
-          </div>
-
-          {/* Assign Lead */}
-          <div className="border-t border-ink-border pt-4">
-            <label className="flex items-center gap-2 text-[13px] font-medium text-ink mb-2">
-              <UserCheck className="w-4 h-4 text-brand" />
-              Assign Lead
-              <span className="text-ink-muted font-normal">(optional)</span>
-            </label>
-            <select
-              value={assignedToId}
-              onChange={(e) => setAssignedToId(e.target.value)}
-              disabled={loadingUsers}
-              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand disabled:bg-ink-bg"
-            >
-              <option value="">— Assign to me (default) —</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} · {ROLE_LABEL[u.role] ?? u.role}
-                </option>
-              ))}
-            </select>
-            {loadingUsers && (
-              <p className="text-[12px] text-ink-muted mt-1">Loading teammates…</p>
-            )}
-            {assignedToId && (
-              <p className="text-[12px] text-amber-700 mt-1.5">
-                ⚡ This lead will appear in <strong>{users.find((u) => u.id === assignedToId)?.name ?? ownerName ?? 'the selected user'}</strong>'s panel
-              </p>
-            )}
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-[13px] text-ink-muted mb-1.5">Description</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="What did the customer ask for?"
-              className="w-full px-3 py-2 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand resize-none" />
+            <div>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Assign To</label>
+              <select value={assignedToId} onChange={(e) => setAssignedToId(e.target.value)} disabled={loadingUsers}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
+                <option value="">— Default (Me) —</option>
+                {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            </div>
           </div>
 
           {error && <div className="text-[13px] text-danger bg-red-50 border border-red-200 rounded-md px-3 py-2">{error}</div>}
@@ -599,12 +305,9 @@ export function AddLeadModal({
           <button onClick={handleClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] text-ink hover:bg-brand-light transition-colors">
             Cancel
           </button>
-          <button 
-            onClick={handleSubmit} 
-            disabled={submitting || (hasDuplicates && !ignoreDuplicate)} 
-            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {submitting ? 'Saving…' : 'Create Lead'}
+          <button onClick={handleSubmit} disabled={submitting || isDuplicatePhone}
+            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            {submitting ? 'Saving…' : isDuplicatePhone ? 'Duplicate Blocked' : 'Create Lead'}
           </button>
         </div>
       </div>
