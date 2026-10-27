@@ -188,21 +188,29 @@ export function AddLeadModal({
   // ✅ Autocomplete & Duplicate Detection
   useEffect(() => {
     if (!open) return;
-    const search = name.trim() || phone.trim();
-    if (search.length < 3) {
+    
+    // Check if name OR phone is at least 3 characters
+    const nameQuery = name.trim().length >= 3 ? name.trim() : '';
+    const phoneQuery = phone.trim().length >= 3 ? phone.trim() : '';
+    
+    if (!nameQuery && !phoneQuery) {
       setSuggestions([]);
       return;
     }
 
     const timer = setTimeout(async () => {
       try {
-        // Fetch up to 3 matching leads
+        // Search by whichever field has enough characters
+        const search = nameQuery || phoneQuery;
         const res = await leadsService.list({ search, pageSize: 3 });
+        
+        // Filter out exact match if we want, but showing it is better
         setSuggestions(res.data || []);
-      } catch {
+      } catch (err) {
+        console.error('Duplicate check failed:', err);
         setSuggestions([]);
       }
-    }, 400); // 400ms debounce
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [name, phone, open]);
