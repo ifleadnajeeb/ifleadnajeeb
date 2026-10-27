@@ -106,7 +106,7 @@ export default function AppointmentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.data.map((a) => (
+                {data.(Array.isArray(data) ? data : (data?.data || [])).map((a) => (
                   <tr key={a.id} className="border-t border-ink-border hover:bg-brand-light/40">
                     <td className="px-5 py-3 font-medium text-ink">
                       {a.title}

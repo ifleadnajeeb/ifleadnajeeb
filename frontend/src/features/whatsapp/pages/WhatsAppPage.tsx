@@ -139,7 +139,7 @@ function LogsTab() {
               </tr>
             </thead>
             <tbody>
-              {data.data.map(l => (
+              {data.(Array.isArray(data) ? data : (data?.data || [])).map(l => (
                 <tr key={l.id} className="border-t border-ink-border">
                   <td className="px-5 py-3 text-ink-muted whitespace-nowrap">
                     {new Date(l.createdAt).toLocaleString('en-IN', {

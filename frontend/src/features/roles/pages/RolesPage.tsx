@@ -23,7 +23,7 @@ export default function RolesPage() {
 
       {data && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {data.map(r => (
+          {(Array.isArray(data) ? data : (data?.data || [])).map(r => (
             <div key={r.id} className="bg-white border border-ink-border rounded-xl p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-3">

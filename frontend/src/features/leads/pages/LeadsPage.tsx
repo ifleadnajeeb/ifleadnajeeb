@@ -89,7 +89,7 @@ export default function LeadsPage() {
     ? data?.data.find((l) => l.id === followupLead) ?? null
     : null;
 
-  const allIds = useMemo(() => data?.data.map((l) => l.id) ?? [], [data]);
+  const allIds = useMemo(() => data?.(Array.isArray(data) ? data : (data?.data || [])).map((l) => l.id) ?? [], [data]);
   const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id));
   const someSelected = selected.size > 0;
 
@@ -268,7 +268,7 @@ export default function LeadsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.data.map((lead) => (
+                  {data.(Array.isArray(data) ? data : (data?.data || [])).map((lead) => (
                     <LeadRow
                       key={lead.id}
                       lead={lead}

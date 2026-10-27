@@ -121,7 +121,7 @@ export default function FollowupsPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.data.map((f) => {
+                {data.(Array.isArray(data) ? data : (data?.data || [])).map((f) => {
                   const overdue = f.status === 'PENDING' && new Date(f.dueAt) < new Date();
                   return (
                     <tr key={f.id} className="border-t border-ink-border hover:bg-brand-light/40">

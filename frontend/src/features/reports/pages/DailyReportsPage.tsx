@@ -142,7 +142,7 @@ export default function DailyReportsPage() {
               {!isLoading && reports.length === 0 && (
                 <tr><td colSpan={7} className="p-10 text-center text-ink-muted">No reports found for this date range.</td></tr>
               )}
-              {reports.map((r: any) => (
+              {(Array.isArray(reports) ? reports : []).map((r: any) => (
                 <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">

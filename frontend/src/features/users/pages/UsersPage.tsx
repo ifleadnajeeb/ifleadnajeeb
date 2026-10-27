@@ -94,7 +94,7 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.data.map((u) => (
+                {data.(Array.isArray(data) ? data : (data?.data || [])).map((u) => (
                   <tr
                     key={u.id}
                     className="border-b border-ink-border last:border-0 hover:bg-brand-light transition-colors"

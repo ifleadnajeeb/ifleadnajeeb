@@ -114,7 +114,7 @@ export default function ProjectsPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.data.map(p => (
+                {data.(Array.isArray(data) ? data : (data?.data || [])).map(p => (
                   <tr key={p.id} className="border-t border-ink-border hover:bg-brand-light/40">
                     <td className="px-5 py-3">
                       <div className="font-medium text-ink">{p.name}</div>
