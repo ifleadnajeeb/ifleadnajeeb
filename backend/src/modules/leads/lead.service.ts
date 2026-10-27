@@ -254,6 +254,12 @@ export const leadService = {
         include: {
           assignedTo: { select: { id: true, name: true } },
           createdBy: { select: { id: true, name: true } },
+          // ✅ CRITICAL FIX: Fetch pending followups so we can calculate nextFollowupAt for the table
+          followups: {
+            where: { status: 'PENDING' },
+            orderBy: { dueAt: 'asc' },
+            take: 1,
+          },
         },
         orderBy: { [query.sortBy]: query.sortDir },
         skip,
