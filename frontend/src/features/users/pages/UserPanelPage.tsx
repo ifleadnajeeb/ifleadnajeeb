@@ -400,7 +400,8 @@ function PanelLeadRow({
       <td className="px-2 py-2.5 whitespace-nowrap text-right w-[100px]">
         <CanDo permission="followups:create">
           <button
-            onClick={() => onEdit()}
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            type="button"
             title="Edit Lead"
             className="w-8 h-8 rounded-md inline-flex items-center justify-center text-ink-muted hover:text-brand hover:bg-brand-light transition-colors mr-1"
           >
