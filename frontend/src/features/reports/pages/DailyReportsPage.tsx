@@ -18,7 +18,7 @@ export default function DailyReportsPage() {
     queryFn: () => operationsService.listDailyReports({ startDate, endDate, search }),
   });
 
-  const reports = data?.data || [];
+  const reports = Array.isArray(data) ? data : (data?.data || []);
   const summary = data?.summary || { totalHours: 0, completedTasks: 0, uniqueEmployees: 0, totalReports: 0 };
 
   return (
