@@ -1,146 +1,193 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, Search, Clock, User } from 'lucide-react';
-import { cn } from '@/shared/utils/cn';
+import { Search, Calendar as CalIcon, Clock, CheckCircle, AlertCircle, FileText, Download } from 'lucide-react';
 import { operationsService } from '@/features/operations/services/operations.service';
+import { cn } from '@/shared/utils/cn';
 
 export default function DailyReportsPage() {
+  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [search, setSearch] = useState('');
+  
+  // Default to Today for daily, this week for weekly, etc.
+  const today = new Date().toISOString().split('T')[0];
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
 
-  const [timeframe, setTimeframe] = useState('all');
-  const [departmentId, setDepartmentId] = useState('');
-
-  const { data: reports, isLoading } = useQuery({
-    queryKey: ['daily-reports', timeframe, search, departmentId],
-    queryFn: () => operationsService.listDailyReports({ timeframe, search, departmentId }),
+  const { data, isLoading } = useQuery({
+    queryKey: ['daily-reports', startDate, endDate, search, activeTab],
+    queryFn: () => operationsService.listDailyReports({ startDate, endDate, search }),
   });
 
-  const filteredReports = reports || [];
-
-  const { data: departments } = useQuery({
-    queryKey: ['departments'],
-    queryFn: operationsService.listDepartments,
-  });
+  const reports = data?.data || [];
+  const summary = data?.summary || { totalHours: 0, completedTasks: 0, uniqueEmployees: 0, totalReports: 0 };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-10">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-ink">Daily Work Reports</h1>
-          <p className="text-[13.5px] text-ink-muted mt-0.5">
-            View all employee timesheets and daily progress updates
-          </p>
+          <p className="text-[13.5px] text-ink-muted mt-0.5">View all employee timesheets and daily progress updates</p>
         </div>
+        <button className="h-9 px-4 rounded-md border border-ink-border bg-white text-[13px] font-medium flex items-center gap-2 hover:bg-gray-50">
+          <Download className="w-4 h-4" /> Export Report
+        </button>
       </div>
 
-      <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-ink-border flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+      {/* Tabs & Filters */}
+      <div className="bg-white border border-ink-border rounded-xl shadow-sm p-4 space-y-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           
-          {/* Timeframe Tabs */}
-          <div className="flex bg-ink-bg p-1 rounded-lg w-full md:w-auto overflow-x-auto">
-            {[
-              { id: 'all', label: 'All Time' },
-              { id: 'today', label: 'Today' },
-              { id: 'week', label: 'This Week' },
-              { id: 'month', label: 'This Month' },
-            ].map((t) => (
+          {/* Tabs */}
+          <div className="flex bg-gray-100 p-1 rounded-lg">
+            {['daily', 'weekly', 'monthly'].map((tab) => (
               <button
-                key={t.id}
-                onClick={() => setTimeframe(t.id)}
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
                 className={cn(
-                  'px-4 py-1.5 rounded-md text-[13px] font-medium transition-colors whitespace-nowrap',
-                  timeframe === t.id ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+                  'px-6 py-1.5 rounded-md text-[13px] font-medium capitalize transition-colors',
+                  activeTab === tab ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
                 )}
               >
-                {t.label}
+                {tab}
               </button>
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            {/* ✅ Department Dropdown */}
-            <select
-              value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
-              className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand"
-            >
+          {/* Date Range & Filters */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 bg-white border border-ink-border rounded-md px-3 h-9">
+              <CalIcon className="w-4 h-4 text-ink-muted" />
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-[12.5px] outline-none bg-transparent" />
+              <span className="text-ink-muted text-[12px]">to</span>
+              <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-[12.5px] outline-none bg-transparent" />
+            </div>
+            
+            <select className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand">
               <option value="">All Departments</option>
-              {departments?.map((d: any) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
+              {/* Add department options dynamically later */}
             </select>
 
-            <div className="relative w-full sm:w-[300px]">
+            <div className="relative w-full sm:w-[240px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by employee name, task, or content..."
-              className="w-full h-10 pl-9 pr-3 border border-ink-border rounded-md text-[14px] bg-ink-bg focus:outline-none focus:border-brand focus:bg-white"
+              <input
+                value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search employee, task..."
+                className="w-full h-9 pl-9 pr-3 border border-ink-border rounded-md text-[13px] focus:outline-none focus:border-brand"
               />
             </div>
           </div>
         </div>
+      </div>
 
-        {isLoading ? (
-          <div className="p-10 text-center text-ink-muted">Loading reports...</div>
-        ) : filteredReports.length === 0 ? (
-          <div className="p-10 text-center text-ink-muted text-sm">No work reports found.</div>
-        ) : (
-          <div className="divide-y divide-ink-border">
-            {filteredReports.map((r: any) => (
-              <div key={r.id} className="p-5 hover:bg-ink-bg/30 transition-colors">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-brand-light text-brand flex items-center justify-center">
-                      <User className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="font-semibold text-ink text-[14px]">
-                        {r.task?.assignedTo?.name || 'Unknown Employee'}
-                      </div>
-                      <div className="text-[12px] text-ink-muted flex items-center gap-2">
-                        <FileText className="w-3.5 h-3.5" /> Task: {r.task?.title || 'N/A'}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[12px] font-medium text-brand bg-brand-light px-2.5 py-1 rounded-full inline-flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" /> 
-                      {r.timeSpent ? `${r.timeSpent} hours` : 'No hours logged'}
-                    </div>
-                    <div className="text-[11px] text-ink-muted mt-1">
-                      Submitted: {new Date(r.createdAt).toLocaleString('en-GB')}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-[12px] font-medium text-ink mb-1">
-                    <span>Progress</span>
-                    <span>{r.progress ?? 0}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-brand h-2 rounded-full transition-all" style={{ width: `${r.progress ?? 0}%` }}></div>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-[13px] text-ink whitespace-pre-wrap">
-                  <div className="font-semibold text-ink-muted mb-1 text-[11px] uppercase tracking-wider">Work Done:</div>
-                  {r.workCompleted}
-                </div>
-
-                {r.blockers && (
-                  <div className="mt-2 text-[12.5px] text-red-700 bg-red-50 p-2 rounded border border-red-100 flex items-center gap-1">
-                    ⚠️ <strong>Blocker:</strong> {r.blockers}
-                  </div>
-                )}
-              </div>
-            ))}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white border border-ink-border rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5 text-blue-600" />
           </div>
-        )}
+          <div>
+            <div className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Total Reports</div>
+            <div className="text-xl font-bold text-ink">{summary.totalReports}</div>
+          </div>
+        </div>
+        <div className="bg-white border border-ink-border rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <div className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Total Hours</div>
+            <div className="text-xl font-bold text-ink">{summary.totalHours}</div>
+          </div>
+        </div>
+        <div className="bg-white border border-ink-border rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center shrink-0">
+            <CheckCircle className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <div className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Completed Tasks</div>
+            <div className="text-xl font-bold text-ink">{summary.completedTasks}</div>
+          </div>
+        </div>
+        <div className="bg-white border border-ink-border rounded-xl p-4 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-brand-light flex items-center justify-center shrink-0">
+            <AlertCircle className="w-5 h-5 text-brand" />
+          </div>
+          <div>
+            <div className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Active Employees</div>
+            <div className="text-xl font-bold text-ink">{summary.uniqueEmployees}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px] min-w-[900px]">
+            <thead className="bg-gray-50 border-b border-ink-border">
+              <tr className="text-left text-[11px] uppercase tracking-wider text-ink-muted font-semibold">
+                <th className="px-5 py-3">Employee</th>
+                <th className="px-5 py-3">Task</th>
+                <th className="px-5 py-3">Date</th>
+                <th className="px-5 py-3 w-[150px]">Progress</th>
+                <th className="px-5 py-3">Hours</th>
+                <th className="px-5 py-3">Status</th>
+                <th className="px-5 py-3">Submitted</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ink-border">
+              {isLoading && (
+                <tr><td colSpan={7} className="p-10 text-center text-ink-muted">Loading reports...</td></tr>
+              )}
+              {!isLoading && reports.length === 0 && (
+                <tr><td colSpan={7} className="p-10 text-center text-ink-muted">No reports found for this date range.</td></tr>
+              )}
+              {reports.map((r: any) => (
+                <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-brand-light text-brand flex items-center justify-center font-bold text-[12px]">
+                        {r.employee?.name?.charAt(0) || 'U'}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-ink">{r.employee?.name || 'Unknown'}</div>
+                        <div className="text-[11px] text-ink-muted">{r.employee?.department?.name || 'General'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="font-medium text-ink">{r.task?.title || 'N/A'}</div>
+                  </td>
+                  <td className="px-5 py-3 text-ink-muted whitespace-nowrap">
+                    {new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand rounded-full" style={{ width: `${r.progress || 0}%` }} />
+                      </div>
+                      <span className="text-[11px] font-semibold text-ink w-8 text-right">{r.progress || 0}%</span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 font-medium text-ink">{r.timeSpent ? `${r.timeSpent}h` : '-'}</td>
+                  <td className="px-5 py-3">
+                    <span className={cn(
+                      "px-2 py-0.5 rounded text-[11px] font-semibold",
+                      r.progress === 100 ? "bg-green-100 text-green-700" :
+                      r.workStatus === 'Blocked' ? "bg-red-100 text-red-700" :
+                      "bg-blue-100 text-blue-700"
+                    )}>
+                      {r.progress === 100 ? 'Completed' : (r.workStatus || 'In Progress')}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-ink-muted whitespace-nowrap">
+                    {new Date(r.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

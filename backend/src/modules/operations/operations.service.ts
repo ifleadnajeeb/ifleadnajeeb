@@ -60,23 +60,23 @@ export const operationsService = {
   },
 
   async listDailyReports(actor: AuthUser, query: any = {}) {
-    const { timeframe = 'all', search = '' } = query;
+    const { search = '', departmentId, startDate, endDate } = query;
     const where: any = { organizationId: actor.organizationId };
 
-    // ✅ Bulletproof date filtering
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    if (timeframe === 'today') {
-      where.createdAt = { gte: startOfToday };
-    } else if (timeframe === 'week') {
-      const startOfWeek = new Date(startOfToday);
-      startOfWeek.setDate(startOfWeek.getDate() - 7);
-      where.createdAt = { gte: startOfWeek };
-    } else if (timeframe === 'month') {
-      const startOfMonth = new Date(startOfToday);
-      startOfMonth.setMonth(startOfMonth.getMonth() - 1);
-      where.createdAt = { gte: startOfMonth };
+    // ✅ Filter by Date Range
+    if (startDate && endDate) {
+      where.createdAt = {
+        gte: new Date(startDate),
+        lte: new Date(new Date(endDate).setHours(23, 59, 59, 999))
+      };
+    }
+
+    // ✅ Filter by Department (Software Dev, Graphic Dev, etc.)
+    if (departmentId) {
+      where.task = { 
+        ...where.task,
+        assignedTo: { departmentId: departmentId } 
+      };
     }
 
     // ✅ Search filtering
@@ -88,14 +88,31 @@ export const operationsService = {
       ];
     }
 
-    return prisma.dailyReport.findMany({
+    const reports = await prisma.dailyReport.findMany({
       where,
       include: {
-        task: { select: { title: true, assignedTo: { select: { name: true } } } }
+        employee: { select: { name: true, department: { select: { name: true } } } },
+        task: { 
+          select: { 
+            id: true,
+            title: true, 
+            assignedTo: { select: { name: true } } 
+          } 
+        }
       },
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 200, // Load more for the table
     });
+
+    // Summary Calculations
+    const totalHours = reports.reduce((sum, r) => sum + (r.timeSpent || 0), 0);
+    const completedTasks = reports.filter(r => r.progress === 100 || r.status === 'COMPLETED').length;
+    const uniqueEmployees = new Set(reports.map(r => r.employeeId)).size;
+
+    return {
+      data: reports,
+      summary: { totalHours, completedTasks, uniqueEmployees, totalReports: reports.length }
+    };
   },
 
   async createDailyReport(actor: AuthUser, input: any) {
