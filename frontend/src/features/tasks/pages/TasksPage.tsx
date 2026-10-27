@@ -287,7 +287,7 @@ return (
                   </tr>
                 </thead>
                 <tbody>
-                  {(Array.isArray(data) ? data : (data?.data || [])).map(t => (
+                  {(Array.isArray(listQ.data) ? listQ.data : (listQ.data?.data || [])).map(t => (
                     <tr key={t.id} className="border-t border-ink-border hover:bg-brand-light/40">
                       <td className="px-5 py-3">
                         <div className="font-medium text-ink">{t.title}</div>
