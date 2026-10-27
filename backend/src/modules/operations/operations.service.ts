@@ -106,7 +106,7 @@ export const operationsService = {
 
     // Summary Calculations
     const totalHours = reports.reduce((sum, r) => sum + (r.timeSpent || 0), 0);
-    const completedTasks = reports.filter(r => r.progress === 100 || r.status === 'COMPLETED').length;
+    const completedTasks = reports.filter(r => r.progress === 100 || r.workStatus === 'Completed').length;
     const uniqueEmployees = new Set(reports.map(r => r.employeeId)).size;
 
     return {
