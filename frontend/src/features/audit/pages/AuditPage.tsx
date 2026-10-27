@@ -88,7 +88,7 @@ export default function AuditPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.(Array.isArray(data) ? data : (data?.data || [])).map(a => (
+                {(Array.isArray(data) ? data : (data?.data || [])).map(a => (
                   <tr key={a.id} className="border-t border-ink-border hover:bg-brand-light/40">
                     <td className="px-5 py-3 text-ink-muted whitespace-nowrap">{fmt(a.createdAt)}</td>
                     <td className="px-5 py-3">

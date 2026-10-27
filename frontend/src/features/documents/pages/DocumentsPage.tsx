@@ -97,7 +97,7 @@ export default function DocumentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.(Array.isArray(data) ? data : (data?.data || [])).map(d => (
+                {(Array.isArray(data) ? data : (data?.data || [])).map(d => (
                   <tr key={d.id} className="border-t border-ink-border hover:bg-brand-light/40">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">

@@ -188,7 +188,7 @@ export default function UserPanelPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(data as any).(Array.isArray(data) ? data : (data?.data || [])).map((lead: Lead) => (
+                  {(Array.isArray(data) ? data : (data?.data || [])).map((lead: Lead) => (
                     <PanelLeadRow
                       key={lead.id}
                       lead={lead}

@@ -66,7 +66,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.(Array.isArray(data) ? data : (data?.data || [])).map(c => (
+                {(Array.isArray(data) ? data : (data?.data || [])).map(c => (
                   <tr key={c.id} onClick={() => setSelected(c.id)} className="border-t border-ink-border hover:bg-brand-light/40 cursor-pointer">
                     <td className="px-4 py-3 font-medium text-ink">{c.name}</td>
                     <td className="px-4 py-3 text-ink-muted">
