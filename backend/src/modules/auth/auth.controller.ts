@@ -29,7 +29,7 @@ export async function login(req: Request, res: Response) {
   res.cookie('refresh_token', result.refreshToken, {
     ...appConfig.cookieOptions,
     maxAge: appConfig.refreshTokenTtlMs,
-    path: '/api/auth/refresh',
+    path: '/',
   });
 
   res.json({ user: result.user });
@@ -63,7 +63,7 @@ export async function logout(req: AuthRequest, res: Response) {
   res.clearCookie('access_token', appConfig.cookieOptions);
   res.clearCookie('refresh_token', {
     ...appConfig.cookieOptions,
-    path: '/api/auth/refresh',
+    path: '/',
   });
   res.json({ ok: true });
 }
