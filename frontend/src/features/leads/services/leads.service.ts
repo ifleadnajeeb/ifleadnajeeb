@@ -124,3 +124,23 @@ Object.assign(leadsService, {
     return res.data;
   },
 });
+
+// 👇 NEW HOOK FOR DUPLICATE CHECK 👇
+import { useQuery } from '@tanstack/react-query';
+
+export const useCheckDuplicate = (query: string) => {
+  return useQuery({
+    queryKey: ['leads', 'duplicate', query],
+    queryFn: async () => {
+      if (!query || query.length < 3) return { duplicates: [] };
+      const res = await fetch(`http://localhost:4000/api/leads/check-duplicate?name=${encodeURIComponent(query)}`, {
+        credentials: 'include'
+      });
+      if (!res.ok) return { duplicates: [] };
+      const json = await res.json();
+      return json.data;
+    },
+    enabled: query.length > 2, // Only search if 3+ chars
+    staleTime: 1000 * 60,
+  });
+};

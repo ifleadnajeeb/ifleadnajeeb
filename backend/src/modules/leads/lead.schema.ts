@@ -1,97 +1,88 @@
 import { z } from 'zod';
 import { LeadStatus, LeadPriority } from '@prisma/client';
 
+// ─────────────────────────────────────────────
+// CREATE
+// ─────────────────────────────────────────────
 export const CreateLeadSchema = z.object({
-  name: z.string().min(2).max(120),
-  email: z.string().email().optional().or(z.literal('')),
-  phone: z.string().min(6).max(20).optional().or(z.literal('')),
-  company: z.string().max(120).optional(),
-  source: z.string().max(40).optional(),
-  projectName: z.string().max(200).optional(),
-  service: z.string().max(100).optional(),
+  name: z.string().min(1, 'Name is required').max(100),
+  email: z.string().email('Invalid email').optional().nullable().or(z.literal('')),
+  phone: z.string().max(20).optional().nullable().or(z.literal('')),
+  company: z.string().max(100).optional().nullable(),
+  source: z.string().max(50).optional().nullable(),
   status: z.nativeEnum(LeadStatus).optional(),
   priority: z.nativeEnum(LeadPriority).optional(),
-  value: z.coerce.number().nonnegative().optional().nullable(),
-  notes: z.string().max(5000).optional(),
+  value: z.number().positive().optional().nullable(),
+  notes: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
-  assignedToId: z.string().optional(),
-  createdById: z.string().optional(),
-  nextFollowupAt: z.string().optional().nullable(),
-});
-
-export const UpdateLeadSchema = CreateLeadSchema.partial();
-
-export const AssignLeadSchema = z.object({
-  assignedToId: z.string().nullable(),
-});
-
-export const UpdateLeadStatusSchema = z.object({
-  status: z.nativeEnum(LeadStatus),
-  note: z.string().max(1000).optional(),
-});
-
-export const BulkAssignSchema = z.object({
-  leadIds: z.array(z.string()).min(1),
-  assignedToId: z.string(),
-});
-
-export const BulkDeleteSchema = z.object({
-  leadIds: z.array(z.string()).min(1),
-});
-
-export const BulkStatusSchema = z.object({
-  leadIds: z.array(z.string()).min(1),
-  status: z.nativeEnum(LeadStatus),
-});
-
-export const ListLeadsQuerySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
-  pageSize: z.coerce.number().min(1).max(100).default(20),
-  search: z.string().optional(),
-  status: z.nativeEnum(LeadStatus).optional(),
-  priority: z.nativeEnum(LeadPriority).optional(),
-  source: z.string().optional(),
-  assignedToId: z.string().optional(),
-  createdById: z.string().optional(), // 👈 ADDED THIS LINE
-  customerId: z.string().optional(),
-  tag: z.string().optional(),
-  from: z.string().optional(),
-  to: z.string().optional(),
-  sortBy: z
-    .enum(['createdAt', 'updatedAt', 'value', 'name', 'priority'])
-    .default('createdAt'),
-  sortDir: z.enum(['asc', 'desc']).default('desc'),
-  view: z.enum(['all', 'mine', 'hot', 'overdue', 'user', 'won', 'lost', 'today']).default('all'),
-  userId: z.string().optional(),
-  tab: z.enum(['all', 'mine', 'hot', 'overdue']).optional(),
+  assignedToId: z.string().optional().nullable(),
+  nextFollowupAt: z.string().datetime().optional().nullable(),
+  
+  // 👇 THIS IS THE NEW FLAG 👇
+  forceCreate: z.boolean().optional().default(false), 
 });
 
 export type CreateLeadInput = z.infer<typeof CreateLeadSchema>;
-export type UpdateLeadInput = z.infer<typeof UpdateLeadSchema>;
-export type ListLeadsQuery = z.infer<typeof ListLeadsQuerySchema>;
 
-export const CompleteFollowupSchema = z.object({
-  method: z.enum(['Phone', 'WhatsApp', 'Email', 'Meeting', 'Other']),
-  result: z.string().min(1),
-  note: z.string().max(2000).optional(),
-  nextAction: z.string().max(120).optional(),
-  nextDate: z.string().optional().nullable(),
-  nextTime: z.string().optional().nullable(),
+// ─────────────────────────────────────────────
+// UPDATE
+// ─────────────────────────────────────────────
+export const UpdateLeadSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  email: z.string().email().optional().nullable().or(z.literal('')),
+  phone: z.string().max(20).optional().nullable().or(z.literal('')),
+  company: z.string().max(100).optional().nullable(),
+  source: z.string().max(50).optional().nullable(),
+  status: z.nativeEnum(LeadStatus).optional(),
+  priority: z.nativeEnum(LeadPriority).optional(),
+  value: z.number().positive().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional(),
+  assignedToId: z.string().optional().nullable(),
 });
 
-export type CompleteFollowupInput = z.infer<typeof CompleteFollowupSchema>;
-export const BulkCreateLeadsSchema = z.object({
-  leads: z.array(
-    z.object({
-      name: z.string().min(2).max(120),
-      phone: z.string().max(30).optional(),
-      email: z.union([z.string().email().max(200), z.literal('')]).optional(),
-      company: z.string().max(200).optional(),
-      source: z.string().max(50).optional(),
-      status: z.string().max(50).optional(),
-      priority: z.string().max(20).optional(),
-      value: z.coerce.number().nonnegative().optional().nullable(),
-      notes: z.string().max(2000).optional(),
-    })
-  ).min(1).max(1000),
+export type UpdateLeadInput = z.infer<typeof UpdateLeadSchema>;
+
+// ─────────────────────────────────────────────
+// LIST / QUERY
+// ─────────────────────────────────────────────
+export const ListLeadsSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  pageSize: z.coerce.number().min(1).max(100).default(20),
+  sortBy: z.string().default('createdAt'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
+  search: z.string().optional(),
+  view: z.enum(['all', 'mine', 'hot', 'today', 'overdue', 'won', 'lost', 'user']).optional(),
+  userId: z.string().optional(), // Used when view === 'user'
+  tab: z.string().optional(), // Used inside user panel
+});
+
+export type ListLeadsQuery = z.infer<typeof ListLeadsSchema>;
+
+// ─────────────────────────────────────────────
+// STATUS CHANGE
+// ─────────────────────────────────────────────
+export const ChangeStatusSchema = z.object({
+  status: z.nativeEnum(LeadStatus),
+  note: z.string().optional(),
+});
+
+// ─────────────────────────────────────────────
+// ASSIGN
+// ─────────────────────────────────────────────
+export const AssignLeadSchema = z.object({
+  assignedToId: z.string().nullable(), // null means unassign
+});
+
+// ─────────────────────────────────────────────
+// BULK ACTIONS
+// ─────────────────────────────────────────────
+export const BulkActionSchema = z.object({
+  leadIds: z.array(z.string()).min(1, 'Select at least one lead'),
+  assignedToId: z.string().optional(),
+  status: z.nativeEnum(LeadStatus).optional(),
+});
+
+export const BulkCreateSchema = z.object({
+  leads: z.array(z.any()).min(1, 'No leads provided'),
 });
