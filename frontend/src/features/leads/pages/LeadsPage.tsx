@@ -425,7 +425,7 @@ export default function LeadsPage() {
 }
 
 function LeadRow({
-  lead, isSelected, onToggleSelect, onOpen, onFollowup, onWhatsApp,
+  lead, isSelected, onToggleSelect, onOpen, onFollowup, onEdit, onWhatsApp,
   onDescClick,
 }: {
   lead: Lead;
