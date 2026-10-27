@@ -146,7 +146,10 @@ function OPManagerDashboard() {
 
   const { data: reports, isLoading: reportsLoading } = useQuery({
     queryKey: ['daily-reports'],
-    queryFn: operationsService.listDailyReports,
+    queryFn: async () => {
+    const res = await operationsService.listDailyReports();
+    return res.data || []; // ✅ Extract the array from the new API response format
+  },
     enabled: ['OP_MANAGER', 'ADMIN', 'CEO'].includes(user?.role || ''),
   });
 
