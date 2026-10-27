@@ -61,20 +61,55 @@ function toDTO(lead: any, userMap?: Map<string, string>) {
 }
 
 export const leadService = {
+  // ✅ NEW: Autocomplete / Duplicate Check endpoint
+  async checkDuplicate(req: AuthRequest, query: { name?: string; phone?: string; email?: string }) {
+    const { organizationId } = req.user!;
+    const { name, phone, email } = query;
+
+    if (!name && !phone && !email) return { duplicates: [] };
+
+    const OR: any[] = [];
+    if (phone && phone.length > 5) OR.push({ phone: { contains: phone } });
+    if (email) OR.push({ email: { equals: email, mode: 'insensitive' } });
+    if (name && name.length > 2) OR.push({ name: { contains: name, mode: 'insensitive' } });
+
+    const duplicates = await prisma.lead.findMany({
+      where: {
+        organizationId,
+        OR,
+        status: { notIn: ['WON', 'LOST'] } // Only check active leads
+      },
+      take: 5,
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        status: true,
+        assignedTo: { select: { name: true } }
+      }
+    });
+
+    return { duplicates };
+  },
+
   async create(
     req: AuthRequest,
     input: CreateLeadInput,
     actor: AuthUser
   ) {
-    const dupes = await leadRepository.findDuplicates(
-      actor.organizationId,
-      input.email || undefined,
-      input.phone || undefined
-    );
-    if (dupes.length) {
-      throw new ConflictError(
-        `Possible duplicate: ${dupes.map((d) => d.name).join(', ')}`
+    // ✅ MODIFIED: Only check duplicates if forceCreate is NOT true
+    if (!(input as any).forceCreate) {
+      const dupes = await leadRepository.findDuplicates(
+        actor.organizationId,
+        input.email || undefined,
+        input.phone || undefined
       );
+      if (dupes.length) {
+        throw new ConflictError(
+          `Possible duplicate: ${dupes.map((d) => d.name).join(', ')}`
+        );
+      }
     }
 
     let assignedToId = input.assignedToId;
@@ -126,7 +161,7 @@ export const leadService = {
         });
       }
 
-      // ✅ NEW: create Followup record if nextFollowupAt provided
+      // ✅ create Followup record if nextFollowupAt provided
       if (input.nextFollowupAt) {
         await tx.followup.create({
           data: {
@@ -271,7 +306,7 @@ export const leadService = {
     };
   },
 
-async getById(req: AuthRequest, id: string) {
+  async getById(req: AuthRequest, id: string) {
     const scope = await buildScopeFilter(req);
     const lead = await prisma.lead.findFirst({
       where: { id, ...scope.where },
@@ -287,7 +322,7 @@ async getById(req: AuthRequest, id: string) {
         activities: {
           orderBy: { createdAt: 'desc' },
           take: 1,
-          select: { createdAt: true },
+          select: { createdAt: true, userId: true },
         },
       },
     });
@@ -397,7 +432,7 @@ async getById(req: AuthRequest, id: string) {
 
     if (existing.status === status) return this.getById(req, id);
 
-        const allowedTransitions: Record<LeadStatus, LeadStatus[]> = {
+    const allowedTransitions: Record<string, string[]> = {
       NEW: ['CONTACTED', 'LOST', 'PENDING', 'FIRST_FOLLOWUP', 'LATER_FOLLOWUP', 'PROPOSAL_REQUESTED'],
       CONTACTED: ['QUALIFIED', 'LOST', 'PENDING', 'FIRST_FOLLOWUP', 'LATER_FOLLOWUP', 'PROPOSAL_REQUESTED'],
       QUALIFIED: ['PROPOSAL', 'LOST', 'PENDING', 'PROPOSAL_REQUESTED', 'PROPOSAL_GIVEN'],
@@ -412,7 +447,7 @@ async getById(req: AuthRequest, id: string) {
       FIRST_FOLLOWUP: ['CONTACTED', 'QUALIFIED', 'LOST', 'PENDING'],
       LATER_FOLLOWUP: ['CONTACTED', 'QUALIFIED', 'LOST', 'PENDING'],
     };
-    if (!allowedTransitions[existing.status].includes(status)) {
+    if (!allowedTransitions[existing.status]?.includes(status)) {
       throw new ValidationError(
         `Cannot transition ${existing.status} to ${status}`
       );
@@ -421,7 +456,7 @@ async getById(req: AuthRequest, id: string) {
     const updated = await prisma.$transaction(async (tx) => {
       const lead = await tx.lead.update({
         where: { id },
-        data: { status },
+        data: { status: status as LeadStatus },
       });
       await tx.activity.create({
         data: {
@@ -546,6 +581,7 @@ async getById(req: AuthRequest, id: string) {
 
     return { count: result.count };
   },
+
   async bulkCreate(req: AuthRequest, input: { leads: any[] }) {
     const actor = req.user!;
     const rows = input.leads ?? [];
@@ -649,6 +685,7 @@ async function canViewUserLeads(
   const subtree = await collectDescendants(actor.id);
   return subtree.includes(targetUserId);
 }
+
 async function notifyOwnerOnBehalfOf(
   actor: AuthUser,
   ownerId: string | null,
