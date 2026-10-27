@@ -530,6 +530,9 @@ model DailyReport {
   @@index([organizationId])
   @@index([taskId])
   @@index([employeeId])
+  workStatus     String?   // In Progress, Completed, Blocked
+  nextDayPlan    String?
+  attachments    String[]  // URLs to uploaded files
 }
 
 model Activity {

@@ -106,9 +106,11 @@ export const operationsService = {
         taskId: input.taskId,
         workCompleted: input.workCompleted,
         timeSpent: input.timeSpent,
-        progress: input.progress || 0,
+        progress: input.progress,
         blockers: input.blockers,
-        nextPlan: input.nextPlan,
+        workStatus: input.workStatus || 'In Progress', // ✅ New
+        nextDayPlan: input.nextDayPlan,                 // ✅ New
+        attachments: input.attachments || [],           // ✅ New
       },
     });
   },
