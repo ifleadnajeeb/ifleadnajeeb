@@ -153,6 +153,8 @@ model User {
   manager   User?   @relation("UserHierarchy", fields: [managerId], references: [id])
   reports   User[]  @relation("UserHierarchy")
 
+  departmentId   String?
+  department     Department?  @relation(fields: [departmentId], references: [id])
   teamId String?
   team   Team?   @relation(fields: [teamId], references: [id])
 
@@ -488,6 +490,7 @@ model Department {
   name           String
   description    String?
   tasks          Task[]
+  users          User[]
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
