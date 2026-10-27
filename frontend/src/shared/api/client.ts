@@ -19,8 +19,7 @@ api.interceptors.response.use(
 
     const isAuthCall =
       url.includes('/auth/login') ||
-      url.includes('/auth/refresh') ||
-      url.includes('/auth/me');
+      url.includes('/auth/refresh');
 
     if (status === 401 && !isAuthCall) {
       try {
