@@ -15,6 +15,7 @@ const CAN_CREATE: Record<RoleName, RoleName[]> = {
   DIGITAL_MARKETER: [],
   CONTENT_CREATOR: [],
   VIDEO_EDITOR: [],
+  GRAPHIC_DESIGNER: [],
 };
 
 const CAN_MANAGE: Record<RoleName, RoleName[]> = {
@@ -29,6 +30,7 @@ const CAN_MANAGE: Record<RoleName, RoleName[]> = {
   DIGITAL_MARKETER: [],
   CONTENT_CREATOR: [],
   VIDEO_EDITOR: [],
+  GRAPHIC_DESIGNER: [],
 };
 
 function toDTO(u: any) {
