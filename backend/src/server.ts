@@ -43,3 +43,12 @@ process.on('SIGTERM', async () => {
 });
 
 bootstrap();
+
+
+// ✅ Prevent Render Free Tier from sleeping
+setInterval(() => {
+  // @ts-ignore
+  fetch('https://ifleadnajeeb.onrender.com/health')
+    .then(() => console.log('🔄 Keep-alive ping sent'))
+    .catch((err: any) => console.error('Keep-alive failed:', err.message));
+}, 10 * 60 * 1000); // Runs every 10 minutes
