@@ -43,6 +43,7 @@ export function TaskFloatingButton({ inline = false }: { inline?: boolean } = {}
     setSubmitting(true);
     try {
       await tasksService.create({
+        isPrivate: true,
         title: title.trim(),
         description: description.trim() || undefined,
         priority, status, reminderAt,

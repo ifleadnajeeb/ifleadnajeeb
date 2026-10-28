@@ -137,7 +137,7 @@ export const taskService = {
 
   async list(req: AuthRequest, q: ListTasksQuery) {
     const scope = await scopeFor(req);
-    const where: any = { ...scope };
+    const where: any = { ...scope, isPrivate: false };
     if (q.status) where.status = q.status;
     if (q.priority) where.priority = q.priority;
     if (q.assignedToId) where.assignedToId = q.assignedToId;
