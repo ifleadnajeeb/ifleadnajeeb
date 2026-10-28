@@ -61,7 +61,7 @@ export default function TasksPage() {
 
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
-    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id , isPrivate: showPrivate ? 'true' : 'false'}),
+    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id , isPrivate: showPrivate}),
     enabled: view === 'list',
   });
 

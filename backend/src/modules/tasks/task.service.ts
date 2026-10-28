@@ -135,56 +135,44 @@ export const taskService = {
     });
   },
 
-  async list(req: AuthRequest, q: ListTasksQuery) {
+  async list(req: AuthRequest, query: any = {}) {
+    const actor = req.user!;
     const scope = await scopeFor(req);
     const where: any = { ...scope };
-    // ✅ Check if user is asking for their private Quick Tasks
-    if (req.query.isPrivate === 'true') {
+
+    // ✅ Apply Private/Public filter
+    if (query.isPrivate === 'true' || query.isPrivate === true) {
       where.isPrivate = true;
-      where.createdById = req.user!.id; // Only show their own private tasks
+      where.createdById = actor.id; // Only show the user's own private tasks
     } else {
-      where.isPrivate = false; // Show public Works tasks
+      where.isPrivate = false; // Show team works (public)
     }
-    if (q.status) where.status = q.status;
-    if (q.priority) where.priority = q.priority;
-    if (q.assignedToId) where.assignedToId = q.assignedToId;
-    if (q.search) {
+
+    // Apply search if present
+    if (query.search) {
       where.OR = [
-        { title: { contains: q.search, mode: 'insensitive' } },
-        { description: { contains: q.search, mode: 'insensitive' } },
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } }
       ];
     }
+
+    const skip = ((Number(query.page) || 1) - 1) * (Number(query.pageSize) || 100);
+    const take = Number(query.pageSize) || 100;
 
     const [data, total] = await Promise.all([
       prisma.task.findMany({
         where,
-        include: {
-          assignedTo: { select: { id: true, name: true } },
-          createdBy: { select: { id: true, name: true } },
-          dailyReports: { orderBy: { createdAt: 'desc' }, take: 1 }
-        },
-        orderBy: [{ priority: 'desc' }, { dueAt: 'asc' }, { createdAt: 'desc' }],
-        skip: q.view === 'kanban' ? 0 : (q.page - 1) * q.pageSize,
-        take: q.view === 'kanban' ? 200 : q.pageSize,
+        include: { assignedTo: true, createdBy: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
       }),
-      prisma.task.count({ where }),
+      prisma.task.count({ where })
     ]);
 
-    // Kanban: group by status
-    if (q.view === 'kanban') {
-      const columns: Record<string, any[]> = { TODO: [], IN_PROGRESS: [], DONE: [], CANCELLED: [] };
-      data.forEach(t => {
-        if (columns[t.status]) columns[t.status].push(toDTO(t));
-      });
-      return {
-        columns,
-        meta: { total },
-      };
-    }
-
     return {
-      data: data.map(toDTO),
-      meta: { page: q.page, pageSize: q.pageSize, total, totalPages: Math.ceil(total / q.pageSize) },
+      data,
+      meta: { total, page: Number(query.page) || 1, pageSize: take }
     };
   },
 
