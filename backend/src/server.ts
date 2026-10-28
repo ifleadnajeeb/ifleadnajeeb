@@ -1,3 +1,4 @@
+if (process.env.DATABASE_URL_CUSTOM) process.env.DATABASE_URL = process.env.DATABASE_URL_CUSTOM;
 import 'express-async-errors';
 import { app } from './app.js';
 import { env } from './config/env.js';
