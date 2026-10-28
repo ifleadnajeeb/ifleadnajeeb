@@ -363,3 +363,15 @@ export const taskService = {
 };
 
 export const TASK_STATUSES = STATUSES;
+
+
+async function collectDescendants(rootId: string): Promise<string[]> {
+  const ids: string[] = [rootId];
+  const queue = [rootId];
+  while (queue.length) {
+    const current = queue.shift()!;
+    const children = await prisma.user.findMany({ where: { managerId: current }, select: { id: true } });
+    for (const c of children) { ids.push(c.id); queue.push(c.id); }
+  }
+  return ids;
+}
