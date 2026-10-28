@@ -6,7 +6,7 @@ import type { CreateTaskInput, UpdateTaskInput, ListTasksQuery } from './task.sc
 async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
-  if (u.role === 'CEO' || u.role === 'OP_MANAGER') return { organizationId: u.organizationId };
+  if (u.role === 'CEO' || u.role === 'OP_MANAGER' || u.role === 'DIGITAL_MARKETER') return { organizationId: u.organizationId };
   if (u.role === 'BDM') {
     const ids = await collectDesc(u.id);
     return { organizationId: u.organizationId, assignedToId: { in: ids } };
