@@ -7,8 +7,8 @@ async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
   
-  // ✅ All worker roles get organization-wide access for Team Works
-  if (['CEO', 'OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'].includes(u.role)) {
+  const allAccessRoles = ['CEO', 'OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'];
+  if (allAccessRoles.includes(u.role)) {
     return { organizationId: u.organizationId };
   }
 
@@ -143,15 +143,14 @@ export const taskService = {
     const scope = await scopeFor(req);
     const where: any = { ...scope };
 
-    // ✅ Handle Private vs Public Tasks safely
+    // ✅ Simple boolean check
     if (query.isPrivate === 'true' || query.isPrivate === true) {
       where.isPrivate = true;
-      where.createdById = req.user!.id; // Only see your own private tasks
+      where.createdById = req.user!.id;
     } else {
-      where.isPrivate = false; // See public tasks (handles both false and null)
+      where.isPrivate = false; // Find all public tasks
     }
 
-    // ✅ Search logic
     if (query.search) {
       where.OR = [
         { title: { contains: query.search, mode: 'insensitive' } },
@@ -159,9 +158,8 @@ export const taskService = {
       ];
     }
 
-    // ✅ Pagination
     const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 30;
+    const pageSize = Number(query.pageSize) || 100;
     const skip = (page - 1) * pageSize;
 
     const [data, total] = await Promise.all([
@@ -175,10 +173,7 @@ export const taskService = {
       prisma.task.count({ where })
     ]);
 
-    return {
-      data,
-      meta: { total, page, pageSize }
-    };
+    return { data, meta: { total, page, pageSize } };
   },
 
   async create(req: AuthRequest, input: CreateTaskInput) {
