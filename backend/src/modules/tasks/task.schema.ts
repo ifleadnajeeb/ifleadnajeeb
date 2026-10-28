@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const CreateTaskSchema = z.object({
+  isPrivate: z.boolean().optional(),
   projectId: z.string().optional(),
   departmentId: z.string().optional(),
   customerId: z.string().optional(),
