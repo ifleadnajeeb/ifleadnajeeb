@@ -6,19 +6,23 @@ import type { CreateTaskInput, UpdateTaskInput, ListTasksQuery } from './task.sc
 async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
-  if (u.role === 'CEO' || u.role === 'OP_MANAGER' || u.role === 'DIGITAL_MARKETER') return { organizationId: u.organizationId };
+  
+  // ✅ All worker roles get organization-wide access for Team Works
+  if (['CEO', 'OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'].includes(u.role)) {
+    return { organizationId: u.organizationId };
+  }
+
   if (u.role === 'BDM') {
-    const ids = await collectDesc(u.id);
+    const ids = await collectDescendants(u.id);
     return { organizationId: u.organizationId, assignedToId: { in: ids } };
   }
+
   if (u.role === 'SALES_HEAD') {
     if (!u.teamId) return { assignedToId: u.id };
-    const mem = await prisma.user.findMany({
-      where: { teamId: u.teamId, organizationId: u.organizationId },
-      select: { id: true },
-    });
-    return { organizationId: u.organizationId, assignedToId: { in: [u.id, ...mem.map(m => m.id)] } };
+    const team = await prisma.user.findMany({ where: { teamId: u.teamId, organizationId: u.organizationId }, select: { id: true } });
+    return { organizationId: u.organizationId, assignedToId: { in: [u.id, ...team.map(t => t.id)] } };
   }
+
   return { organizationId: u.organizationId, assignedToId: u.id };
 }
 
@@ -144,7 +148,7 @@ export const taskService = {
       where.isPrivate = true;
       where.createdById = req.user!.id; // Only see your own private tasks
     } else {
-      where.isPrivate = { not: true }; // See public tasks (handles both false and null)
+      where.isPrivate = false; // See public tasks (handles both false and null)
     }
 
     // ✅ Search logic
