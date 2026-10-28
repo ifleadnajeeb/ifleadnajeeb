@@ -137,7 +137,14 @@ export const taskService = {
 
   async list(req: AuthRequest, q: ListTasksQuery) {
     const scope = await scopeFor(req);
-    const where: any = { ...scope, isPrivate: false };
+    const where: any = { ...scope };
+    // ✅ Check if user is asking for their private Quick Tasks
+    if (req.query.isPrivate === 'true') {
+      where.isPrivate = true;
+      where.createdById = req.user!.id; // Only show their own private tasks
+    } else {
+      where.isPrivate = false; // Show public Works tasks
+    }
     if (q.status) where.status = q.status;
     if (q.priority) where.priority = q.priority;
     if (q.assignedToId) where.assignedToId = q.assignedToId;
@@ -185,6 +192,7 @@ export const taskService = {
     const actor = req.user!;
     const created = await prisma.task.create({
       data: {
+        isPrivate: input.isPrivate ?? false,
         organizationId: actor.organizationId,
         title: input.title,
         description: input.description,

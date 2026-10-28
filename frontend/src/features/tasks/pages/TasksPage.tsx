@@ -45,6 +45,7 @@ export default function TasksPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(!!customerName);
+  const [showPrivate, setShowPrivate] = useState(false);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   // Auto-open modal if coming from "Assign Work"
@@ -60,7 +61,7 @@ export default function TasksPage() {
 
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
-    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
+    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id , isPrivate: showPrivate ? 'true' : 'false'}),
     enabled: view === 'list',
   });
 
@@ -124,6 +125,7 @@ return (
             >
               <ListIcon className="w-3.5 h-3.5" /> List
             </button>
+            </div>
           </div>
           <CanDo permission="tasks:create">
             <button
