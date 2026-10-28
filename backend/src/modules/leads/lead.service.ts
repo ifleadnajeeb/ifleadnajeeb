@@ -197,6 +197,12 @@ export const leadService = {
   async list(req: AuthRequest, query: ListLeadsQuery) {
     const actor = req.user!;
     const scope = await buildScopeFilter(req);
+    
+    // ✅ Force CEO to only see leads assigned to them (like BDE)
+    if (actor.role === 'CEO') {
+      scope.where.assignedToId = actor.id;
+    }
+    
     let where: any = { ...scope.where };
 
     // 1. Filter the main table data
