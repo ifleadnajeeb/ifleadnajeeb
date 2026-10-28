@@ -136,28 +136,29 @@ export const taskService = {
   },
 
   async list(req: AuthRequest, query: any = {}) {
-    const actor = req.user!;
     const scope = await scopeFor(req);
     const where: any = { ...scope };
 
-    // ✅ Apply Private/Public filter
+    // ✅ Handle Private vs Public Tasks safely
     if (query.isPrivate === 'true' || query.isPrivate === true) {
       where.isPrivate = true;
-      where.createdById = actor.id; // Only show the user's own private tasks
+      where.createdById = req.user!.id; // Only see your own private tasks
     } else {
-      where.isPrivate = false; // Show team works (public)
+      where.isPrivate = { not: true }; // See public tasks (handles both false and null)
     }
 
-    // Apply search if present
+    // ✅ Search logic
     if (query.search) {
       where.OR = [
         { title: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } }
+        { description: { contains: query.search, mode: 'insensitive' } },
       ];
     }
 
-    const skip = ((Number(query.page) || 1) - 1) * (Number(query.pageSize) || 100);
-    const take = Number(query.pageSize) || 100;
+    // ✅ Pagination
+    const page = Number(query.page) || 1;
+    const pageSize = Number(query.pageSize) || 30;
+    const skip = (page - 1) * pageSize;
 
     const [data, total] = await Promise.all([
       prisma.task.findMany({
@@ -165,14 +166,14 @@ export const taskService = {
         include: { assignedTo: true, createdBy: true },
         orderBy: { createdAt: 'desc' },
         skip,
-        take,
+        take: pageSize,
       }),
       prisma.task.count({ where })
     ]);
 
     return {
       data,
-      meta: { total, page: Number(query.page) || 1, pageSize: take }
+      meta: { total, page, pageSize }
     };
   },
 
