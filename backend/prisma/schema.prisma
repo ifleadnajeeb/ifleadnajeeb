@@ -20,6 +20,7 @@ enum RoleName {
   BDM
   SALES_HEAD
   BDE
+  GRAPHIC_DESIGNER
 }
 
 enum UserStatus {
