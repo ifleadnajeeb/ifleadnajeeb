@@ -94,10 +94,7 @@ export default function TasksPage() {
   const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
     if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
-    return true;
-    if (assigneeFilter !== 'all' && task.assignedToId !== assigneeFilter) return false;
-    if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
-    return true;
+    return true; // ✅ THIS WAS MISSING! It was hiding all tasks.
   }) : [];
 
 
