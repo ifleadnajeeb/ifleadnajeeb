@@ -144,7 +144,9 @@ export const taskService = {
   },
 
   async list(req: AuthRequest, query: any = {}) {
-    const where: any = { organizationId: req.user!.organizationId };
+    // ✅ Apply role-based scope (workers see only their tasks, managers see all)
+    const scope = await scopeFor(req);
+    const where: any = { ...scope };
 
     if (query.search) {
       where.OR = [
