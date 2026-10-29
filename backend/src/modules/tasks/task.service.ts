@@ -140,23 +140,10 @@ export const taskService = {
   },
 
   async list(req: AuthRequest, query: any = {}) {
-    const scope = await scopeFor(req); // This already handles roles correctly
+    const scope = await scopeFor(req);
     const where: any = { ...scope };
 
-    // ✅ Handle Private Tasks
-    if (query.isPrivate === 'true' || query.isPrivate === true) {
-      where.isPrivate = true;
-      where.createdById = req.user!.id;
-    } else {
-      where.isPrivate = false;
-    }
-
-    // ✅ ONLY apply assignedToId if the role is restricted (like BDE)
-    const allAccessRoles = ['ADMIN', 'CEO', 'OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'];
-    if (!allAccessRoles.includes(req.user!.role) && query.assignedToId) {
-      where.assignedToId = query.assignedToId;
-    }
-
+    // ✅ Just fetch all tasks (Private or Public) so they show up
     if (query.search) {
       where.OR = [
         { title: { contains: query.search, mode: 'insensitive' } },

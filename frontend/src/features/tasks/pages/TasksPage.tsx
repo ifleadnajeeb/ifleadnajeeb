@@ -58,6 +58,8 @@ export default function TasksPage() {
     queryFn: () => tasksService.kanban({ search: search || undefined, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
     enabled: view === 'kanban',
   });
+  const kanbanTasks = Array.isArray(kanbanQ.data) ? kanbanQ.data : (kanbanQ.data?.data || []);
+
 
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
@@ -110,20 +112,7 @@ return (
           <p className="text-[13.5px] text-ink-muted mt-0.5">Manage your tasks and assignments</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex bg-ink-bg p-1 rounded-lg">
-            <button
-              onClick={() => setShowPrivate(false)}
-              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${!showPrivate ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}
-            >
-              Team Works
-            </button>
-            <button
-              onClick={() => setShowPrivate(true)}
-              className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${showPrivate ? 'bg-brand text-white shadow-sm' : 'text-ink-muted hover:text-ink'}`}
-            >
-              My Quick Tasks
-            </button>
-          </div>
+          
           
           <div className="flex bg-ink-bg p-1 rounded-lg">
             <button onClick={() => setViewMode('kanban')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${viewMode === 'kanban' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
