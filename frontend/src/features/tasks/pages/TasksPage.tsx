@@ -54,6 +54,7 @@ export default function TasksPage() {
   }, [customerName]);
 
   const kanbanQ = useQuery({
+    refetchOnMount: 'always',
     queryKey: ['tasks', 'kanban', search],
     queryFn: () => tasksService.list({ search: search || undefined, pageSize: 100 }),
     enabled: view === 'kanban',
@@ -91,6 +92,9 @@ export default function TasksPage() {
     ? (kanbanQ.data?.data || []) 
     : (listQ.data?.data || []);
   
+  console.log('KANBAN DATA:', kanbanQ.data);
+  console.log('DISPLAY TASKS:', displayTasks);
+
   const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
     if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
