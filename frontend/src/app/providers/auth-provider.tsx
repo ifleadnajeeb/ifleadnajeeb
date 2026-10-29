@@ -30,7 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return null;
       }
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: Infinity,
+    refetchOnMount: false,
   });
 
   // ✅ The `can` function that both sidebars depend on
@@ -46,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await api.post('/auth/login', { email, password });
       const userData = res.data?.user || res.data;
       queryClient.setQueryData(['me'], userData);
-      queryClient.invalidateQueries({ queryKey: ['me'] });
     } catch (err) {
       throw new Error(getErrorMessage(err));
     }
