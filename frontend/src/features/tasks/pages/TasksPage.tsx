@@ -55,7 +55,7 @@ export default function TasksPage() {
 
   const kanbanQ = useQuery({
     queryKey: ['tasks', 'kanban', search],
-    queryFn: () => tasksService.list({ search: search || undefined, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
+    queryFn: () => tasksService.list({ search: search || undefined, pageSize: 100 }),
     enabled: view === 'kanban',
   });
   
