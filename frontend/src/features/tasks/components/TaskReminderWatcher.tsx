@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bell, X, CheckSquare, AlertTriangle } from 'lucide-react';
+import { api } from '@/shared/api/client';
 
 // ─────────────────────────────────────────────────────────────
 // Audio (inline, no external imports)
 // ─────────────────────────────────────────────────────────────
 let audioCtx: AudioContext | null = null;
-const API_BASE = (import.meta.env.VITE_API_URL as string | undefined) || '';
 
 function beep() {
   try {
@@ -83,20 +83,10 @@ export function TaskReminderWatcher() {
     async function poll() {
       if (cancelled) return;
       try {
-        const res = await fetch(`${API_BASE}/api/tasks/reminders/due`, {
-          credentials: 'include',
-          headers: { 'Accept': 'application/json' },
-        });
-
+        const res = await api.get('/tasks/reminders/due');
         const timestamp = new Date().toLocaleTimeString('en-GB');
-        console.log(`[watcher] poll @ ${timestamp} → status ${res.status}`);
-
-        if (!res.ok) {
-          setDebug(d => ({ ...d, polls: d.polls + 1, lastError: `HTTP ${res.status}`, lastFetchAt: timestamp }));
-          return;
-        }
-
-        const json = await res.json();
+        console.log(`[watcher] poll @ ${timestamp} → status 200`);
+        const json = res.data;
         const items: Task[] = json?.data ?? [];
         console.log('[watcher] got', items.length, 'reminders');
 
@@ -124,10 +114,7 @@ export function TaskReminderWatcher() {
         beepIntervalRef.current = setInterval(beep, 1500);
 
         // Mark as fired on server
-        fetch(`${API_BASE}/api/tasks/${next.id}/reminder-fired`, {
-          method: 'POST',
-          credentials: 'include',
-        }).catch(() => {});
+        api.post(`/tasks/${next.id}/reminder-fired`).catch(() => {});
 
         // Update tab title
         document.title = `🔔 ${next.title}`;
@@ -169,12 +156,7 @@ export function TaskReminderWatcher() {
   const markDone = async () => {
     if (!active) return;
     try {
-      await fetch(`${API_BASE}/api/tasks/${active.id}/move`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'DONE' }),
-      });
+      await api.patch(`/tasks/${active.id}/move`, { status: 'DONE' });
     } catch {}
     dismiss();
   };

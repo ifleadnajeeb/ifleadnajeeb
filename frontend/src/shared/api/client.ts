@@ -1,12 +1,14 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
-const baseURL = API_BASE ? `${API_BASE}/api` : '/api';
+// ✅ In dev: use localhost:4000. In prod: use Vercel env or Render URL
+const API_BASE = import.meta.env.VITE_API_URL || 
+  (import.meta.env.DEV ? 'http://localhost:4000' : 'https://ifleadnajeeb.onrender.com');
+const baseURL = `${API_BASE}/api`;
 
 export const api = axios.create({
   baseURL,
   withCredentials: true,
-  timeout: 90000, // ✅ 15 second timeout
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },

@@ -6,7 +6,6 @@ import {
   STATUS_LABEL, STATUS_COLOR, PRIORITY_COLOR,
 } from '../services/tasks.service';
 import { cn } from '@/shared/utils/cn';
-import { useQuery } from '@tanstack/react-query';
 import { usersService } from '@/features/users/services/users.service';
 import { operationsService } from '@/features/operations/services/operations.service';
 import { useAuth } from '@/app/providers/auth-provider';

@@ -5,6 +5,7 @@ import { api, getErrorMessage } from '@/shared/api/client';
 interface AuthContextType {
   user: any | null;
   loading: boolean;
+  can: (permission: string) => boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -19,29 +20,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retry: false,
     queryFn: async () => {
       try {
-        // ✅ Force a 5-second timeout so it never hangs forever
         const timeout = new Promise<null>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout')), 5000)
+          setTimeout(() => reject(new Error('Timeout')), 8000)
         );
         const request = api.get('/auth/me').then((res) => res.data?.user || null);
-        
         return await Promise.race([request, timeout]) as any;
       } catch (error) {
-        console.warn('Auth check timed out or failed. Redirecting to login.');
+        console.warn('Auth check timed out or failed.');
         return null;
       }
     },
     staleTime: 5 * 60 * 1000,
   });
 
+  // ✅ The `can` function that both sidebars depend on
+  const can = (permission: string): boolean => {
+    if (!user) return false;
+    if (user.role === 'ADMIN') return true;
+    const permissions: string[] = user.permissions || [];
+    return permissions.includes(permission);
+  };
+
   const login = async (email: string, password: string) => {
     try {
       const res = await api.post('/auth/login', { email, password });
-      // ✅ Immediately set the user data so the UI redirects instantly
       const userData = res.data?.user || res.data;
       queryClient.setQueryData(['me'], userData);
-      
-      // Refetch in the background to ensure cookies are fully synced
       queryClient.invalidateQueries({ queryKey: ['me'] });
     } catch (err) {
       throw new Error(getErrorMessage(err));
@@ -60,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: user || null, loading: isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user: user || null, loading: isLoading, can, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
