@@ -122,6 +122,7 @@ export const taskService = {
   },
 
   async list(req: AuthRequest, query: any = {}) {
+    // ✅ Return ALL tasks for the organization without any role filters
     const where: any = { organizationId: req.user!.organizationId };
 
     if (query.search) {
@@ -131,7 +132,6 @@ export const taskService = {
       ];
     }
 
-    // Fetch all tasks in the organization
     const tasks = await prisma.task.findMany({
       where,
       include: { assignedTo: true, createdBy: true },
