@@ -36,8 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      await api.post('/auth/login', { email, password });
-      await queryClient.invalidateQueries({ queryKey: ['me'] });
+      const res = await api.post('/auth/login', { email, password });
+      // ✅ Immediately set the user data so the UI redirects instantly
+      const userData = res.data?.user || res.data;
+      queryClient.setQueryData(['me'], userData);
+      
+      // Refetch in the background to ensure cookies are fully synced
+      queryClient.invalidateQueries({ queryKey: ['me'] });
     } catch (err) {
       throw new Error(getErrorMessage(err));
     }
