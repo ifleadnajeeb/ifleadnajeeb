@@ -1,30 +1,36 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/app/providers/auth-provider';
 import { DesktopLayout } from '@/app/layouts/desktop-layout';
-import Login from '@/features/auth/pages/Login';
-import UsersPage from '@/features/users/pages/UsersPage';
-import SettingsPage from '@/features/settings/pages/SettingsPage';
-import TeamPerformancePage from '@/features/users/pages/TeamPerformancePage';
-import UserPanelPage from '@/features/users/pages/UserPanelPage';
-import IntegrationsPage from '@/features/integrations/pages/IntegrationsPage';
-import VoicePage from '@/features/ai/voice/VoicePage';
-import DailyReportsPage from '@/features/reports/pages/DailyReportsPage';
-import ReportsPage from '@/features/reports/pages/ReportsPage';
-import LeadsPage from '@/features/leads/pages/LeadsPage';
-import DashboardHome from '@/features/dashboard/pages/DashboardHome';
-import AIAssistantPage from '@/features/ai/pages/AIAssistantPage';
-import MissionsPage from '@/features/missions/pages/MissionsPage';
-import FollowupsPage from '@/features/followups/pages/FollowupsPage';
-import AppointmentsPage from '@/features/appointments/pages/AppointmentsPage';
-import CalendarPage from '@/features/calendar/pages/CalendarPage';
-import CustomersPage from '@/features/customers/pages/CustomersPage';
-import TasksPage from '@/features/tasks/pages/TasksPage';
-import DocumentsPage from '@/features/documents/pages/DocumentsPage';
-import RolesPage from '@/features/roles/pages/RolesPage';
-import AuditPage from '@/features/audit/pages/AuditPage';
-import AttendancePage from '@/features/audit/pages/AttendancePage';
-import WhatsAppPage from '@/features/whatsapp/pages/WhatsAppPage';
-import ConfigPage from '@/features/config/pages/ConfigPage';
+const Login = lazy(() => import('@/features/auth/pages/Login'));
+const UsersPage = lazy(() => import('@/features/users/pages/UsersPage'));
+const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'));
+const TeamPerformancePage = lazy(() => import('@/features/users/pages/TeamPerformancePage'));
+const UserPanelPage = lazy(() => import('@/features/users/pages/UserPanelPage'));
+const IntegrationsPage = lazy(() => import('@/features/integrations/pages/IntegrationsPage'));
+const VoicePage = lazy(() => import('@/features/ai/voice/VoicePage'));
+const DailyReportsPage = lazy(() => import('@/features/reports/pages/DailyReportsPage'));
+const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage'));
+const LeadsPage = lazy(() => import('@/features/leads/pages/LeadsPage'));
+const DashboardHome = lazy(() => import('@/features/dashboard/pages/DashboardHome'));
+const AIAssistantPage = lazy(() => import('@/features/ai/pages/AIAssistantPage'));
+const MissionsPage = lazy(() => import('@/features/missions/pages/MissionsPage'));
+const FollowupsPage = lazy(() => import('@/features/followups/pages/FollowupsPage'));
+const AppointmentsPage = lazy(() => import('@/features/appointments/pages/AppointmentsPage'));
+const CalendarPage = lazy(() => import('@/features/calendar/pages/CalendarPage'));
+const CustomersPage = lazy(() => import('@/features/customers/pages/CustomersPage'));
+const TasksPage = lazy(() => import('@/features/tasks/pages/TasksPage'));
+const DocumentsPage = lazy(() => import('@/features/documents/pages/DocumentsPage'));
+const RolesPage = lazy(() => import('@/features/roles/pages/RolesPage'));
+const AuditPage = lazy(() => import('@/features/audit/pages/AuditPage'));
+const AttendancePage = lazy(() => import('@/features/audit/pages/AttendancePage'));
+const WhatsAppPage = lazy(() => import('@/features/whatsapp/pages/WhatsAppPage'));
+const ConfigPage = lazy(() => import('@/features/config/pages/ConfigPage'));
+
+
+function SuspenseWrapper({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<div className="p-10 text-center text-ink-muted">Loading...</div>}>{children}</Suspense>;
+}
 
 function ProtectedRoute() {
   const { user, loading } = useAuth();

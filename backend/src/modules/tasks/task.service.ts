@@ -42,6 +42,9 @@ function toDTO(t: any) {
 
 const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'] as const;
 
+
+  const userSelect = { select: { id: true, name: true, email: true } };
+
 export const taskService = {
   async submitForReview(req: AuthRequest, id: string, deliverableUrl?: string) {
     const task = await prisma.task.update({
@@ -133,7 +136,7 @@ export const taskService = {
 
     const tasks = await prisma.task.findMany({
       where,
-      include: { assignedTo: true, createdBy: true },
+      include: { assignedTo: userSelect, createdBy: userSelect },
       orderBy: { createdAt: 'desc' },
     });
 
