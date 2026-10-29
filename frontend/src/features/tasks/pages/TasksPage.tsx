@@ -58,8 +58,7 @@ export default function TasksPage() {
     queryFn: () => tasksService.kanban({ search: search || undefined, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
     enabled: view === 'kanban',
   });
-  const kanbanTasks = Array.isArray(kanbanQ.data) ? kanbanQ.data : (kanbanQ.data?.data || []);
-
+  
 
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
@@ -104,7 +103,10 @@ export default function TasksPage() {
     return true;
   }) : [];
 
-return (
+
+  const safeTasks = kanbanQ.data?.data || [];
+
+  return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
         <div>

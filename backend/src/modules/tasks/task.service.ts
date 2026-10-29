@@ -7,8 +7,8 @@ async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
   
-  const allAccessRoles = ['CEO', 'OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'];
-  if (allAccessRoles.includes(u.role)) {
+  // ✅ Managers see ALL tasks
+  if (u.role === 'CEO' || u.role === 'OP_MANAGER') {
     return { organizationId: u.organizationId };
   }
 
@@ -23,6 +23,7 @@ async function scopeFor(req: AuthRequest): Promise<any> {
     return { organizationId: u.organizationId, assignedToId: { in: [u.id, ...team.map(t => t.id)] } };
   }
 
+  // ✅ Workers (WEB_DEV, SOFTWARE_DEV, etc.) only see their own tasks
   return { organizationId: u.organizationId, assignedToId: u.id };
 }
 
@@ -150,7 +151,6 @@ export const taskService = {
       ];
     }
 
-    // ✅ Fetch all tasks based on role scope
     const tasks = await prisma.task.findMany({
       where,
       include: { assignedTo: true, createdBy: true },
