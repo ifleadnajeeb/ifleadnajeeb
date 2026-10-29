@@ -109,7 +109,7 @@ export default function EmployeeDashboard() {
                   <div className="flex justify-between items-center mt-3">
                     <span className="text-[12px] font-semibold text-ink-muted bg-gray-100 px-2 py-1 rounded">{t.status}</span>
                     <div className="flex gap-2">
-                      <button onClick={() => setReportTaskId(t.id)} className="text-[13px] text-ink-muted font-medium hover:underline">Log Daily Report</button>
+                      <button onClick={() => setReportTaskId(t.id)} className="text-[13px] text-ink-muted font-medium hover:underline"></button>
                       
                     </div>
                   </div>
@@ -255,7 +255,7 @@ function SubmitReviewModal({ taskId, onClose, onSuccess }: { taskId: string, onC
         </div>
       </div>
     
-      {/* ✅ New Log Daily Report Modal */}
+      {/* ✅ New  Modal */}
       <LogDailyReportModal
         isOpen={!!reportTaskId}
         onClose={() => setReportTaskId(null)}
