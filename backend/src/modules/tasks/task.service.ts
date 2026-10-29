@@ -143,7 +143,6 @@ export const taskService = {
     const scope = await scopeFor(req);
     const where: any = { ...scope };
 
-    // ✅ Just fetch all tasks (Private or Public) so they show up
     if (query.search) {
       where.OR = [
         { title: { contains: query.search, mode: 'insensitive' } },
@@ -151,22 +150,14 @@ export const taskService = {
       ];
     }
 
-    const page = Number(query.page) || 1;
-    const pageSize = Number(query.pageSize) || 100;
-    const skip = (page - 1) * pageSize;
+    // ✅ Fetch all tasks based on role scope
+    const tasks = await prisma.task.findMany({
+      where,
+      include: { assignedTo: true, createdBy: true },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    const [data, total] = await Promise.all([
-      prisma.task.findMany({
-        where,
-        include: { assignedTo: true, createdBy: true },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: pageSize,
-      }),
-      prisma.task.count({ where })
-    ]);
-
-    return { data, meta: { total, page, pageSize } };
+    return { data: tasks, meta: { total: tasks.length } };
   },
 
   async create(req: AuthRequest, input: CreateTaskInput) {

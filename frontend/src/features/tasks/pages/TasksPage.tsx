@@ -63,7 +63,7 @@ export default function TasksPage() {
 
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
-    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id , isPrivate: showPrivate}),
+    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
     enabled: view === 'list',
   });
 
@@ -112,8 +112,6 @@ return (
           <p className="text-[13.5px] text-ink-muted mt-0.5">Manage your tasks and assignments</p>
         </div>
         <div className="flex items-center gap-3">
-          
-          
           <div className="flex bg-ink-bg p-1 rounded-lg">
             <button onClick={() => setViewMode('kanban')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${viewMode === 'kanban' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               <LayoutGrid className="w-3.5 h-3.5 inline mr-1" /> Kanban
@@ -122,12 +120,8 @@ return (
               <ListIcon className="w-3.5 h-3.5 inline mr-1" /> List
             </button>
           </div>
-          
           <CanDo permission="tasks:create">
-            <button
-              onClick={() => setCreateOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover"
-            >
+            <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover">
               <Plus className="w-4 h-4" /> New {pageTitle.slice(0, -1)}
             </button>
           </CanDo>
