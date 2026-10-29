@@ -86,14 +86,10 @@ export default function TasksPage() {
     }
   };
 
-    const rawKanban = kanbanQ.data || {};
-  const flatKanbanTasks = Array.isArray(rawKanban) 
-    ? rawKanban 
-    : (rawKanban as any)?.data && Array.isArray((rawKanban as any).data)
-      ? (rawKanban as any).data
-      : Object.values(rawKanban).flat();
-
-  const rawTasks = view === 'kanban' ? flatKanbanTasks : (listQ.data?.data || []);
+      // ✅ Safely extract tasks from the list API
+  const rawTasks = view === 'kanban' 
+    ? (kanbanQ.data?.data || []) 
+    : (listQ.data?.data || []);
   
   const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;

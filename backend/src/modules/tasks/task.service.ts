@@ -4,7 +4,7 @@ import { NotFoundError } from '../../shared/errors.js';
 import type { CreateTaskInput, UpdateTaskInput, ListTasksQuery } from './task.schema.js';
 
 async function scopeFor(req: AuthRequest): Promise<any> {
-  // ✅ Everyone can see all tasks in the organization on the Works board
+  // ✅ Everyone sees all tasks in the organization
   return { organizationId: req.user!.organizationId };
 }
 
@@ -122,7 +122,6 @@ export const taskService = {
   },
 
   async list(req: AuthRequest, query: any = {}) {
-    // ✅ Return ALL tasks for the organization without any role filters
     const where: any = { organizationId: req.user!.organizationId };
 
     if (query.search) {
