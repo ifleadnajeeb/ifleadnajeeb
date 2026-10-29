@@ -4,8 +4,27 @@ import { NotFoundError } from '../../shared/errors.js';
 import type { CreateTaskInput, UpdateTaskInput, ListTasksQuery } from './task.schema.js';
 
 async function scopeFor(req: AuthRequest): Promise<any> {
-  // ✅ Everyone sees all tasks in the organization
-  return { organizationId: req.user!.organizationId };
+  const u = req.user!;
+  if (u.role === 'ADMIN') return {};
+
+  // ✅ Managers see ALL tasks in the organization
+  if (u.role === 'CEO' || u.role === 'OP_MANAGER') {
+    return { organizationId: u.organizationId };
+  }
+
+  if (u.role === 'BDM') {
+    const ids = await collectDescendants(u.id);
+    return { organizationId: u.organizationId, assignedToId: { in: ids } };
+  }
+
+  if (u.role === 'SALES_HEAD') {
+    if (!u.teamId) return { assignedToId: u.id };
+    const team = await prisma.user.findMany({ where: { teamId: u.teamId, organizationId: u.organizationId }, select: { id: true } });
+    return { organizationId: u.organizationId, assignedToId: { in: [u.id, ...team.map(t => t.id)] } };
+  }
+
+  // ✅ Workers (WEB_DEVELOPER, SOFTWARE_DEVELOPER, DIGITAL_MARKETER, etc.) ONLY see their own tasks
+  return { organizationId: u.organizationId, assignedToId: u.id };
 }
 
 async function collectDesc(root: string): Promise<string[]> {
