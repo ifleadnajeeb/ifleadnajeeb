@@ -102,7 +102,6 @@ export default function TasksPage() {
   
   
   
-  const safeTasks = kanbanQ.data?.data || [];
 
   return (
     <div className="space-y-4">
@@ -141,7 +140,7 @@ export default function TasksPage() {
       {view === 'kanban' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
-            const tasks = kanbanQ.data?.columns?.[col] ?? [];
+            const tasks = displayTasks.filter((t: any) => t.status === col);
             return (
               <div
                 key={col}
@@ -149,7 +148,7 @@ export default function TasksPage() {
                 onDrop={e => {
                   e.preventDefault();
                   const taskId = e.dataTransfer.getData('text/task-id');
-                  const allTasks = Object.values(kanbanQ.data?.columns ?? {}).flat();
+                  const allTasks = displayTasks;
                   const dragged = allTasks.find((t: Task) => t.id === taskId);
                   if (dragged) moveTask(dragged, col);
                 }}
