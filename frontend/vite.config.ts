@@ -8,7 +8,8 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') },
   },
   build: {
-    sourcemap: true,
-    minify: false, // 👈 DISABLED to see real function names in errors
+    minify: 'esbuild', // ✅ Back to fast production build
+    sourcemap: false,  // ✅ Saves Vercel bandwidth
+    chunkSizeWarningLimit: 4000,
   },
 });
