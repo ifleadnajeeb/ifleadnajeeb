@@ -80,7 +80,7 @@ export function BlockModal({ open, onClose, onSuccess, defaultUserId, defaultDat
             <select value={forUserId} onChange={(e) => setForUserId(e.target.value)}
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white">
               <option value="">— Myself —</option>
-              {users.map((u) => (
+              {(Array.isArray(users) ? users : (users?.data || [])).map((u) => (
                 <option key={u.id} value={u.id}>{u.name} · {ROLE_LABEL[u.role] ?? u.role}</option>
               ))}
             </select>

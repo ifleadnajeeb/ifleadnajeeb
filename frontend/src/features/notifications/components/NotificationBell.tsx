@@ -102,7 +102,7 @@ export function NotificationBell() {
                 <p className="text-[12.5px] text-ink-muted mt-1">You don't have any new notifications.</p>
               </div>
             ) : (
-              notifications.map(n => (
+              (Array.isArray(notifications) ? notifications : (notifications?.data || [])).map(n => (
                 <div
                   key={n.id}
                   onClick={() => handleItemClick(n)}

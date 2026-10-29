@@ -407,7 +407,7 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
               <option value="">— Select Employee —</option>
               {/* Ensure `users` is available in this component scope. If not, we may need to pass it as a prop. */}
-              {users?.map((u: any) => (
+              {(Array.isArray(users) ? users : (users?.data || [])).map((u: any) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>

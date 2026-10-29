@@ -206,7 +206,7 @@ export function AIAssistant() {
               </div>
             )}
 
-            {messages.map((m, i) => (
+            {(Array.isArray(messages) ? messages : (messages?.data || [])).map((m, i) => (
               <div key={i} className={cn('flex gap-2.5', m.role === 'user' ? 'justify-end' : 'justify-start')}>
                 {m.role === 'ai' && (
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-brand to-brand-hover grid place-items-center shrink-0 mt-0.5">

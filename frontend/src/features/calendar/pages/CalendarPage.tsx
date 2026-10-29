@@ -152,7 +152,7 @@ export default function CalendarPage() {
             <select value={userId} onChange={(e) => setUserId(e.target.value)}
               className="w-full h-9 px-2 border border-ink-border rounded-md text-[13px] bg-white">
               <option value="">— Select a user —</option>
-              {users.map((u) => (
+              {(Array.isArray(users) ? users : (users?.data || [])).map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name} · {ROLE_LABEL[u.role] ?? u.role}
                 </option>

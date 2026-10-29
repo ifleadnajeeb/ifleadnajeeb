@@ -310,7 +310,7 @@ export function ChatPanel({ onClose }: { onClose: () => void }) {
                       </p>
                     </div>
                   )}
-                  {messages.map((m, i) => {
+                  {(Array.isArray(messages) ? messages : (messages?.data || [])).map((m, i) => {
                     const mine = m.sender?.id === user?.id;
                     const showSender =
                       activeChat.isGroup &&

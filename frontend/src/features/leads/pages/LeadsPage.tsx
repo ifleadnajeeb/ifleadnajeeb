@@ -600,7 +600,7 @@ function BulkAssignModal({
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] focus:outline-none focus:border-brand"
             >
               <option value="">— Pick a user —</option>
-              {users.map((u) => (
+              {(Array.isArray(users) ? users : (users?.data || [])).map((u) => (
                 <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
               ))}
             </select>

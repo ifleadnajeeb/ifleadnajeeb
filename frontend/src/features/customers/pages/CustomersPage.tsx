@@ -319,7 +319,7 @@ function AssignWorkModal({ customerId, customerName, onClose, onSuccess }: { cus
             <label className="block text-[13px] text-ink-muted mb-1.5 font-medium">Assign To Staff *</label>
             <select required value={assignedToId} onChange={e => setAssignedToId(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white">
               <option value="">— Select Employee —</option>
-              {users?.map((u: AppUser) => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+              {(Array.isArray(users) ? users : (users?.data || [])).map((u: AppUser) => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
             </select>
           </div>
 

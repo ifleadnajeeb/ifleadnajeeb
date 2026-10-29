@@ -293,7 +293,7 @@ export function AddLeadModal({
               <select value={assignedToId} onChange={(e) => setAssignedToId(e.target.value)} disabled={loadingUsers}
                 className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
                 <option value="">— Default (Me) —</option>
-                {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                {(Array.isArray(users) ? users : (users?.data || [])).map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
           </div>

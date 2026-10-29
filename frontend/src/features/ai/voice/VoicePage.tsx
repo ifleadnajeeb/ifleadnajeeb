@@ -258,7 +258,7 @@ export default function VoicePage() {
               </div>
             )}
 
-            {messages.map((m, i) => (
+            {(Array.isArray(messages) ? messages : (messages?.data || [])).map((m, i) => (
               <div key={i}>
                 <div
                   className={cn(

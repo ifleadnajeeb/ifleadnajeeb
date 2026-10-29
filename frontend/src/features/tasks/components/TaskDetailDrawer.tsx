@@ -467,7 +467,7 @@ function EditTaskModal({ task, onClose, onSuccess }: { task: any, onClose: () =>
               <label className="block text-[13px] text-ink-muted mb-1.5">Assign To</label>
               <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)} className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]">
                 <option value="">— Unassigned —</option>
-                {users?.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                {(Array.isArray(users) ? users : (users?.data || [])).map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             <div>
