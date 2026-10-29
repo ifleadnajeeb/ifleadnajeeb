@@ -1,70 +1,61 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from 'react';
-import { api } from '@/shared/api/client';
+import { createContext, useContext, ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, getErrorMessage } from '@/shared/api/client';
 
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  permissions: string[];
-}
-
-interface AuthContextValue {
-  user: AuthUser | null;
+interface AuthContextType {
+  user: any | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  can: (permission: string) => boolean;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  // Hydrate from server on mount
-  useEffect(() => {
-    api
-      .get<AuthUser>('/auth/me')
-      .then((res) => setUser(res.data))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: user, isLoading } = useQuery({
+    queryKey: ['me'],
+    retry: false,
+    queryFn: async () => {
+      try {
+        // ✅ Force a 5-second timeout so it never hangs forever
+        const timeout = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), 5000)
+        );
+        const request = api.get('/auth/me').then((res) => res.data?.user || null);
+        
+        return await Promise.race([request, timeout]) as any;
+      } catch (error) {
+        console.warn('Auth check timed out or failed. Redirecting to login.');
+        return null;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const login = async (email: string, password: string) => {
-    const res = await api.post<{ user: AuthUser }>('/auth/login', {
-      email,
-      password,
-    });
-    setUser(res.data.user);
+    try {
+      await api.post('/auth/login', { email, password });
+      await queryClient.invalidateQueries({ queryKey: ['me'] });
+    } catch (err) {
+      throw new Error(getErrorMessage(err));
+    }
   };
 
   const logout = async () => {
     try {
       await api.post('/auth/logout');
-    } finally {
-      setUser(null);
-      window.location.href = '/login';
+    } catch (err) {
+      console.error(err);
     }
-  };
-
-  const can = (permission: string) => {
-    if (!user) return false;
-    if (user.role === 'ADMIN') return true;
-    if (user.permissions.includes(permission)) return true;
-    const [mod] = permission.split(':');
-    return user.permissions.includes(`${mod}:*`);
+    queryClient.setQueryData(['me'], null);
+    queryClient.clear();
+    window.location.href = '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, can }}>
+    <AuthContext.Provider value={{ user: user || null, loading: isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -72,20 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
-}
-
-// ─── Permission gate component ───
-export function Can({
-  permission,
-  children,
-  fallback = null,
-}: {
-  permission: string;
-  children: ReactNode;
-  fallback?: ReactNode;
-}) {
-  const { can } = useAuth();
-  return can(permission) ? <>{children}</> : <>{fallback}</>;
 }
