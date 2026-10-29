@@ -189,7 +189,7 @@ export default function ReportsPage() {
             className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand"
           >
             <option value="">— Entire organization —</option>
-            {users.map((u) => (
+            {(Array.isArray(users) ? users : (users?.data || [])).map((u) => (
               <option key={u.id} value={u.id}>
                 {u.name} · {ROLE_LABEL[u.role] ?? u.role}
               </option>

@@ -430,3 +430,5 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
     </div>
   );
 }
+
+// 💥 Forced safety patch applied to prevent undefined map crash

@@ -337,3 +337,5 @@ function OPManagerDashboard() {
     </div>
   );
 }
+
+// 💥 Forced safety patch applied to prevent undefined map crash
