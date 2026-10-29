@@ -413,7 +413,7 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
           </div>
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Assign To Staff *</label>
-            <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)}
+            <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)} required
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
               <option value="">— Select Employee —</option>
               {/* Ensure `users` is available in this component scope. If not, we may need to pass it as a prop. */}
