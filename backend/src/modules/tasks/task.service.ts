@@ -4,27 +4,8 @@ import { NotFoundError } from '../../shared/errors.js';
 import type { CreateTaskInput, UpdateTaskInput, ListTasksQuery } from './task.schema.js';
 
 async function scopeFor(req: AuthRequest): Promise<any> {
-  const u = req.user!;
-  if (u.role === 'ADMIN') return {};
-  
-  // ✅ Managers see ALL tasks
-  if (u.role === 'CEO' || u.role === 'OP_MANAGER') {
-    return { organizationId: u.organizationId };
-  }
-
-  if (u.role === 'BDM') {
-    const ids = await collectDescendants(u.id);
-    return { organizationId: u.organizationId, assignedToId: { in: ids } };
-  }
-
-  if (u.role === 'SALES_HEAD') {
-    if (!u.teamId) return { assignedToId: u.id };
-    const team = await prisma.user.findMany({ where: { teamId: u.teamId, organizationId: u.organizationId }, select: { id: true } });
-    return { organizationId: u.organizationId, assignedToId: { in: [u.id, ...team.map(t => t.id)] } };
-  }
-
-  // ✅ Workers (WEB_DEV, SOFTWARE_DEV, etc.) only see their own tasks
-  return { organizationId: u.organizationId, assignedToId: u.id };
+  // ✅ Everyone can see all tasks in the organization on the Works board
+  return { organizationId: req.user!.organizationId };
 }
 
 async function collectDesc(root: string): Promise<string[]> {
@@ -141,8 +122,7 @@ export const taskService = {
   },
 
   async list(req: AuthRequest, query: any = {}) {
-    const scope = await scopeFor(req);
-    const where: any = { ...scope };
+    const where: any = { organizationId: req.user!.organizationId };
 
     if (query.search) {
       where.OR = [
@@ -151,6 +131,7 @@ export const taskService = {
       ];
     }
 
+    // Fetch all tasks in the organization
     const tasks = await prisma.task.findMany({
       where,
       include: { assignedTo: true, createdBy: true },
