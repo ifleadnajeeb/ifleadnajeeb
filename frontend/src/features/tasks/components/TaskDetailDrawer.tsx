@@ -334,7 +334,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                 {task.checklist.length === 0 && (
                   <p className="text-[12.5px] text-ink-muted text-center py-2">No items yet.</p>
                 )}
-                {task.checklist.map((item: any) => (
+                {(task.checklist || []).map((item: any) => (
                   <div key={item.id} className="group flex items-center gap-2 py-1">
                     <input type="checkbox" checked={item.done}
                       onChange={e => toggleCheck(item.id, e.target.checked)}
@@ -369,7 +369,7 @@ export function TaskDetailDrawer({ taskId, onClose }: { taskId: string | null; o
                 {task.comments.length === 0 && (
                   <p className="text-[12.5px] text-ink-muted text-center py-2">No comments yet.</p>
                 )}
-                {task.comments.map((c: any) => (
+                {(task.comments || []).map((c: any) => (
                   <div key={c.id} className="flex gap-2.5">
                     <div className="w-7 h-7 rounded-full bg-brand-light text-brand flex items-center justify-center text-[11px] font-bold shrink-0">
                       {c.user.name.charAt(0).toUpperCase()}

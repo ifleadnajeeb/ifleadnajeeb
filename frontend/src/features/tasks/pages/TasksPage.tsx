@@ -148,7 +148,7 @@ export default function TasksPage() {
       {view === 'kanban' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
-            const tasks = displayTasks.filter((t: any) => t.status === col);
+            const tasks = (displayTasks || []).filter((t: any) => t.status === col);
             return (
               <div
                 key={col}
@@ -169,7 +169,7 @@ export default function TasksPage() {
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {tasks.map(task => {
+                  {(tasks || []).map(task => {
                     // Calculate progress based on status or latest daily report
                     let progress = 0;
                     if (task.status === 'DONE') progress = 100;
