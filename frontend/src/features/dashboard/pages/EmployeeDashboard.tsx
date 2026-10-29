@@ -110,7 +110,7 @@ export default function EmployeeDashboard() {
                     <span className="text-[12px] font-semibold text-ink-muted bg-gray-100 px-2 py-1 rounded">{t.status}</span>
                     <div className="flex gap-2">
                       <button onClick={() => setReportTaskId(t.id)} className="text-[13px] text-ink-muted font-medium hover:underline">Log Daily Report</button>
-                      <button onClick={() => setReviewTaskId(t.id)} className="text-[13px] bg-green-600 text-white px-2 py-1 rounded font-medium hover:bg-green-700">Submit for Review</button>
+                      
                     </div>
                   </div>
                 </div>
