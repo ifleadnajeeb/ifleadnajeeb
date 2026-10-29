@@ -30,9 +30,8 @@ api.interceptors.response.use(
         await api.post('/auth/refresh');
         return api.request(error.config as InternalAxiosRequestConfig);
       } catch {
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
-        }
+        // ✅ Just reject. The AuthProvider will handle the redirect gracefully.
+        return Promise.reject(error);
       }
     }
 
