@@ -17,11 +17,20 @@ export async function login(
   meta: { userAgent?: string; ipAddress?: string }
 ) {
   const user = await prisma.user.findUnique({
-    where: { email },
-    include: {
-      role: { include: { permissions: { include: { permission: true } } } },
-    },
-  });
+      where: { email },
+      include: {
+        role: {
+          include: {
+            permissions: {
+              include: {
+                permission: true
+              }
+            }
+          }
+        },
+        organization: true
+      }
+    });
 
   const valid = user
     ? await bcrypt.compare(password, user.passwordHash)
