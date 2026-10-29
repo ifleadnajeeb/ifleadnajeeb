@@ -88,17 +88,21 @@ export default function TasksPage() {
   };
 
       // ✅ Safely extract tasks from the list API
+  const extractTasks = (data: any) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.data)) return data.data;
+    return [];
+  };
+
   const rawTasks = view === 'kanban' 
-    ? (kanbanQ.data?.data || []) 
-    : (listQ.data?.data || []);
-  
-  console.log('KANBAN DATA:', kanbanQ.data);
-  console.log('DISPLAY TASKS:', displayTasks);
+    ? extractTasks(kanbanQ.data) 
+    : extractTasks(listQ.data);
 
   const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
     if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
-    return true; // ✅ THIS WAS MISSING! It was hiding all tasks.
+    return true; 
   }) : [];
 
 
