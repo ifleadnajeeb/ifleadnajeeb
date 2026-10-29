@@ -37,8 +37,15 @@ function ProtectedRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-ink-bg">
-        <div className="text-sm text-ink-muted">Loading…</div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="w-12 h-12 rounded-[10px] bg-[#E3001B] flex items-center justify-center shrink-0">
+            <span className="text-white font-black text-[30px] leading-none -mt-1 font-sans">if</span>
+          </div>
+          <span className="text-[42px] font-black text-black leading-none tracking-tighter">LEADS</span>
+        </div>
+        <div className="w-8 h-8 border-4 border-gray-200 border-t-[#E3001B] rounded-full animate-spin"></div>
+        <p className="text-gray-500 text-sm mt-4 font-medium">Loading your workspace...</p>
       </div>
     );
   }
