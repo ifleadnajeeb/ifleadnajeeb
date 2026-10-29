@@ -55,7 +55,7 @@ export default function TasksPage() {
 
   const kanbanQ = useQuery({
     queryKey: ['tasks', 'kanban', search],
-    queryFn: () => tasksService.kanban({ search: search || undefined, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
+    queryFn: () => tasksService.list({ search: search || undefined, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
     enabled: view === 'kanban',
   });
   
@@ -98,6 +98,7 @@ export default function TasksPage() {
   const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
     if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
+    return true;
     if (assigneeFilter !== 'all' && task.assignedToId !== assigneeFilter) return false;
     if (priorityFilter !== 'all' && task.priority !== priorityFilter) return false;
     return true;
