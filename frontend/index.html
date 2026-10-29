@@ -14,7 +14,35 @@
     />
   </head>
   <body>
-    <div id="root"></div>
+    
+    <style>
+      .loading-skeleton {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: system-ui, -apple-system, sans-serif;
+        color: #6b7280;
+        font-size: 14px;
+      }
+      .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #dc2626;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 12px;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+    <div id="root">
+      <div class="loading-skeleton">
+        <div class="spinner"></div>
+        Loading workspace...
+      </div>
+    </div>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
