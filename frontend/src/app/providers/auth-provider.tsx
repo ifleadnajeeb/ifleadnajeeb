@@ -19,14 +19,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['me'],
     retry: false,
     queryFn: async () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) return null; // Skip /me call if no token
-      
       try {
+        // The browser sends the cookie automatically through the Vercel proxy
         const res = await api.get('/auth/me');
         return res.data?.user || null;
       } catch {
-        localStorage.removeItem('accessToken');
         return null;
       }
     },
@@ -45,11 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/auth/login', { email, password });
       const userData = res.data?.user || res.data;
-      const token = res.data?.accessToken;
-      
-      if (token) {
-        localStorage.setItem('accessToken', token);
-      }
       queryClient.setQueryData(['me'], userData);
     } catch (err) {
       throw new Error(getErrorMessage(err));
@@ -60,7 +52,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api.post('/auth/logout');
     } catch {}
-    localStorage.removeItem('accessToken');
     queryClient.setQueryData(['me'], null);
     queryClient.clear();
     window.location.href = '/login';
