@@ -14,5 +14,5 @@ export const appConfig = {
   accessTokenTtlMs: 15 * 60 * 1000,
   refreshTokenTtlMs: 7 * 24 * 60 * 60 * 1000,
 
-  bcryptRounds: 8,
+  bcryptRounds: 10,
 };

@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import { Prisma, RoleName, UserStatus } from '@prisma/client';
 import { prisma } from '../../config/database.js';
 import { AuthUser } from '../../middleware/auth.middleware.js';
