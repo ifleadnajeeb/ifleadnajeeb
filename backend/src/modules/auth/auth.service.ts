@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 import { prisma } from '../../config/database.js';
 import { env } from '../../config/env.js';
+import { appConfig } from '../../config/app-config.js';
 import {
   UnauthorizedError,
   ForbiddenError,
