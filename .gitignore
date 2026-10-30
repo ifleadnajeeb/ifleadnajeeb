@@ -49,3 +49,6 @@ prisma/*.db
 prisma/*.db-journal
 .vercel
 .env*
+*.zip
+*.tar.gz
+infrastructure.zip
