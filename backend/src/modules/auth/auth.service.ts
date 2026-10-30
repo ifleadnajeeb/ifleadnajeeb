@@ -70,7 +70,7 @@ export async function login(
   });
 
   const refreshToken = crypto.randomBytes(48).toString('hex');
-  const refreshHash = await bcrypt.hash(refreshToken, 4); // ✅ 4 rounds is enough for long random JWTs
+  const refreshHash = await bcrypt.hash(refreshToken, appConfig.bcryptRounds); // ✅ 4 rounds is enough for long random JWTs
 
   const session = await prisma.session.create({
     data: {
