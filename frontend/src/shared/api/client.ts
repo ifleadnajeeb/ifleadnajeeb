@@ -1,16 +1,25 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// ✅ Use Vercel Proxy so cookies are treated as first-party
-const baseURL = '/api';
+// ✅ Direct Render API (No proxy)
+const baseURL = 'https://ifleadnajeeb.onrender.com/api';
 
 export const api = axios.create({
   baseURL,
-  withCredentials: true, // ✅ Required for cookies
+  withCredentials: true,
   timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ✅ Silent Token Refresh Logic
+// ✅ Attach Bearer token to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ✅ Silent Token Refresh
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
@@ -28,7 +37,6 @@ api.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
 
-    // If 401 Unauthorized, try to refresh the token silently
     if (
       status === 401 && 
       !originalRequest._retry && 
@@ -40,22 +48,25 @@ api.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         }).then(() => {
           return api(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        }).catch(err => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        // Request new token using the refresh cookie
-        await api.post('/auth/refresh');
+        const refreshRes = await api.post('/auth/refresh');
+        const newToken = refreshRes.data?.accessToken;
+        if (newToken) {
+          localStorage.setItem('accessToken', newToken);
+          api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        }
         processQueue(null);
-        return api(originalRequest); // Retry original request
+        return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
-        // Only logout if refresh token is completely dead
+        localStorage.removeItem('accessToken');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
