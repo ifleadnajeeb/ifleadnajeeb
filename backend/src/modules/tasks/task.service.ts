@@ -7,24 +7,31 @@ async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
 
-  // ✅ Managers see ALL tasks in the organization
-  if (u.role === 'CEO' || u.role === 'OP_MANAGER') {
+  // ✅ Only CEO and OP_MANAGER see EVERYTHING in the organization
+  if (['CEO', 'OP_MANAGER'].includes(u.role)) {
     return { organizationId: u.organizationId };
   }
 
   if (u.role === 'BDM') {
-    const ids = await collectDescendants(u.id);
+    const ids = await collectDesc(u.id);
     return { organizationId: u.organizationId, assignedToId: { in: ids } };
   }
 
   if (u.role === 'SALES_HEAD') {
-    if (!u.teamId) return { assignedToId: u.id };
+    if (!u.teamId) return { organizationId: u.organizationId, OR: [{ assignedToId: u.id }, { createdById: u.id }] };
     const team = await prisma.user.findMany({ where: { teamId: u.teamId, organizationId: u.organizationId }, select: { id: true } });
     return { organizationId: u.organizationId, assignedToId: { in: [u.id, ...team.map(t => t.id)] } };
   }
 
-  // ✅ Workers (WEB_DEVELOPER, SOFTWARE_DEVELOPER, DIGITAL_MARKETER, etc.) ONLY see their own tasks
-  return { organizationId: u.organizationId, assignedToId: u.id };
+  // ✅ FOR DIGITAL_MARKETER AND ALL OTHER WORKERS:
+  // See tasks assigned to them OR tasks they created (even if assigned to others)
+  return { 
+    organizationId: u.organizationId, 
+    OR: [
+      { assignedToId: u.id },
+      { createdById: u.id }
+    ]
+  };
 }
 
 async function collectDesc(root: string): Promise<string[]> {
