@@ -1,17 +1,16 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError } from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_URL || 
-  (import.meta.env.DEV ? 'http://localhost:4000' : 'https://ifleadnajeeb.onrender.com');
-const baseURL = `${API_BASE}/api`;
+// ✅ Use relative path so Vercel's proxy handles the backend connection
+const baseURL = '/api';
 
 export const api = axios.create({
   baseURL,
-  withCredentials: true, // Keep for local dev, but we rely on headers now
-  timeout: 20000,
+  withCredentials: true,
+  timeout: 60000, // ✅ Increased to 60s to survive Render cold starts
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ✅ Attach token from localStorage to every request
+// ✅ Attach Bearer token from localStorage to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
@@ -29,7 +28,6 @@ api.interceptors.response.use(
     const isAuthCall = url.includes('/auth/login') || url.includes('/auth/me');
 
     if (status === 401 && !isAuthCall) {
-      // Try refresh (optional, but we can skip if we just force re-login)
       localStorage.removeItem('accessToken');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
