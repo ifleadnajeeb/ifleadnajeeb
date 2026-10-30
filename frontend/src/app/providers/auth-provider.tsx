@@ -75,3 +75,4 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
+// Force rebuild Fri Oct 30 12:34:25 UTC 2026
