@@ -1,6 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// ✅ In dev: use localhost:4000. In prod: use Vercel env or Render URL
 const API_BASE = import.meta.env.VITE_API_URL || 
   (import.meta.env.DEV ? 'http://localhost:4000' : 'https://ifleadnajeeb.onrender.com');
 const baseURL = `${API_BASE}/api`;
@@ -8,7 +7,7 @@ const baseURL = `${API_BASE}/api`;
 export const api = axios.create({
   baseURL,
   withCredentials: true,
-  timeout: 60000,
+  timeout: 8000, // ✅ 8 second hard timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -30,7 +29,6 @@ api.interceptors.response.use(
         await api.post('/auth/refresh');
         return api.request(error.config as InternalAxiosRequestConfig);
       } catch {
-        // ✅ Just reject. The AuthProvider will handle the redirect gracefully.
         return Promise.reject(error);
       }
     }
