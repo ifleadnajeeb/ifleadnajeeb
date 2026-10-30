@@ -1,26 +1,23 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// ✅ Use relative path so the Vercel Proxy handles it (first-party cookies)
+// ✅ Use Vercel Proxy so cookies are treated as first-party
 const baseURL = '/api';
 
 export const api = axios.create({
   baseURL,
-  withCredentials: true, // ✅ CRITICAL: Sends cookies to the proxy
+  withCredentials: true, // ✅ Required for cookies
   timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ✅ Silent Token Refresh Logic (Cookie Only)
+// ✅ Silent Token Refresh Logic
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
 const processQueue = (error: any) => {
   failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve();
-    }
+    if (error) prom.reject(error);
+    else prom.resolve();
   });
   failedQueue = [];
 };
@@ -31,7 +28,7 @@ api.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const status = error.response?.status;
 
-    // If 401 Unauthorized (expired access token)
+    // If 401 Unauthorized, try to refresh the token silently
     if (
       status === 401 && 
       !originalRequest._retry && 
@@ -39,7 +36,6 @@ api.interceptors.response.use(
       !originalRequest.url?.includes('/auth/refresh')
     ) {
       if (isRefreshing) {
-        // Queue this request while refreshing
         return new Promise(function(resolve, reject) {
           failedQueue.push({ resolve, reject });
         }).then(() => {
@@ -53,14 +49,13 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Silently request a new token (browser sends the refresh_token cookie automatically)
+        // Request new token using the refresh cookie
         await api.post('/auth/refresh');
-        
         processQueue(null);
-        return api(originalRequest); // Retry the original failed request
+        return api(originalRequest); // Retry original request
       } catch (refreshError) {
         processQueue(refreshError);
-        // Only redirect if the refresh token itself is dead (e.g., after 7 days)
+        // Only logout if refresh token is completely dead
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
