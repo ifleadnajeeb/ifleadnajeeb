@@ -6,11 +6,18 @@ const baseURL = `${API_BASE}/api`;
 
 export const api = axios.create({
   baseURL,
-  withCredentials: true,
-  timeout: 20000, // ✅ 8 second hard timeout
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  withCredentials: true, // Keep for local dev, but we rely on headers now
+  timeout: 20000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// ✅ Attach token from localStorage to every request
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('accessToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 api.interceptors.response.use(
@@ -19,28 +26,20 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const url = error.config?.url ?? '';
 
-    const isAuthCall =
-      url.includes('/auth/login') ||
-      url.includes('/auth/refresh') ||
-      url.includes('/auth/me');
+    const isAuthCall = url.includes('/auth/login') || url.includes('/auth/me');
 
     if (status === 401 && !isAuthCall) {
-      try {
-        await api.post('/auth/refresh');
-        return api.request(error.config as InternalAxiosRequestConfig);
-      } catch {
-        return Promise.reject(error);
+      // Try refresh (optional, but we can skip if we just force re-login)
+      localStorage.removeItem('accessToken');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
     }
-
     return Promise.reject(error);
   }
 );
 
-export interface ApiError {
-  error: string;
-  message: string;
-}
+export interface ApiError { error: string; message: string; }
 
 export function getErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {

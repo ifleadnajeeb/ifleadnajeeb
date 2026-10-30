@@ -32,7 +32,7 @@ export async function login(req: Request, res: Response) {
     path: '/',
   });
 
-  res.json({ user: result.user });
+  res.json({ user: result.user, accessToken: result.accessToken });
 }
 
 export async function refresh(req: Request, res: Response) {

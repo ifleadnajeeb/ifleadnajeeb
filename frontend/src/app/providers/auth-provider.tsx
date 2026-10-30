@@ -19,22 +19,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['me'],
     retry: false,
     queryFn: async () => {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return null; // Skip /me call if no token
+      
       try {
-        const timeout = new Promise<null>((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout')), 8000)
-        );
-        const request = api.get('/auth/me').then((res) => res.data?.user || null);
-        return await Promise.race([request, timeout]) as any;
-      } catch (error) {
-        console.warn('Auth check timed out or failed.');
+        const res = await api.get('/auth/me');
+        return res.data?.user || null;
+      } catch {
+        localStorage.removeItem('accessToken');
         return null;
       }
     },
-    staleTime: Infinity,
-    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // ✅ The `can` function that both sidebars depend on
   const can = (permission: string): boolean => {
     if (!user) return false;
     if (user.role === 'ADMIN') return true;
@@ -46,6 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/auth/login', { email, password });
       const userData = res.data?.user || res.data;
+      const token = res.data?.accessToken;
+      
+      if (token) {
+        localStorage.setItem('accessToken', token);
+      }
       queryClient.setQueryData(['me'], userData);
     } catch (err) {
       throw new Error(getErrorMessage(err));
@@ -55,9 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await api.post('/auth/logout');
-    } catch (err) {
-      console.error(err);
-    }
+    } catch {}
+    localStorage.removeItem('accessToken');
     queryClient.setQueryData(['me'], null);
     queryClient.clear();
     window.location.href = '/login';

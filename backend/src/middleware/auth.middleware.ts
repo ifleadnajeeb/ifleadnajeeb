@@ -27,7 +27,8 @@ export async function authenticate(
   next: NextFunction
 ) {
   try {
-    const token = req.cookies?.access_token;
+    const authHeader = req.headers.authorization;
+  const token = req.cookies?.access_token || (authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null);
     if (!token) throw new UnauthorizedError('No token');
 
     const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as {
