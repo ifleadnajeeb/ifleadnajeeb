@@ -1,16 +1,16 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// ✅ Direct Render API (No proxy)
-const baseURL = 'https://ifleadnajeeb.onrender.com/api';
+// ✅ Use Vercel Proxy so the first-party Vercel cookies are sent
+const baseURL = '/api';
 
 export const api = axios.create({
   baseURL,
-  withCredentials: true,
+  withCredentials: true, // ✅ Required to send the cookies
   timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ✅ Attach Bearer token to every request
+// ✅ Attach Bearer token (if localStorage has one) as a fallback
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {

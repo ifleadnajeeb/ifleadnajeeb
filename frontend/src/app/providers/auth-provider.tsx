@@ -19,8 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['me'],
     retry: false,
     queryFn: async () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) return null;
+      // ✅ Always try to fetch /me because cookies might be present
       try {
         const res = await api.get('/auth/me');
         return res.data?.user || null;
@@ -44,9 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await api.post('/auth/login', { email, password });
       const userData = res.data?.user || res.data;
       const token = res.data?.accessToken;
+      
       if (token) {
         localStorage.setItem('accessToken', token);
       }
+      
       queryClient.setQueryData(['me'], userData);
     } catch (err) {
       throw new Error(getErrorMessage(err));
@@ -75,4 +76,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
-// Force rebuild Fri Oct 30 12:34:25 UTC 2026
