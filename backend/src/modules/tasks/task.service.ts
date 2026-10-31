@@ -164,7 +164,11 @@ export const taskService = {
 
     const tasks = await prisma.task.findMany({
       where,
-      include: { assignedTo: userSelect, createdBy: userSelect },
+      include: {
+        assignedTo: userSelect,
+        createdBy: userSelect,
+        dailyReports: { orderBy: { createdAt: 'desc' }, take: 1 },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
