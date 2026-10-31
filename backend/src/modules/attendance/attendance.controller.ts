@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { attendanceService } from './attendance.service';
+import { attendanceService } from './attendance.service.js';
 
 export async function getAttendanceList(req: any, res: Response, next: NextFunction) {
   try {
