@@ -14,6 +14,7 @@ const DailyReportsPage = lazy(() => import('@/features/reports/pages/DailyReport
 const UsersPage = lazy(() => import('@/features/users/pages/UsersPage'));
 const TeamPerformancePage = lazy(() => import('@/features/users/pages/TeamPerformancePage'));
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'));
+const AttendancePage = lazy(() => import('@/features/attendance/pages/AttendancePage'));
 const CalendarPage = lazy(() => import('@/features/calendar/pages/CalendarPage'));
 
 function LoadingScreen() {

@@ -1,6 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// ✅ Direct Render URL (No proxy)
 const baseURL = 'https://ifleadnajeeb.onrender.com/api';
 
 export const api = axios.create({
@@ -10,7 +9,7 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ✅ Attach Access Token
+// ✅ Attach Bearer token to EVERY request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
@@ -58,7 +57,6 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
 
-        // Send refresh token in the BODY
         const refreshRes = await api.post('/auth/refresh', { refreshToken });
         const newAccessToken = refreshRes.data?.accessToken;
         const newRefreshToken = refreshRes.data?.refreshToken;

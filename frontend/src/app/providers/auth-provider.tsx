@@ -20,11 +20,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     retry: false,
     queryFn: async () => {
       const token = localStorage.getItem('accessToken');
-      if (!token) return null;
+      if (!token) {
+        console.log('❌ No token in localStorage');
+        return null;
+      }
       try {
         const res = await api.get('/auth/me');
         return res.data?.user || null;
-      } catch {
+      } catch (err) {
+        console.log('❌ /me failed:', err);
         return null;
       }
     },
@@ -41,16 +45,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('🔐 Logging in as:', email);
       const res = await api.post('/auth/login', { email, password });
+      console.log('🔐 Login response:', res.data);
+      
       const userData = res.data?.user || res.data;
       const accessToken = res.data?.accessToken;
       const refreshToken = res.data?.refreshToken;
       
+      console.log('🔐 accessToken:', accessToken ? accessToken.substring(0, 20) + '...' : 'MISSING');
+      console.log('🔐 refreshToken:', refreshToken ? refreshToken.substring(0, 20) + '...' : 'MISSING');
+      
       if (accessToken) localStorage.setItem('accessToken', accessToken);
       if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       
+      console.log('✅ Token saved:', localStorage.getItem('accessToken') ? 'YES' : 'NO');
+      
       queryClient.setQueryData(['me'], userData);
     } catch (err) {
+      console.error('❌ Login failed:', err);
       throw new Error(getErrorMessage(err));
     }
   };
