@@ -3,94 +3,49 @@ import { AuthRequest } from '../../middleware/auth.middleware.js';
 
 export const attendanceService = {
   async list(req: AuthRequest) {
-    const actor = req.user!;
-
-    // ✅ Scope: Admin/CEO/BDM/OP_MANAGER see all, others see only themselves
-    let userFilter: any = { organizationId: actor.organizationId };
-    if (!['ADMIN', 'CEO', 'BDM', 'OP_MANAGER'].includes(actor.role)) {
-      userFilter.id = actor.id;
-    }
-
-    // ✅ Query from AuditLog. Filter via the user relation (no direct organizationId on AuditLog)
-    const logs = await prisma.auditLog.findMany({
-      where: {
-        action: { in: ['auth.login', 'auth.logout'] },
-        user: userFilter,
-      },
-      include: {
-        user: { select: { id: true, name: true, role: { select: { name: true } } } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
+    const user = req.user!;
+    const scope = (user.role === 'ADMIN' || user.role === 'CEO' || user.role === 'GM') 
+      ? { organizationId: user.organizationId }
+      : { userId: user.id };
+      
+    return prisma.attendance.findMany({
+      where: scope,
+      include: { user: { select: { id: true, name: true, role: true } } },
+      orderBy: { checkIn: 'desc' },
     });
-
-    // Group by userId + date
-    const recordsMap = new Map<string, any>();
-
-    logs.forEach((log) => {
-      const date = new Date(log.createdAt);
-      const dateStr = date.toISOString().split('T')[0];
-      const key = `${log.userId}-${dateStr}`;
-
-      if (log.action === 'auth.login') {
-        if (!recordsMap.has(key)) {
-          recordsMap.set(key, {
-            id: log.id,
-            user: log.user,
-            date,
-            checkIn: date,
-            checkOut: null,
-            status: 'Active',
-          });
-        }
-      } else if (log.action === 'auth.logout') {
-        if (recordsMap.has(key)) {
-          const record = recordsMap.get(key);
-          if (!record.checkOut || date > record.checkOut) {
-            record.checkOut = date;
-            record.status = 'Completed';
-          }
-        }
-      }
-    });
-
-    const data = Array.from(recordsMap.values()).sort(
-      (a, b) => b.date.getTime() - a.date.getTime()
-    );
-
-    return { data };
   },
 
   async clockIn(req: AuthRequest) {
-    // Manual clock-in = write an audit log entry
-    const actor = req.user!;
-    await prisma.auditLog.create({
-      data: {
-        action: 'auth.login',
-        entityType: 'User',
-        entityId: actor.id,
-        userId: actor.id,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'] ?? null,
-      },
+    const user = req.user!;
+    const existing = await prisma.attendance.findFirst({
+      where: { userId: user.id, checkOut: null },
     });
-    return { success: true };
+    if (existing) return existing;
+    
+    return prisma.attendance.create({
+      data: { checkIn: new Date(), organizationId: user.organizationId, user: { connect: { id: user.id } } },
+      include: { user: { select: { id: true, name: true, role: true } } },
+    });
   },
 
   async clockOut(req: AuthRequest) {
-    // Manual clock-out = write an audit log entry
-    const actor = req.user!;
-    await prisma.auditLog.create({
-      data: {
-        action: 'auth.logout',
-        entityType: 'User',
-        entityId: actor.id,
-        userId: actor.id,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'] ?? null,
-      },
+    const user = req.user!;
+    const record = await prisma.attendance.findFirst({
+      where: { userId: user.id, checkOut: null },
+      orderBy: { checkIn: 'desc' },
     });
-    return { success: true };
+    if (!record) throw new Error('No active clock-in found');
+    
+    let checkOutTime = new Date();
+    if (checkOutTime.getTime() < record.checkIn.getTime()) {
+      checkOutTime = new Date(record.checkIn.getTime() + 60000);
+    }
+
+    return prisma.attendance.update({
+      where: { id: record.id },
+      data: { checkOut: checkOutTime },
+      include: { user: { select: { id: true, name: true, role: true } } },
+    });
   },
 
   async summary(req: AuthRequest, period: string) {
@@ -98,7 +53,6 @@ export const attendanceService = {
     const now = new Date();
     let startDate = new Date();
 
-    // Calculate start date based on period
     if (period === 'daily') {
       startDate.setHours(0, 0, 0, 0);
     } else if (period === 'weekly') {
@@ -106,12 +60,12 @@ export const attendanceService = {
     } else if (period === 'monthly') {
       startDate.setMonth(now.getMonth() - 1);
     } else {
-      startDate = new Date(0); // All time
+      startDate = new Date(0);
     }
 
     const records = await prisma.attendance.findMany({
       where: {
-        organizationId: orgId,
+        user: { organizationId: orgId },
         checkIn: { gte: startDate }
       },
       include: {
@@ -134,7 +88,6 @@ export const attendanceService = {
 
       if (r.checkOut) {
         const diff = r.checkOut.getTime() - r.checkIn.getTime();
-        // Only add if positive (fixes your timezone bug automatically)
         if (diff > 0) {
           grouped[r.userId].totalMs += diff;
         }
@@ -149,4 +102,4 @@ export const attendanceService = {
       daysWorked: g.daysWorked.size,
     })).sort((a, b) => b.totalHours - a.totalHours);
   }
-;
+};
