@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X, CheckCircle2, AlertTriangle, Search } from 'lucide-react';
 import { api } from '@/shared/api/client';
+import { configService } from '@/features/config/services/config.service';
 import { usersService, type AppUser, ROLE_LABEL } from '@/features/users/services/users.service';
 import { leadsService, type Lead } from '../services/leads.service';
 
