@@ -16,6 +16,7 @@ const TeamPerformancePage = lazy(() => import('@/features/users/pages/TeamPerfor
 const UserPanelPage = lazy(() => import('@/features/users/pages/UserPanelPage'));
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'));
 const AttendancePage = lazy(() => import('@/features/attendance/pages/AttendancePage'));
+const AuditLogsPage = lazy(() => import('@/features/audit/pages/AuditLogsPage'));
 const CalendarPage = lazy(() => import('@/features/calendar/pages/CalendarPage'));
 
 function LoadingScreen() {
@@ -61,7 +62,7 @@ export const router = createBrowserRouter([
           { path: '/team-performance', element: <Suspense fallback={<LoadingScreen />}><TeamPerformancePage /></Suspense> },
           { path: '/panel/:userId', element: <Suspense fallback={<LoadingScreen />}><UserPanelPage /></Suspense> },
           { path: '/calendar', element: <Suspense fallback={<LoadingScreen />}><CalendarPage /></Suspense> },
-                    { path: '/audit', element: <Placeholder title="Audit Logs" /> },
+                    { path: '/audit', element: <Suspense fallback={<LoadingScreen />}><AuditLogsPage /></Suspense> },
           { path: '/config', element: <Suspense fallback={<LoadingScreen />}><SettingsPage /></Suspense> },
           { path: '/integrations', element: <Placeholder title="Integrations" /> },
           { path: '/missions', element: <Placeholder title="Missions" /> },

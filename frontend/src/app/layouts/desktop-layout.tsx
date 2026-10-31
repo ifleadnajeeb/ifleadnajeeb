@@ -4,7 +4,6 @@ import { DesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { DesktopHeader } from '@/components/navigation/DesktopHeader';
 import { AIAssistant } from '@/features/ai/components/AIAssistant';
 import { TaskFloatingButton } from '@/features/tasks/components/TaskFloatingButton';
-import { TaskReminderWatcher } from '@/features/tasks/components/TaskReminderWatcher';
 import { ChatFloatingButton } from '@/features/chat/components/ChatFloatingButton';
 import { MobileBottomNav } from '@/components/navigation/MobileBottomNav';
 import { MobileSidebarDrawer } from '@/components/navigation/MobileSidebarDrawer';

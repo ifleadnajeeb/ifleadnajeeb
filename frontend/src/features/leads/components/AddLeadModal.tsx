@@ -143,6 +143,7 @@ export function AddLeadModal({
         phone: normalizedPhone,
         company: projectName.trim() || undefined,
         service: service.trim() || undefined,
+        service: service.trim() || undefined,
         source, status, priority,
         value: value ? Number(value) : undefined,
         notes: notes.trim() || undefined,
