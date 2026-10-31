@@ -35,7 +35,7 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
   const qc = useQueryClient();
-  const isOpsRole = ['OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user?.role || '');
+  const isOpsRole = ['OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'].includes(user?.role || '');
   const pageTitle = isOpsRole ? 'Works' : 'Tasks';
   const opsFilter = isOpsRole ? 'true' : 'false';
   const [searchParams] = useSearchParams();

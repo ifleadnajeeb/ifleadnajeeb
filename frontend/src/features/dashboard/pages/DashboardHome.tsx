@@ -18,7 +18,7 @@ export default function DashboardHome() {
   if (!user) return null;
 
   // Route to Employee Dashboard
-  if (['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'].includes(user.role)) {
+  if (['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'].includes(user.role)) {
     return <EmployeeDashboard />;
   }
 
