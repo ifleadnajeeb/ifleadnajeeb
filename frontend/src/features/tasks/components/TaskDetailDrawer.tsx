@@ -11,7 +11,7 @@ import { operationsService } from '@/features/operations/services/operations.ser
 import { useAuth } from '@/app/providers/auth-provider';
 
 const COLUMNS: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
-const DEV_ROLES = ['WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'];
+const DEV_ROLES = ['WEB_DEVELOPER', 'GRAPHIC_DESIGNER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR'];
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString('en-IN', {
