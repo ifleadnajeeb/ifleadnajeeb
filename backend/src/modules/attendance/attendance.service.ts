@@ -2,6 +2,44 @@ import { prisma } from '../../config/database.js';
 import { AuthRequest } from '../../middleware/auth.middleware.js';
 
 export const attendanceService = {
+  async startSession(userId: string, organizationId: string) {
+    const existing = await prisma.attendance.findFirst({
+      where: { userId, status: 'ACTIVE' },
+    });
+    if (existing) return existing;
+
+    return prisma.attendance.create({
+      data: {
+        userId,
+        organizationId,
+        checkIn: new Date(),
+        lastSeenAt: new Date(),
+        status: 'ACTIVE',
+      },
+    });
+  },
+
+  async endSession(userId: string, reason: string = 'USER_LOGOUT') {
+    const active = await prisma.attendance.findFirst({
+      where: { userId, status: 'ACTIVE' },
+      orderBy: { checkIn: 'desc' },
+    });
+    if (!active) return null;
+
+    const checkOut = new Date();
+    const durationSeconds = Math.floor((checkOut.getTime() - active.checkIn.getTime()) / 1000);
+
+    return prisma.attendance.update({
+      where: { id: active.id },
+      data: {
+        checkOut,
+        durationSeconds,
+        status: 'COMPLETED',
+        logoutReason: reason,
+      },
+    });
+  },
+
   async list(req: AuthRequest) {
     const user = req.user!;
     const scope = (user.role === 'ADMIN' || user.role === 'CEO' || user.role === 'GM') 
