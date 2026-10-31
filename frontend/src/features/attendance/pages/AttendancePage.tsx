@@ -133,3 +133,6 @@ export function AttendancePage() {
     </div>
   );
 }
+
+
+export default AttendancePage;
