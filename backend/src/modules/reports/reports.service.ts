@@ -189,7 +189,13 @@ export const reportsService = {
     } else if (req.user!.role === 'BDE' || req.user!.role === 'SALES_HEAD') {
       taskWhere.assignedToId = req.user!.id;
     }
-    if (dateRange) taskWhere.createdAt = dateRange;
+    // ✅ For tasks, filter by updatedAt (or completedAt) instead of createdAt
+    if (dateRange) {
+      taskWhere.OR = [
+        { createdAt: dateRange },
+        { completedAt: dateRange }
+      ];
+    }
     const taskGroups = await prisma.task.groupBy({
       by: ['status'],
       where: taskWhere,
