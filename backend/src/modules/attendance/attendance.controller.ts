@@ -10,3 +10,13 @@ export const attendanceController = {
     res.json(await attendanceService.clockOut(req));
   }
 };
+
+router.get('/summary', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const period = req.query.period as string || 'monthly';
+    const data = await attendanceService.summary(req, period);
+    res.json({ data });
+  } catch (err) {
+    next(err);
+  }
+});

@@ -171,11 +171,11 @@ export default function TasksPage() {
                 <div className="space-y-2">
                   {(tasks || []).map(task => {
                     // Calculate progress based on status or latest daily report
-                    const latestReport = task.dailyReports?.[0];
+                    const latestProgressReport = task.dailyReports?.[0];
                     let progress = 0;
                     if (task.status === 'DONE') progress = 100;
                     else if (task.reviewStatus === 'PENDING_REVIEW') progress = 80;
-                    else if (latestReport?.progress != null) progress = latestReport.progress;
+                    else if (latestProgressReport?.progress != null) progress = latestProgressReport.progress;
                     else if (task.acceptance === 'ACCEPTED') progress = 20;
                     else if (task.acceptance === 'PENDING') progress = 0;
 
