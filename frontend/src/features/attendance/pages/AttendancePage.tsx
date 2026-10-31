@@ -43,20 +43,8 @@ export default function AttendancePage() {
           <p className="text-[13.5px] text-ink-muted mt-0.5">Track employee check-ins, check-outs, and working hours</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleClockIn}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-[13px] font-medium hover:bg-green-700 disabled:opacity-50"
-          >
-            <CheckCircle className="w-4 h-4" /> Clock In
-          </button>
-          <button
-            onClick={handleClockOut}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg text-[13px] font-medium hover:bg-red-700 disabled:opacity-50"
-          >
-            <LogOut className="w-4 h-4" /> Clock Out
-          </button>
+          
+          
         </div>
       </div>
 

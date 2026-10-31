@@ -70,6 +70,7 @@ export const ROLE_LABEL: Record<string, string> = {
   SOFTWARE_DEVELOPER: 'Software Dev',
   DIGITAL_MARKETER: 'Digital Mktg',
   CONTENT_CREATOR: 'Content Creator',
+  GRAPHIC_DESIGNER: 'Graphic Designer',
   VIDEO_EDITOR: 'Video Editor',
 
   ADMIN: 'Admin',
