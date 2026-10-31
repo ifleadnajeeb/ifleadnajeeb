@@ -48,6 +48,20 @@ export async function refresh(req: Request, res: Response) {
 }
 
 export async function logout(req: AuthRequest, res: Response) {
+  // ✅ AUTO CLOCK-OUT
+  if (req.user) {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      await prisma.attendance.updateMany({
+        where: { userId: req.user.id, checkOut: null, date: { gte: today } },
+        data: { checkOut: new Date() }
+      });
+    } catch (e) {
+      console.error('Failed to auto clock out', e);
+    }
+  }
+
   if (req.user) {
     prisma.auditLog.create({
       data: {
