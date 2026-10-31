@@ -3,6 +3,7 @@ import { AuthRequest } from '../../middleware/auth.middleware.js';
 import * as service from './auth.service.js';
 import { appConfig } from '../../config/app-config.js';
 import { prisma } from '../../config/database.js';
+import { attendanceService } from '../attendance/attendance.service.js';
 
 export async function login(req: Request, res: Response) {
   const { email, password } = req.body;
@@ -72,6 +73,11 @@ export async function logout(req: AuthRequest, res: Response) {
         userAgent: req.headers['user-agent'],
       },
     }).catch((e) => console.error('[audit.logout]', e));
+  }
+
+  // ✅ AUTOMATIC ATTENDANCE TRACKING (LOGOUT)
+  if (req.user) {
+    await attendanceService.endSession(req.user.id, 'USER_LOGOUT').catch(console.error);
   }
 
   if (req.sessionId) await service.logout(req.sessionId);

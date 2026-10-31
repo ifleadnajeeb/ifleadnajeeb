@@ -90,6 +90,9 @@ export async function login(
     { expiresIn: env.ACCESS_TOKEN_TTL as any }
   );
 
+  // ✅ AUTOMATIC ATTENDANCE TRACKING (LOGIN)
+  await attendanceService.startSession(user.id, user.organizationId);
+
   return {
     accessToken,
     refreshToken,
