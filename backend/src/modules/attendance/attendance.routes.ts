@@ -3,7 +3,7 @@ import { getAttendanceList, getAttendanceSummary } from './attendance.controller
 
 const router = Router();
 
-// Ensure routes are defined correctly
+
 router.get('/', getAttendanceList);
 router.get('/summary', getAttendanceSummary);
 
