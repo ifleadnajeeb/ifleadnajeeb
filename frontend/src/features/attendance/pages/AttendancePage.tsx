@@ -83,7 +83,7 @@ export function AttendancePage() {
                 <tr key={r.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="font-medium text-ink">{r.user?.name || 'Unknown'}</div>
-                    <div className="text-xs text-ink-muted">{r.user?.role}</div>
+                    <div className="text-xs text-ink-muted">{r.user?.role?.name || r.user?.role}</div>
                   </td>
                   <td className="px-4 py-3 text-ink-muted">{formatDate(r.checkIn)}</td>
                   <td className="px-4 py-3 text-green-600 font-medium">{formatTime(r.checkIn)}</td>
@@ -118,7 +118,7 @@ export function AttendancePage() {
                 <tr key={row.userId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="font-medium text-ink">{row.name}</div>
-                    <div className="text-xs text-ink-muted">{row.role}</div>
+                    <div className="text-xs text-ink-muted">{row.role?.name || row.role}</div>
                   </td>
                   <td className="px-4 py-3 text-center">{row.daysWorked}</td>
                   <td className="px-4 py-3 text-center">{row.sessions}</td>

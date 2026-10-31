@@ -48,7 +48,7 @@ export const attendanceService = {
       
     return prisma.attendance.findMany({
       where: scope,
-      include: { user: { select: { id: true, name: true, role: true } } },
+      include: { user: { select: { id: true, name: true, role: { select: { name: true } } } } },
       orderBy: { checkIn: 'desc' },
     });
   },
@@ -62,7 +62,7 @@ export const attendanceService = {
     
     return prisma.attendance.create({
       data: { checkIn: new Date(), organizationId: user.organizationId, user: { connect: { id: user.id } } },
-      include: { user: { select: { id: true, name: true, role: true } } },
+      include: { user: { select: { id: true, name: true, role: { select: { name: true } } } } },
     });
   },
 
@@ -82,7 +82,7 @@ export const attendanceService = {
     return prisma.attendance.update({
       where: { id: record.id },
       data: { checkOut: checkOutTime },
-      include: { user: { select: { id: true, name: true, role: true } } },
+      include: { user: { select: { id: true, name: true, role: { select: { name: true } } } } },
     });
   },
 
