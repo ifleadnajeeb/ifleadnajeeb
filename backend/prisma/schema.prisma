@@ -198,6 +198,8 @@ model User {
   @@index([managerId])
   @@index([teamId])
   @@index([status])
+
+  attendances Attendance[]
 }
 
 model Role {
@@ -661,4 +663,19 @@ model ConfigItem {
 
   @@unique([organizationId, type, name])
   @@index([organizationId, type])
+}
+
+
+model Attendance {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date           DateTime @default(now())
+  checkIn        DateTime @default(now())
+  checkOut       DateTime?
+  
+  @@index([organizationId])
+  @@index([userId])
+  @@index([date])
 }
