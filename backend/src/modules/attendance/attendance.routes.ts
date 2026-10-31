@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../../middleware/auth.middleware.js';
-import { getAttendanceList, clockIn, clockOut, getAttendanceSummary } from './attendance.controller';;
+import { getAttendanceList, clockIn, clockOut, getAttendanceSummary } from './attendance.controller.js';;
 
 const router = Router();
 router.use(authenticate);
