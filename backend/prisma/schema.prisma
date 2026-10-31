@@ -675,7 +675,10 @@ model Attendance {
   checkIn        DateTime @default(now())
   checkOut       DateTime?
   
-  @@index([organizationId])
   @@index([userId])
   @@index([date])
+  lastSeenAt     DateTime? @default(now())
+  status         String    @default("ACTIVE") // ACTIVE, COMPLETED, TIMED_OUT
+  durationSeconds Int?     @default(0)
+  logoutReason   String?
 }
