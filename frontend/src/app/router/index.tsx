@@ -15,6 +15,10 @@ const UsersPage = lazy(() => import('@/features/users/pages/UsersPage'));
 const TeamPerformancePage = lazy(() => import('@/features/users/pages/TeamPerformancePage'));
 const UserPanelPage = lazy(() => import('@/features/users/pages/UserPanelPage'));
 const ConfigPage = lazy(() => import('@/features/config/pages/ConfigPage'));
+const VoicePage = lazy(() => import('@/features/ai/voice/VoicePage'));
+const IntegrationsPage = lazy(() => import('@/features/integrations/pages/IntegrationsPage'));
+const FollowupsPage = lazy(() => import('@/features/followups/pages/FollowupsPage'));
+const MissionsPage = lazy(() => import('@/features/missions/pages/MissionsPage'));
 const AttendancePage = lazy(() => import('@/features/attendance/pages/AttendancePage'));
 const AuditLogsPage = lazy(() => import('@/features/audit/pages/AuditLogsPage'));
 const CalendarPage = lazy(() => import('@/features/calendar/pages/CalendarPage'));
@@ -64,15 +68,15 @@ export const router = createBrowserRouter([
           { path: '/calendar', element: <Suspense fallback={<LoadingScreen />}><CalendarPage /></Suspense> },
                     { path: '/audit', element: <Suspense fallback={<LoadingScreen />}><AuditLogsPage /></Suspense> },
           { path: '/config', element: <Suspense fallback={<LoadingScreen />}><ConfigPage /></Suspense> },
-          { path: '/integrations', element: <Placeholder title="Integrations" /> },
-          { path: '/missions', element: <Placeholder title="Missions" /> },
+          { path: '/integrations', element: <Suspense fallback={<LoadingScreen />}><IntegrationsPage /></Suspense> },
+          { path: '/missions', element: <Suspense fallback={<LoadingScreen />}><MissionsPage /></Suspense> },
           { path: '/roles', element: <Placeholder title="Roles" /> },
-          { path: '/voice', element: <Placeholder title="Voice AI" /> },
+          { path: '/voice', element: <Suspense fallback={<LoadingScreen />}><VoicePage /></Suspense> },
           { path: '/whatsapp', element: <Placeholder title="WhatsApp" /> },
 { path: '/settings', element: <Suspense fallback={<LoadingScreen />}><ConfigPage /></Suspense> },
-          { path: '/customers', element: <Placeholder title="Customers" /> },
-          { path: '/appointments', element: <Placeholder title="Appointments" /> },
-          { path: '/followups', element: <Placeholder title="Followups" /> },
+          { path: '/customers', element: <Suspense fallback={<LoadingScreen />}><CustomersPage /></Suspense> },
+          { path: '/appointments', element: <Suspense fallback={<LoadingScreen />}><AppointmentsPage /></Suspense> },
+          { path: '/followups', element: <Suspense fallback={<LoadingScreen />}><FollowupsPage /></Suspense> },
           { path: '/attendance', element: <Suspense fallback={<LoadingScreen />}><AttendancePage /></Suspense> },
         ],
       },

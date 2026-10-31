@@ -2,41 +2,44 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { DesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { DesktopHeader } from '@/components/navigation/DesktopHeader';
+import { MobileBottomNav } from '@/components/navigation/MobileBottomNav';
+import { MobileSidebarDrawer } from '@/components/navigation/MobileSidebarDrawer';
+
+// Floating Buttons
 import { AIAssistant } from '@/features/ai/components/AIAssistant';
 import { TaskFloatingButton } from '@/features/tasks/components/TaskFloatingButton';
 import { ChatFloatingButton } from '@/features/chat/components/ChatFloatingButton';
-import { MobileBottomNav } from '@/components/navigation/MobileBottomNav';
-import { MobileSidebarDrawer } from '@/components/navigation/MobileSidebarDrawer';
-import { TaskReminderWatcher } from '@/features/tasks/components/TaskReminderWatcher';
 
 export function DesktopLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="h-screen flex overflow-hidden bg-ink-bg">
-      {/* Desktop sidebar — hidden on mobile (drawer renders its own copy) */}
+    <div className="h-screen flex overflow-hidden bg-ink-bg relative">
+      {/* Desktop sidebar */}
       <div className="hidden lg:block shrink-0">
         <DesktopSidebar />
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DesktopHeader onOpenMobileMenu={() => setDrawerOpen(true)} />
-
-        <main className="flex-1 overflow-auto">
-          <div className="max-w-[1440px] mx-auto p-4 lg:p-6 pb-20 lg:pb-6">
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <DesktopHeader />
+        <main className="flex-1 overflow-y-auto relative">
+          <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-5 pb-24">
             <Outlet />
           </div>
         </main>
       </div>
 
-      {/* Floating AI Assistant — bottom-right of every page */}
-      <AIAssistant />
-      <ChatFloatingButton />
-      <TaskReminderWatcher />
-
-      {/* Mobile-only: bottom nav + slide-in drawer */}
-      <MobileBottomNav onOpenMenu={() => setDrawerOpen(true)} />
+      {/* Mobile Navigation */}
       <MobileSidebarDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <MobileBottomNav />
+      
+      {/* ✅ Floating Buttons (Globally forced to top layer) */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-auto">
+        <ChatFloatingButton />
+        <TaskFloatingButton />
+        <AIAssistant />
+      </div>
     </div>
   );
 }
