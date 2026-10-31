@@ -53,6 +53,7 @@ export const router = createBrowserRouter([
           { path: '/works', element: <Suspense fallback={<LoadingScreen />}><TasksPage /></Suspense> },
           { path: '/ai', element: <Suspense fallback={<LoadingScreen />}><AIAssistantPage /></Suspense> },
           { path: '/reports', element: <Suspense fallback={<LoadingScreen />}><ReportsPage /></Suspense> },
+          { path: '/reports/user/:userId', element: <Suspense fallback={<LoadingScreen />}><ReportsPage /></Suspense> },
           { path: '/daily-reports', element: <Suspense fallback={<LoadingScreen />}><DailyReportsPage /></Suspense> },
           { path: '/users', element: <Suspense fallback={<LoadingScreen />}><UsersPage /></Suspense> },
           { path: '/team-performance', element: <Suspense fallback={<LoadingScreen />}><TeamPerformancePage /></Suspense> },
