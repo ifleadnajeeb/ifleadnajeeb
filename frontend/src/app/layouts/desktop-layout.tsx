@@ -7,6 +7,7 @@ import { TaskFloatingButton } from '@/features/tasks/components/TaskFloatingButt
 import { ChatFloatingButton } from '@/features/chat/components/ChatFloatingButton';
 import { MobileBottomNav } from '@/components/navigation/MobileBottomNav';
 import { MobileSidebarDrawer } from '@/components/navigation/MobileSidebarDrawer';
+import { TaskReminderWatcher } from '@/features/tasks/components/TaskReminderWatcher';
 
 export function DesktopLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
