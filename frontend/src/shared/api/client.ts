@@ -1,16 +1,16 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-// ✅ Use Vercel Proxy so the first-party Vercel cookies are sent
-const baseURL = '/api';
+// ✅ Direct Render URL (No proxy)
+const baseURL = 'https://ifleadnajeeb.onrender.com/api';
 
 export const api = axios.create({
   baseURL,
-  withCredentials: true, // ✅ Required to send the cookies
+  withCredentials: true,
   timeout: 60000,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ✅ Attach Bearer token (if localStorage has one) as a fallback
+// ✅ Attach Access Token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) {
@@ -55,18 +55,26 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshRes = await api.post('/auth/refresh');
-        const newToken = refreshRes.data?.accessToken;
-        if (newToken) {
-          localStorage.setItem('accessToken', newToken);
-          api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        }
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) throw new Error('No refresh token');
+
+        // Send refresh token in the BODY
+        const refreshRes = await api.post('/auth/refresh', { refreshToken });
+        const newAccessToken = refreshRes.data?.accessToken;
+        const newRefreshToken = refreshRes.data?.refreshToken;
+        
+        if (newAccessToken) localStorage.setItem('accessToken', newAccessToken);
+        if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
+
+        api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        
         processQueue(null);
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError);
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login';
         }

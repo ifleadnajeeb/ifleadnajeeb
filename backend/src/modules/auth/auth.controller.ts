@@ -32,11 +32,12 @@ export async function login(req: Request, res: Response) {
     path: '/',
   });
 
-  res.json({ user: result.user, accessToken: result.accessToken });
+  res.json({ user: result.user, accessToken: result.accessToken, refreshToken: result.refreshToken });
 }
 
 export async function refresh(req: Request, res: Response) {
-  const token = req.cookies?.refresh_token;
+  // ✅ Accept token from cookie OR request body
+  const token = req.cookies?.refresh_token || req.body?.refreshToken;
   if (!token) return res.status(401).json({ error: 'UNAUTHORIZED' });
   const result = await service.refresh(token);
   res.cookie('access_token', result.accessToken, {

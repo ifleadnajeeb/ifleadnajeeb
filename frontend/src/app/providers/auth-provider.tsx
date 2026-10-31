@@ -19,7 +19,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['me'],
     retry: false,
     queryFn: async () => {
-      // ✅ Always try to fetch /me because cookies might be present
+      const token = localStorage.getItem('accessToken');
+      if (!token) return null;
       try {
         const res = await api.get('/auth/me');
         return res.data?.user || null;
@@ -42,11 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await api.post('/auth/login', { email, password });
       const userData = res.data?.user || res.data;
-      const token = res.data?.accessToken;
+      const accessToken = res.data?.accessToken;
+      const refreshToken = res.data?.refreshToken;
       
-      if (token) {
-        localStorage.setItem('accessToken', token);
-      }
+      if (accessToken) localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       
       queryClient.setQueryData(['me'], userData);
     } catch (err) {
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post('/auth/logout');
     } catch {}
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     queryClient.setQueryData(['me'], null);
     queryClient.clear();
     window.location.href = '/login';
