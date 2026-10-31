@@ -103,6 +103,8 @@ export function DesktopSidebar() {
             }
             return true;
           }).map((item) => {
+    if (item.label === 'Attendance' && user?.role === 'BDE') return null;
+
             const allowed = can(item.permission);
             const displayLabel = (isOpsRole && item.label === 'Tasks') ? 'Works' : item.label;
             const DisplayIcon = (isOpsRole && item.label === 'Tasks') ? Briefcase : item.icon;
