@@ -13,6 +13,7 @@ const ReportsPage = lazy(() => import('@/features/reports/pages/ReportsPage'));
 const DailyReportsPage = lazy(() => import('@/features/reports/pages/DailyReportsPage'));
 const UsersPage = lazy(() => import('@/features/users/pages/UsersPage'));
 const TeamPerformancePage = lazy(() => import('@/features/users/pages/TeamPerformancePage'));
+const UserPanelPage = lazy(() => import('@/features/users/pages/UserPanelPage'));
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'));
 const AttendancePage = lazy(() => import('@/features/attendance/pages/AttendancePage'));
 const CalendarPage = lazy(() => import('@/features/calendar/pages/CalendarPage'));
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
           { path: '/daily-reports', element: <Suspense fallback={<LoadingScreen />}><DailyReportsPage /></Suspense> },
           { path: '/users', element: <Suspense fallback={<LoadingScreen />}><UsersPage /></Suspense> },
           { path: '/team-performance', element: <Suspense fallback={<LoadingScreen />}><TeamPerformancePage /></Suspense> },
+          { path: '/panel/:userId', element: <Suspense fallback={<LoadingScreen />}><UserPanelPage /></Suspense> },
           { path: '/calendar', element: <Suspense fallback={<LoadingScreen />}><CalendarPage /></Suspense> },
           { path: '/settings', element: <Suspense fallback={<LoadingScreen />}><SettingsPage /></Suspense> },
           { path: '/customers', element: <Placeholder title="Customers" /> },
