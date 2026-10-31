@@ -31,6 +31,7 @@ export function AddLeadModal({
 }: Props) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [service, setService] = useState('');
   const [projectName, setProjectName] = useState('');
   const [source, setSource] = useState('manual');
   const [status, setStatus] = useState('NEW');
@@ -104,7 +105,7 @@ export function AddLeadModal({
   if (!open) return null;
 
   const reset = () => {
-    setName(''); setPhone(''); setProjectName('');
+    setName(''); setPhone(''); setService(''); setProjectName('');
     setSource('manual'); setStatus('NEW'); setPriority('MEDIUM');
     setValue(''); setNextFollowupDate(''); setNextFollowupTime('');
     setAssignedToId(defaultAssignedToId ?? ''); setNotes('');
@@ -141,6 +142,7 @@ export function AddLeadModal({
         name: name.trim(),
         phone: normalizedPhone,
         company: projectName.trim() || undefined,
+        service: service.trim() || undefined,
         source, status, priority,
         value: value ? Number(value) : undefined,
         notes: notes.trim() || undefined,
