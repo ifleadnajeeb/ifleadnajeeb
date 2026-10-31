@@ -1,7 +1,8 @@
 import { attendanceService } from './attendance.service.js';
 
 export async function getAttendanceList(req: any, res: any, next: any) {
-  try { 
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No user session found' }); 
     const data = await attendanceService.list(req);
     res.json({ data }); 
   } catch (error: any) { 
@@ -12,7 +13,8 @@ export async function getAttendanceList(req: any, res: any, next: any) {
 }
 
 export async function getAttendanceSummary(req: any, res: any, next: any) {
-  try { 
+  try {
+    if (!req.user) return res.status(401).json({ error: 'No user session found' }); 
     const period = req.query.period || 'monthly';
     const data = await attendanceService.summary(req, period);
     res.json({ data }); 
