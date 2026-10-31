@@ -1,39 +1,23 @@
-import { Response, NextFunction } from 'express';
 import { attendanceService } from './attendance.service.js';
 
-export async function getAttendanceList(req: any, res: Response, next: NextFunction) {
-  try {
+export async function getAttendanceList(req: any, res: any, next: any) {
+  try { 
     const data = await attendanceService.list(req);
-    res.json({ data });
-  } catch (err) {
-    next(err);
+    res.json({ data }); 
+  } catch (error: any) { 
+    console.error("ATTENDANCE API ERROR:", error);
+    // Send the EXACT error to the frontend so we can see it in the Network tab
+    res.status(500).json({ error: error.message, details: error.stack }); 
   }
 }
 
-export async function clockIn(req: any, res: Response, next: NextFunction) {
-  try {
-    const data = await attendanceService.clockIn(req);
-    res.json({ data });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function clockOut(req: any, res: Response, next: NextFunction) {
-  try {
-    const data = await attendanceService.clockOut(req);
-    res.json({ data });
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function getAttendanceSummary(req: any, res: Response, next: NextFunction) {
-  try {
-    const period = (req.query.period as string) || 'monthly';
+export async function getAttendanceSummary(req: any, res: any, next: any) {
+  try { 
+    const period = req.query.period || 'monthly';
     const data = await attendanceService.summary(req, period);
-    res.json({ data });
-  } catch (err) {
-    next(err);
+    res.json({ data }); 
+  } catch (error: any) { 
+    console.error("ATTENDANCE SUMMARY ERROR:", error);
+    res.status(500).json({ error: error.message, details: error.stack }); 
   }
 }
