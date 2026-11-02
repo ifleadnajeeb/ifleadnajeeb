@@ -11,7 +11,7 @@ export const appConfig = {
     sameSite: (env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax',
   },
 
-  accessTokenTtlMs: 15 * 60 * 1000,
+  accessTokenTtlMs: 7 * 24 * 60 * 60 * 1000,
   refreshTokenTtlMs: 7 * 24 * 60 * 60 * 1000,
 
   bcryptRounds: 4,

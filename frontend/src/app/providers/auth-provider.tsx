@@ -68,7 +68,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Use sendBeacon to reliably hit the logout endpoint when closing the tab
+      navigator.sendBeacon('/api/auth/logout');
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+const logout = async () => {
     try {
       await api.post('/auth/logout');
     } catch {}
