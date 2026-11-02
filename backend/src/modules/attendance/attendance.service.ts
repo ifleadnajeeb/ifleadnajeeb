@@ -2,7 +2,7 @@ import { prisma } from '../../config/database.js';
 import { AuthRequest } from '../../middleware/auth.middleware.js';
 
 async function getUserScope(actor: any) {
-  if (actor.role === 'ADMIN' || actor.role === 'CEO' || actor.role === 'GM') return {};
+  if (actor.role === 'ADMIN' || actor.role === 'CEO' || actor.role === 'GM' || actor.role === 'BDM') return {};
   if (actor.role === 'BDE') return { userId: actor.id };
   const ids = [actor.id];
   const queue = [actor.id];
