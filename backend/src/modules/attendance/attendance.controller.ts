@@ -1,25 +1,19 @@
+import { Response } from 'express';
+import { AuthRequest } from '../../middleware/auth.middleware.js';
 import { attendanceService } from './attendance.service.js';
 
-export async function getAttendanceList(req: any, res: any, next: any) {
-  try {
-    if (!req.user) return res.status(401).json({ error: 'No user session found' }); 
-    const data = await attendanceService.list(req);
-    res.json({ data }); 
-  } catch (error: any) { 
-    console.error("ATTENDANCE API ERROR:", error);
-    // Send the EXACT error to the frontend so we can see it in the Network tab
-    res.status(500).json({ error: error.message, details: error.stack }); 
+export const attendanceController = {
+  async list(req: AuthRequest, res: Response) {
+    // ✅ Pass req.query so mode/date work correctly
+    const result = await attendanceService.list(req, req.query);
+    res.json(result);
+  },
+  async getUserLogs(req: AuthRequest, res: Response) {
+    const result = await attendanceService.getUserLogs(req, req.params.userId, req.query.date as string);
+    res.json(result);
+  },
+  async summary(req: AuthRequest, res: Response) {
+    // Dummy summary handler if the frontend calls it
+    res.json({ data: [] });
   }
-}
-
-export async function getAttendanceSummary(req: any, res: any, next: any) {
-  try {
-    if (!req.user) return res.status(401).json({ error: 'No user session found' }); 
-    const period = req.query.period || 'monthly';
-    const data = await attendanceService.summary(req, period);
-    res.json({ data }); 
-  } catch (error: any) { 
-    console.error("ATTENDANCE SUMMARY ERROR:", error);
-    res.status(500).json({ error: error.message, details: error.stack }); 
-  }
-}
+};
