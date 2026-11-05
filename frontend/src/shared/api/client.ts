@@ -1,79 +1,61 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-
-const baseURL = 'https://ifleadnajeeb.onrender.com/api';
+import axios from 'axios';
 
 export const api = axios.create({
-  baseURL,
-  withCredentials: true,
-  timeout: 60000,
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+  withCredentials: true, // Crucial for sending cookies
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// ✅ Attach Bearer token to EVERY request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('accessToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// ✅ Silent Token Refresh
+// ✅ SILENT TOKEN REFRESH INTERCEPTOR
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
-const processQueue = (error: any) => {
-  failedQueue.forEach(prom => {
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
     if (error) prom.reject(error);
-    else prom.resolve();
+    else prom.resolve(token);
   });
   failedQueue = [];
 };
 
 api.interceptors.response.use(
-  (res) => res,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    const status = error.response?.status;
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-    if (
-      status === 401 && 
-      !originalRequest._retry && 
-      !originalRequest.url?.includes('/auth/login') && 
-      !originalRequest.url?.includes('/auth/refresh')
-    ) {
+    // If error is 401 (Unauthorized) and we haven't already tried to refresh this exact request
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/login')) {
+      
       if (isRefreshing) {
+        // If a refresh is already happening, wait for it to finish
         return new Promise(function(resolve, reject) {
           failedQueue.push({ resolve, reject });
         }).then(() => {
           return api(originalRequest);
-        }).catch(err => Promise.reject(err));
+        }).catch((err) => {
+          return Promise.reject(err);
+        });
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) throw new Error('No refresh token');
-
-        const refreshRes = await api.post('/auth/refresh', { refreshToken });
-        const newAccessToken = refreshRes.data?.accessToken;
-        const newRefreshToken = refreshRes.data?.refreshToken;
-        
-        if (newAccessToken) localStorage.setItem('accessToken', newAccessToken);
-        if (newRefreshToken) localStorage.setItem('refreshToken', newRefreshToken);
-
-        api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        
+        // Try to refresh the token
+        await api.post('/auth/refresh');
         processQueue(null);
-        return api(originalRequest);
+        return api(originalRequest); // Retry the original request
       } catch (refreshError) {
-        processQueue(refreshError);
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        if (window.location.pathname !== '/login') {
+        // If refresh fails (e.g., refresh token expired), force logout
+        processQueue(refreshError, null);
+        
+        // Try to hit the logout endpoint to mark the punch-out
+        try { await api.post('/auth/logout'); } catch {} 
+        
+        // Only redirect if not already on the login page
+        if (!window.location.pathname.includes('/login')) {
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);
@@ -85,14 +67,3 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export interface ApiError { error: string; message: string; }
-
-export function getErrorMessage(err: unknown): string {
-  if (axios.isAxiosError(err)) {
-    const data = err.response?.data as ApiError | undefined;
-    return data?.message || err.message;
-  }
-  if (err instanceof Error) return err.message;
-  return 'Something went wrong';
-}

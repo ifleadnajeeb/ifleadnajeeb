@@ -11,6 +11,17 @@ const MODES = [
   { id: 'monthly', label: 'Monthly' },
 ];
 
+
+const formatIST = (dateStr: string) => {
+  if (!dateStr) return '—';
+  return new Intl.DateTimeFormat('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }).format(new Date(dateStr));
+};
+
 export default function AttendancePage() {
   const [mode, setMode] = useState('daily');
   const [dateStr, setDateStr] = useState(new Date().toISOString().split('T')[0]);
@@ -147,11 +158,11 @@ export default function AttendancePage() {
                           {session.checkIn ? format(new Date(session.checkIn), 'dd/MM/yyyy') : '—'}
                         </td>
                         <td className="px-5 py-3 text-green-600 font-medium">
-                          {session.checkIn ? format(new Date(session.checkIn), 'hh:mm a') : '—'}
+                          {session.checkIn ? formatIST(session.checkIn) : '—'}
                         </td>
                         <td className="px-5 py-3 text-red-500 font-medium">
                           {session.checkOut 
-                            ? format(new Date(session.checkOut), 'hh:mm a') 
+                            ? formatIST(session.checkOut) 
                             : <span className="text-ink-muted text-[12px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded">Active</span>}
                         </td>
                         <td className="px-5 py-3 text-ink">
@@ -210,12 +221,12 @@ export default function AttendancePage() {
                   <div className="flex-1 grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <span className="block text-[11px] text-ink-muted uppercase">Login</span>
-                      <span className="font-semibold text-green-600">{format(new Date(log.checkIn), 'hh:mm a')}</span>
+                      <span className="font-semibold text-green-600">{formatIST(log.checkIn)}</span>
                     </div>
                     <div>
                       <span className="block text-[11px] text-ink-muted uppercase">Logout</span>
                       <span className="font-semibold text-red-500">
-                        {log.checkOut ? format(new Date(log.checkOut), 'hh:mm a') : 'Still In'}
+                        {log.checkOut ? formatIST(log.checkOut) : 'Still In'}
                       </span>
                     </div>
                   </div>
