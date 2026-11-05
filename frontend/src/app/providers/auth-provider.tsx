@@ -1,97 +1,82 @@
-import { useEffect } from 'react';
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, getErrorMessage } from '@/shared/api/client';
+import { api } from '@/shared/api/client';
 
 interface AuthContextType {
-  user: any | null;
+  user: any;
   loading: boolean;
-  can: (permission: string) => boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  can: (permission: string) => boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  
+  // By default, we set loading to true so the router waits before redirecting
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  const { data: user, isLoading } = useQuery({
+  const { data: user, isLoading, isFetching } = useQuery({
     queryKey: ['me'],
-    retry: false,
     queryFn: async () => {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        console.log('❌ No token in localStorage');
-        return null;
-      }
       try {
         const res = await api.get('/auth/me');
-        return res.data?.user || null;
+        return res.data.user;
       } catch (err) {
-        console.log('❌ /me failed:', err);
+        // If the token is invalid, we just return null instead of crashing
         return null;
       }
     },
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    retry: false, // Don't retry endlessly if unauthorized
+    refetchOnWindowFocus: false, // Don't refetch every time you click the window
+    staleTime: 1000 * 60 * 5, // Cache user for 5 minutes so refresh is instant
   });
 
-  const can = (permission: string): boolean => {
-    if (!user) return false;
-    if (user.role === 'ADMIN') return true;
-    const permissions: string[] = user.permissions || [];
-    return permissions.includes(permission);
-  };
+  // Once the query finishes (success or fail), we turn off the loading screen
+  useEffect(() => {
+    if (!isLoading && !isFetching) {
+      setInitialLoading(false);
+    }
+  }, [isLoading, isFetching]);
 
   const login = async (email: string, password: string) => {
+    const res = await api.post('/auth/login', { email, password });
+    if (res.data.refreshToken) {
+      localStorage.setItem('refreshToken', res.data.refreshToken);
+    }
+    // Immediately update the cache so the user is logged in
+    queryClient.setQueryData(['me'], res.data.user);
+  };
+
+  const logout = async () => {
     try {
-      console.log('🔐 Logging in as:', email);
-      const res = await api.post('/auth/login', { email, password });
-      console.log('🔐 Login response:', res.data);
-      
-      const userData = res.data?.user || res.data;
-      const accessToken = res.data?.accessToken;
-      const refreshToken = res.data?.refreshToken;
-      
-      console.log('🔐 accessToken:', accessToken ? accessToken.substring(0, 20) + '...' : 'MISSING');
-      console.log('🔐 refreshToken:', refreshToken ? refreshToken.substring(0, 20) + '...' : 'MISSING');
-      
-      if (accessToken) localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-      
-      console.log('✅ Token saved:', localStorage.getItem('accessToken') ? 'YES' : 'NO');
-      
-      queryClient.setQueryData(['me'], userData);
-    } catch (err) {
-      console.error('❌ Login failed:', err);
-      throw new Error(getErrorMessage(err));
+      await api.post('/auth/logout');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('accessToken');
+      queryClient.setQueryData(['me'], null);
+      queryClient.clear();
+      window.location.href = '/login'; 
     }
   };
 
-  
-  
-
-const logout = async () => {
-    try {
-      await api.post('/auth/logout');
-    } catch {}
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    queryClient.setQueryData(['me'], null);
-    queryClient.clear();
-    window.location.href = '/login';
+  const can = (permission: string) => {
+    return user?.permissions?.includes(permission) ?? false;
   };
 
   return (
-    <AuthContext.Provider value={{ user: user || null, loading: isLoading, can, login, logout }}>
+    <AuthContext.Provider value={{ user: user || null, loading: initialLoading, login, logout, can }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  return context;
 }
