@@ -179,7 +179,7 @@ export default function LeadsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-semibold text-ink">Leads</h1>
-        <CanDo permission="leads:create">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setAddOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover transition-colors"
@@ -199,7 +199,7 @@ export default function LeadsPage() {
           >
             <Download className="w-4 h-4" /> {exporting ? 'Exporting…' : 'Export'}
           </button>
-        </CanDo>
+        </div>
       </div>
 
       {/* KPI Cards - Adjusted grid for 6 cards instead of 7 */}
