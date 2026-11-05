@@ -45,7 +45,7 @@ export async function refresh(req: Request, res: Response) {
     ...appConfig.cookieOptions,
     maxAge: appConfig.accessTokenTtlMs,
   });
-  res.json({ user: result.user });
+  res.json({ user: result.user, accessToken: result.accessToken, refreshToken: result.refreshToken });
 }
 
 export async function logout(req: AuthRequest, res: Response) {

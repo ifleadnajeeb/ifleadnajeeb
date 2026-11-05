@@ -3,20 +3,16 @@ import axios from 'axios';
 export const api = axios.create({
   baseURL: (() => {
     let url = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-    // If the URL doesn't end with /api, add it
     if (!url.endsWith('/api')) {
-      url = url.replace(/\/$/, ''); // remove trailing slash if any
+      url = url.replace(/\/$/, '');
       url += '/api';
     }
     return url;
   })(),
-  withCredentials: true, // Crucial for sending cookies
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  withCredentials: true,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// ✅ SILENT TOKEN REFRESH INTERCEPTOR
 let isRefreshing = false;
 let failedQueue: any[] = [];
 
@@ -33,39 +29,33 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 401 (Unauthorized) and we haven't already tried to refresh this exact request
     if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/login')) {
-      
       if (isRefreshing) {
-        // If a refresh is already happening, wait for it to finish
         return new Promise(function(resolve, reject) {
           failedQueue.push({ resolve, reject });
-        }).then(() => {
-          return api(originalRequest);
-        }).catch((err) => {
-          return Promise.reject(err);
-        });
+        }).then(() => api(originalRequest)).catch((err) => Promise.reject(err));
       }
 
       originalRequest._retry = true;
       isRefreshing = true;
 
       try {
-        // Try to refresh the token
-        await api.post('/auth/refresh');
-        processQueue(null);
-        return api(originalRequest); // Retry the original request
-      } catch (refreshError) {
-        // If refresh fails (e.g., refresh token expired), force logout
-        processQueue(refreshError, null);
+        const refreshToken = localStorage.getItem('refreshToken');
+        // ✅ Use axios directly to avoid infinite loops
+        const refreshRes = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken }, { withCredentials: true });
         
-        // Try to hit the logout endpoint to mark the punch-out
-        try { await api.post('/auth/logout'); } catch {} 
-        
-        // Only redirect if not already on the login page
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
+        // ✅ Save the NEW refresh token
+        if (refreshRes.data.refreshToken) {
+          localStorage.setItem('refreshToken', refreshRes.data.refreshToken);
         }
+        
+        processQueue(null);
+        return api(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('accessToken');
+        // ✅ Let React Router handle the redirect (no window.location)
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -76,7 +66,6 @@ api.interceptors.response.use(
   }
 );
 
-// ✅ Restored helper function for error handling
 export function getErrorMessage(error: any): string {
   if (error?.response?.data?.message) return error.response.data.message;
   if (error?.response?.data?.error) return error.response.data.error;
