@@ -24,8 +24,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const res = await api.get('/auth/me');
         const user = res.data.user;
-        if (user && user.role && typeof user.role === 'object') {
-          user.role = user.role.name;
+        
+        // ✅ Flatten role and extract permissions safely
+        if (user) {
+          if (user.role && typeof user.role === 'object') {
+            // If permissions are nested inside the role, move them to the user object
+            if (user.role.permissions && !user.permissions) {
+              user.permissions = user.role.permissions.map((p: any) => p.permission?.action || p.action);
+            }
+            user.role = user.role.name;
+          }
+          if (!user.permissions) user.permissions = [];
         }
         return user;
       } catch (err) {
