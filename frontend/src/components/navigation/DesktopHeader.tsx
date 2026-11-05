@@ -52,7 +52,7 @@ export function DesktopHeader({ onOpenMobileMenu }: { onOpenMobileMenu?: () => v
               {user?.name}
             </div>
             <div className="text-[10.5px] text-ink-muted uppercase tracking-[0.12em]">
-              {user?.role}
+              {typeof user?.role === 'object' ? user?.role?.name : user?.role}
             </div>
           </div>
           <div

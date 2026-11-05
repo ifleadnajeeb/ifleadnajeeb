@@ -115,7 +115,7 @@ export default function UsersPage() {
                           ROLE_COLOR[u.role] || 'bg-gray-100 text-gray-700'
                         )}
                       >
-                        {ROLE_LABEL[u.role] || u.role}
+                        {ROLE_LABEL[typeof u.role === 'object' ? u.role?.name : u.role] || u.role?.name || u.role}
                       </span>
                     </td>
                     <td className="px-3 py-3">
