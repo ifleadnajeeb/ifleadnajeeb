@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/app/providers/auth-provider';
-import { useQuery } from '@tanstack/react-query';
-import { X, CheckCircle2 } from 'lucide-react';
+import { X, CheckCircle2, CalendarClock, UserCheck } from 'lucide-react';
 import { api } from '@/shared/api/client';
 import { usersService, type AppUser, ROLE_LABEL } from '@/features/users/services/users.service';
-import { configService } from '@/features/config/services/config.service';
+import { useAuth } from '@/app/providers/auth-provider';
 
 interface Props {
   open: boolean;
@@ -28,13 +26,10 @@ function cleanPhone(raw: string): { ok: true; phone: string } | { ok: false; msg
   return { ok: false, msg: 'Invalid phone number' };
 }
 
-export function AddLeadModal({
-  open, onClose, onSuccess, defaultAssignedToId, ownerName,
-}: Props) {
+export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ownerName }: Props) {
   const { user } = useAuth();
   const isBDE = user?.role === 'BDE';
-  open, onClose, onSuccess, defaultAssignedToId, ownerName,
-}: Props) {
+
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [projectName, setProjectName] = useState('');
@@ -42,25 +37,17 @@ export function AddLeadModal({
   const [status, setStatus] = useState('NEW');
   const [priority, setPriority] = useState('MEDIUM');
   const [value, setValue] = useState('');
-  const [service, setService] = useState('');
   const [nextFollowupDate, setNextFollowupDate] = useState('');
   const [nextFollowupTime, setNextFollowupTime] = useState('');
   const [assignedToId, setAssignedToId] = useState(defaultAssignedToId ?? '');
   const [notes, setNotes] = useState('');
-
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [isBDE, setIsBDE] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const { data: configData } = useQuery({
-    queryKey: ['config-services'],
-    queryFn: () => configService.list('service'),
-    enabled: open,
-  });
-
+  // Load available users when modal opens
   useEffect(() => {
     if (!open) return;
     if (defaultAssignedToId) setAssignedToId(defaultAssignedToId);
@@ -75,11 +62,11 @@ export function AddLeadModal({
   if (!open) return null;
 
   const reset = () => {
-    setName(''); setPhone(''); setProjectName(''); setSource('manual');
-    setStatus('NEW'); setPriority('MEDIUM'); setValue(''); setService('');
-    setNextFollowupDate(''); setNextFollowupTime('');
-    setAssignedToId(defaultAssignedToId ?? ''); setNotes('');
-    setError(''); setSuccess(false);
+    setName(''); setPhone(''); setProjectName('');
+    setSource('manual'); setStatus('NEW'); setPriority('MEDIUM');
+    setValue(''); setNextFollowupDate(''); setNextFollowupTime('');
+    setAssignedToId(defaultAssignedToId ?? '');
+    setNotes(''); setError(''); setSuccess(false);
   };
 
   const handleSubmit = async () => {
@@ -93,12 +80,12 @@ export function AddLeadModal({
       normalizedPhone = r.phone;
     }
 
+    // Build combined follow-up timestamp safely
     let nextFollowupAt: string | undefined;
     if (nextFollowupDate) {
       try {
         const time = nextFollowupTime || '09:00';
         const dateObj = new Date(`${nextFollowupDate}T${time}:00`);
-        // Ensure it's a valid date before converting to ISO
         if (!isNaN(dateObj.getTime())) {
           nextFollowupAt = dateObj.toISOString();
         }
@@ -114,17 +101,22 @@ export function AddLeadModal({
         phone: normalizedPhone,
         company: projectName.trim() || undefined,
         source, status, priority,
-        service: service || undefined,
         value: value ? Number(value) : undefined,
         notes: notes.trim() || undefined,
       };
-      if (assignedToId) payload.assignedToId = assignedToId;
+      
+      // Only send assignedToId if NOT a BDE
+      if (!isBDE && assignedToId) payload.assignedToId = assignedToId;
       if (nextFollowupAt) payload.nextFollowupAt = nextFollowupAt;
 
-      await api.post('/leads', payload);
+      console.log('[AddLeadModal] POST /leads payload:', JSON.stringify(payload, null, 2));
+
+      const res = await api.post('/leads', payload);
+      console.log('[AddLeadModal] response:', res.data);
       setSuccess(true);
       onSuccess?.();
     } catch (err: any) {
+      console.error('[AddLeadModal] error:', err?.response?.data || err.message);
       setError(
         err?.response?.data?.message ||
         err?.response?.data?.error ||
@@ -145,8 +137,22 @@ export function AddLeadModal({
             <CheckCircle2 className="w-8 h-8 text-green-600" />
           </div>
           <h2 className="text-xl font-bold text-ink mb-1">Lead Created!</h2>
-          <p className="text-[14px] text-ink-muted mb-5"><strong>{name}</strong> has been added.</p>
-          <button onClick={handleClose} className="w-full h-11 rounded-lg bg-brand text-white font-medium hover:bg-brand-hover">Continue</button>
+          <p className="text-[14px] text-ink-muted mb-5">
+            <strong>{name}</strong>{' '}
+            {!isBDE && assignedToId && ownerName
+              ? `has been added to ${ownerName}'s leads.`
+              : !isBDE && assignedToId
+                ? 'has been assigned.'
+                : 'has been added to your leads.'}
+          </p>
+          {nextFollowupDate && (
+            <p className="text-[13px] text-amber-700 mb-4">
+              📅 Follow-up scheduled for {nextFollowupDate} {nextFollowupTime || '09:00'}
+            </p>
+          )}
+          <button onClick={handleClose} className="w-full h-11 rounded-lg bg-brand text-white font-medium hover:bg-brand-hover transition-colors">
+            Continue
+          </button>
         </div>
       </div>
     );
@@ -156,8 +162,17 @@ export function AddLeadModal({
     <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4 overflow-y-auto" onClick={handleClose}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-[560px] w-full my-8" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-border">
-          <h2 className="text-[16px] font-semibold text-ink">Add New Lead</h2>
-          <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-md text-ink-muted hover:bg-brand-light hover:text-brand"><X className="w-4 h-4" /></button>
+          <div>
+            <h2 className="text-[16px] font-semibold text-ink">Add New Lead</h2>
+            {!isBDE && defaultAssignedToId && ownerName && (
+              <p className="text-[12px] text-amber-700 mt-0.5">
+                ⚡ Will be assigned to <strong>{ownerName}</strong>
+              </p>
+            )}
+          </div>
+          <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-md text-ink-muted hover:bg-brand-light hover:text-brand transition-colors" aria-label="Close">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="px-5 py-4 space-y-4 max-h-[72vh] overflow-y-auto">
@@ -205,38 +220,70 @@ export function AddLeadModal({
               </select>
             </div>
             <div>
-              <label className="block text-[13px] text-ink-muted mb-1.5">Value (Rs)</label>
+              <label className="block text-[13px] text-ink-muted mb-1.5">Value (₹)</label>
               <input type="number" value={value} onChange={(e) => setValue(e.target.value)} placeholder="50000"
                 className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
             </div>
           </div>
 
-          <div>
-            <label className="block text-[13px] text-ink-muted mb-1.5">Service</label>
-            <select value={service} onChange={(e) => setService(e.target.value)}
-              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
-              <option value="">-- Select service --</option>
-              {(configData || []).map((s: any) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
+          <div className="border-t border-ink-border pt-4">
+            <label className="flex items-center gap-2 text-[13px] font-medium text-ink mb-2">
+              <CalendarClock className="w-4 h-4 text-brand" />
+              Next Follow-up
+              <span className="text-ink-muted font-normal">(optional)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="date"
+                value={nextFollowupDate}
+                onChange={(e) => setNextFollowupDate(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
+              />
+              <input
+                type="time"
+                value={nextFollowupTime}
+                onChange={(e) => setNextFollowupTime(e.target.value)}
+                disabled={!nextFollowupDate}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand disabled:bg-ink-bg disabled:text-ink-muted"
+              />
+            </div>
+            {nextFollowupDate && (
+              <p className="text-[12px] text-brand mt-1.5">
+                📅 Follow-up on {new Date(nextFollowupDate).toLocaleDateString('en-GB')} at {nextFollowupTime || '09:00'}
+              </p>
+            )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 border-t border-ink-border pt-4">
-            <div>
-              <label className="block text-[13px] text-ink-muted mb-1.5">Next Follow-up</label>
-              <input type="date" value={nextFollowupDate} onChange={(e) => setNextFollowupDate(e.target.value)}
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
-            </div>
-            <div>
-              <label className="block text-[13px] text-ink-muted mb-1.5">Assign To</label>
-              <select value={assignedToId} onChange={(e) => setAssignedToId(e.target.value)} disabled={loadingUsers}
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
-                <option value="">-- Default (Me) --</option>
-                {users.map((u) => <option key={u.id} value={u.id}>{u.name} ({ROLE_LABEL[u.role]})</option>)}
+          {!isBDE && (
+            <div className="border-t border-ink-border pt-4">
+              <label className="flex items-center gap-2 text-[13px] font-medium text-ink mb-2">
+                <UserCheck className="w-4 h-4 text-brand" />
+                Assign Lead
+                <span className="text-ink-muted font-normal">(optional)</span>
+              </label>
+              <select
+                value={assignedToId}
+                onChange={(e) => setAssignedToId(e.target.value)}
+                disabled={loadingUsers}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand disabled:bg-ink-bg"
+              >
+                <option value="">— Assign to me (default) —</option>
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name} · {ROLE_LABEL[u.role] ?? u.role}
+                  </option>
+                ))}
               </select>
+              {loadingUsers && (
+                <p className="text-[12px] text-ink-muted mt-1">Loading teammates…</p>
+              )}
+              {assignedToId && (
+                <p className="text-[12px] text-amber-700 mt-1.5">
+                  ⚡ This lead will appear in <strong>{users.find((u) => u.id === assignedToId)?.name ?? ownerName ?? 'the selected user'}</strong>'s panel
+                </p>
+              )}
             </div>
-          </div>
+          )}
 
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5">Notes</label>
@@ -248,10 +295,12 @@ export function AddLeadModal({
         </div>
 
         <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-ink-border">
-          <button onClick={handleClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] text-ink hover:bg-brand-light">Cancel</button>
+          <button onClick={handleClose} className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] text-ink hover:bg-brand-light transition-colors">
+            Cancel
+          </button>
           <button onClick={handleSubmit} disabled={submitting}
-            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50">
-            {submitting ? 'Saving...' : 'Create Lead'}
+            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            {submitting ? 'Saving…' : 'Create Lead'}
           </button>
         </div>
       </div>
