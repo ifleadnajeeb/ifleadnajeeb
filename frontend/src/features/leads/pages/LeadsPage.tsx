@@ -199,7 +199,7 @@ export default function LeadsPage() {
           >
             <Download className="w-4 h-4" /> {exporting ? 'Exporting…' : 'Export'}
           </button>
-        </>
+        </CanDo>
       </div>
 
       {/* KPI Cards - Adjusted grid for 6 cards instead of 7 */}
@@ -549,7 +549,7 @@ function LeadRow({
           >
             {isClosed ? 'Closed' : 'Follow-up'}
           </button>
-        </>
+        </CanDo>
       </td>
     </tr>
   );
