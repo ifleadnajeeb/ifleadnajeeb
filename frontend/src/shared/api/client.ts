@@ -1,7 +1,15 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+  baseURL: (() => {
+    let url = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+    // If the URL doesn't end with /api, add it
+    if (!url.endsWith('/api')) {
+      url = url.replace(/\/$/, ''); // remove trailing slash if any
+      url += '/api';
+    }
+    return url;
+  })(),
   withCredentials: true, // Crucial for sending cookies
   headers: {
     'Content-Type': 'application/json',
