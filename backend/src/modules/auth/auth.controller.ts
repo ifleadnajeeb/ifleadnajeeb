@@ -27,13 +27,13 @@ export async function login(req: Request, res: Response) {
     ...appConfig.cookieOptions,
     maxAge: appConfig.accessTokenTtlMs,
   });
-  res.cookie('refresh_token', result.refreshToken, {
+  res.cookie('refresh_token', (result as any).refreshToken, {
     ...appConfig.cookieOptions,
     maxAge: appConfig.refreshTokenTtlMs,
     path: '/',
   });
 
-  res.json({ user: result.user, accessToken: result.accessToken, refreshToken: result.refreshToken });
+  res.json({ user: result.user, accessToken: result.accessToken, refreshToken: (result as any).refreshToken });
 }
 
 export async function refresh(req: Request, res: Response) {
@@ -45,7 +45,7 @@ export async function refresh(req: Request, res: Response) {
     ...appConfig.cookieOptions,
     maxAge: appConfig.accessTokenTtlMs,
   });
-  res.json({ user: result.user, accessToken: result.accessToken, refreshToken: result.refreshToken });
+  res.json({ user: result.user, accessToken: result.accessToken, refreshToken: (result as any).refreshToken });
 }
 
 export async function logout(req: AuthRequest, res: Response) {
