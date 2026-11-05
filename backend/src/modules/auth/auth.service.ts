@@ -93,17 +93,7 @@ export async function login(
   // ✅ AUTOMATIC ATTENDANCE TRACKING (LOGIN)
   await attendanceService.startSession(user.id, user.organizationId);
 
-  return {
-    accessToken,
-    refreshToken,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role.name,
-      permissions: user.role.permissions.map((rp) => rp.permission.key),
-    },
-  };
+  return { user, accessToken, refreshToken };
 }
 
 export async function refresh(refreshToken: string) {
@@ -140,16 +130,7 @@ export async function refresh(refreshToken: string) {
     { expiresIn: env.ACCESS_TOKEN_TTL as any }
   );
 
-  return {
-    accessToken,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role.name,
-      permissions: user.role.permissions.map((rp) => rp.permission.key),
-    },
-  };
+  return { user, accessToken };
 }
 
 export async function logout(sessionId: string) {

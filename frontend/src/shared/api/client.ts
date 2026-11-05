@@ -41,6 +41,7 @@ api.interceptors.response.use(
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) throw new Error('No refresh token available');
         // ✅ Use axios directly to avoid infinite loops
         const refreshRes = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken }, { withCredentials: true });
         
