@@ -14,8 +14,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  
-  // By default, we set loading to true so the router waits before redirecting
   const [initialLoading, setInitialLoading] = useState(true);
 
   const { data: user, isLoading, isFetching } = useQuery({
@@ -23,31 +21,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       try {
         const res = await api.get('/auth/me');
-        const user = res.data.user;
+        const fetchedUser = res.data.user;
         
-        // ✅ Flatten role and extract permissions safely
-        if (user) {
-          if (user.role && typeof user.role === 'object') {
-            // If permissions are nested inside the role, move them to the user object
-            if (user.role.permissions && !user.permissions) {
-              user.permissions = user.role.permissions.map((p: any) => p.permission?.action || p.action);
-            }
-            user.role = user.role.name;
-          }
-          if (!user.permissions) user.permissions = [];
+        // ✅ Extract permissions safely whether they are at the root or inside the role object
+        let perms: string[] = [];
+        if (fetchedUser.role && fetchedUser.role.permissions) {
+          perms = fetchedUser.role.permissions.map((p: any) => p.permission?.action || p.action);
+        } else if (fetchedUser.permissions) {
+          perms = fetchedUser.permissions;
         }
-        return user;
+
+        return {
+          ...fetchedUser,
+          role: typeof fetchedUser.role === 'object' ? fetchedUser.role.name : fetchedUser.role,
+          permissions: perms,
+        };
       } catch (err) {
-        // If the token is invalid, we just return null instead of crashing
         return null;
       }
     },
-    retry: false, // Don't retry endlessly if unauthorized
-    refetchOnWindowFocus: false, // Don't refetch every time you click the window
-    staleTime: 1000 * 60 * 5, // Cache user for 5 minutes so refresh is instant
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5,
   });
 
-  // Once the query finishes (success or fail), we turn off the loading screen
   useEffect(() => {
     if (!isLoading && !isFetching) {
       setInitialLoading(false);
@@ -56,14 +53,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });
-    if (res.data.user && res.data.user.role && typeof res.data.user.role === 'object') {
-      res.data.user.role = res.data.user.role.name;
-    }
     if (res.data.refreshToken) {
       localStorage.setItem('refreshToken', res.data.refreshToken);
     }
-    // Immediately update the cache so the user is logged in
-    queryClient.setQueryData(['me'], { ...res.data.user, permissions: res.data.user.permissions || [] });
+    
+    // Same normalization for login
+    const fetchedUser = res.data.user;
+    let perms: string[] = [];
+    if (fetchedUser.role && fetchedUser.role.permissions) {
+      perms = fetchedUser.role.permissions.map((p: any) => p.permission?.action || p.action);
+    } else if (fetchedUser.permissions) {
+      perms = fetchedUser.permissions;
+    }
+
+    const normalizedUser = {
+      ...fetchedUser,
+      role: typeof fetchedUser.role === 'object' ? fetchedUser.role.name : fetchedUser.role,
+      permissions: perms,
+    };
+
+    queryClient.setQueryData(['me'], normalizedUser);
   };
 
   const logout = async () => {
