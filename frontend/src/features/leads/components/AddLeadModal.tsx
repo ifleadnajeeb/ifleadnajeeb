@@ -270,7 +270,7 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
                 <option value="">— Assign to me (default) —</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name} · {ROLE_LABEL[u.role] ?? u.role}
+                    {u.name} · {ROLE_LABEL[typeof u.role === 'object' ? u.role.name : u.role] ?? (typeof u.role === 'object' ? u.role.name : u.role)}
                   </option>
                 ))}
               </select>

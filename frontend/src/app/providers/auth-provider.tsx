@@ -23,7 +23,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: async () => {
       try {
         const res = await api.get('/auth/me');
-        return res.data.user;
+        const user = res.data.user;
+        if (user && user.role && typeof user.role === 'object') {
+          user.role = user.role.name;
+        }
+        return user;
       } catch (err) {
         // If the token is invalid, we just return null instead of crashing
         return null;
@@ -43,6 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });
+    if (res.data.user && res.data.user.role && typeof res.data.user.role === 'object') {
+      res.data.user.role = res.data.user.role.name;
+    }
     if (res.data.refreshToken) {
       localStorage.setItem('refreshToken', res.data.refreshToken);
     }
