@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('refreshToken', res.data.refreshToken);
     }
     // Immediately update the cache so the user is logged in
-    queryClient.setQueryData(['me'], res.data.user);
+    queryClient.setQueryData(['me'], { ...res.data.user, permissions: res.data.user.permissions || [] });
   };
 
   const logout = async () => {
