@@ -27,29 +27,18 @@ function pairSessions(logs: any[]) {
         const checkOut = new Date(log.createdAt);
         const totalHours = (checkOut.getTime() - open.checkIn.getTime()) / (1000 * 60 * 60);
         sessions.push({
-          id: open.id,
-          userId: log.userId,
-          user: open.user,
-          date: open.checkIn,
-          checkIn: open.checkIn,
-          checkOut,
-          totalHours,
+          id: open.id, userId: log.userId, user: open.user, date: open.checkIn,
+          checkIn: open.checkIn, checkOut, totalHours,
         });
         delete openLogins[log.userId!]; 
       }
     }
   }
 
-  // Active sessions (no logout yet)
   for (const [userId, open] of Object.entries(openLogins)) {
     sessions.push({
-      id: open.id,
-      userId,
-      user: open.user,
-      date: open.checkIn,
-      checkIn: open.checkIn,
-      checkOut: null,
-      totalHours: 0,
+      id: open.id, userId, user: open.user, date: open.checkIn,
+      checkIn: open.checkIn, checkOut: null, totalHours: 0,
     });
   }
 
@@ -59,15 +48,13 @@ function pairSessions(logs: any[]) {
 export const attendanceService = {
   async startSession(userId: string, organizationId: string) { return null; },
   async endSession(userId: string, reason: string) { return null; },
-
-  async summary(req: AuthRequest, period: string) { return { data: [] }; },
+  async summary() { return { data: [] }; },
 
   async list(req: AuthRequest, query: any) {
     const actor = req.user!;
     const targetDate = query.date ? new Date(query.date) : new Date();
     
     let start: Date, end: Date;
-    
     if (query.mode === 'weekly') {
       const day = targetDate.getDay();
       const diff = targetDate.getDate() - day + (day === 0 ? -6 : 1);
@@ -82,7 +69,6 @@ export const attendanceService = {
     }
 
     const userScope = await getUserScope(actor);
-
     const logs = await prisma.auditLog.findMany({
       where: {
         action: { in: ['auth.login', 'auth.logout'] },
@@ -96,22 +82,62 @@ export const attendanceService = {
 
     const sessions = pairSessions(logs);
 
-    // ✅ Daily and Raw modes now return SEPARATE sessions (Morning, Lunch, Evening)
-    if (query.mode === 'raw' || query.mode === 'daily') {
+    if (query.mode === 'raw') {
       return { data: sessions, meta: { total: sessions.length } };
     }
 
-    // Weekly / Monthly aggregates
+    if (query.mode === 'daily') {
+      const groupedByUser: Record<string, any> = {};
+      
+      for (const session of sessions) {
+        if (!groupedByUser[session.userId]) {
+          groupedByUser[session.userId] = {
+            id: session.userId, userId: session.userId, user: session.user,
+            date: session.checkIn, firstLogin: session.checkIn, lastLogout: session.checkOut,
+            totalHours: 0, hasActiveSession: !session.checkOut, allSessions: []
+          };
+        }
+        
+        const u = groupedByUser[session.userId];
+        u.allSessions.push(session);
+        
+        if (new Date(session.checkIn) < new Date(u.firstLogin)) u.firstLogin = session.checkIn;
+        if (session.checkOut) {
+          if (!u.lastLogout || new Date(session.checkOut) > new Date(u.lastLogout)) u.lastLogout = session.checkOut;
+        }
+        if (!session.checkOut) u.hasActiveSession = true;
+        u.totalHours += session.totalHours;
+      }
+      
+      const dailyResult = Object.values(groupedByUser).map((u: any) => {
+        // Sort sessions chronologically to find breaks
+        u.allSessions.sort((a: any, b: any) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime());
+        
+        // Calculate break intervals
+        const breaks: { start: Date; end: Date }[] = [];
+        for (let i = 0; i < u.allSessions.length - 1; i++) {
+          const current = u.allSessions[i];
+          const next = u.allSessions[i+1];
+          if (current.checkOut && next.checkIn) {
+            breaks.push({ start: current.checkOut, end: next.checkIn });
+          }
+        }
+
+        return {
+          ...u,
+          lastLogout: u.hasActiveSession ? null : u.lastLogout,
+          totalHours: Math.round(u.totalHours * 10) / 10,
+          breaks
+        };
+      });
+
+      return { data: dailyResult, meta: { total: dailyResult.length } };
+    }
+
     const grouped: Record<string, any> = {};
     for (const session of sessions) {
       if (!grouped[session.userId]) {
-        grouped[session.userId] = {
-          id: session.userId,
-          userId: session.userId,
-          user: session.user,
-          daysPresent: new Set(),
-          totalHours: 0,
-        };
+        grouped[session.userId] = { id: session.userId, userId: session.userId, user: session.user, daysPresent: new Set(), totalHours: 0 };
       }
       const g = grouped[session.userId];
       g.daysPresent.add(new Date(session.checkIn).toISOString().split('T')[0]);
@@ -119,9 +145,7 @@ export const attendanceService = {
     }
 
     const result = Object.values(grouped).map((g: any) => ({
-      ...g,
-      daysPresent: g.daysPresent.size,
-      totalHours: Math.round(g.totalHours * 10) / 10
+      ...g, daysPresent: g.daysPresent.size, totalHours: Math.round(g.totalHours * 10) / 10
     }));
 
     return { data: result, meta: { total: result.length } };
@@ -134,12 +158,7 @@ export const attendanceService = {
     const end = new Date(targetDate); end.setHours(23, 59, 59, 999);
 
     const logs = await prisma.auditLog.findMany({
-      where: {
-        userId,
-        action: { in: ['auth.login', 'auth.logout'] },
-        createdAt: { gte: start, lte: end },
-        user: { organizationId: actor.organizationId }
-      },
+      where: { userId, action: { in: ['auth.login', 'auth.logout'] }, createdAt: { gte: start, lte: end }, user: { organizationId: actor.organizationId } },
       include: { user: { select: { name: true, role: { select: { name: true } } } } },
       orderBy: { createdAt: 'asc' }
     });

@@ -1,7 +1,7 @@
-import { useState, useMemo, Fragment } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { X, Calendar as CalIcon, User } from 'lucide-react';
+import { X, Calendar as CalIcon, User, Coffee } from 'lucide-react';
 import { api } from '@/shared/api/client';
 import { cn } from '@/shared/utils/cn';
 
@@ -10,7 +10,6 @@ const MODES = [
   { id: 'weekly', label: 'Weekly' },
   { id: 'monthly', label: 'Monthly' },
 ];
-
 
 const formatIST = (dateStr: string) => {
   if (!dateStr) return '—';
@@ -44,30 +43,6 @@ export default function AttendancePage() {
     },
     enabled: !!selectedUser,
   });
-
-  // ✅ Group Daily data by Employee so they get "one section"
-  const groupedDaily = useMemo(() => {
-    if (mode !== 'daily' || !data?.data) return [];
-    const groups: Record<string, any> = {};
-    
-    data.data.forEach((session: any) => {
-      if (!groups[session.userId]) {
-        groups[session.userId] = {
-          userId: session.userId,
-          user: session.user,
-          sessions: [],
-        };
-      }
-      groups[session.userId].sessions.push(session);
-    });
-    
-    // Sort sessions inside each user's group by time
-    Object.values(groups).forEach((g: any) => {
-      g.sessions.sort((a: any, b: any) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime());
-    });
-    
-    return Object.values(groups);
-  }, [data, mode]);
 
   return (
     <div className="space-y-5 max-w-6xl mx-auto">
@@ -121,9 +96,10 @@ export default function AttendancePage() {
                   {mode === 'daily' ? (
                     <>
                       <th className="text-left px-5 py-3">Date</th>
-                      <th className="text-left px-5 py-3">Login Time</th>
-                      <th className="text-left px-5 py-3">Logout Time</th>
-                      <th className="text-left px-5 py-3">Session Hours</th>
+                      <th className="text-left px-5 py-3">First Login</th>
+                      <th className="text-left px-5 py-3">Last Logout</th>
+                      <th className="text-left px-5 py-3">Break Times</th>
+                      <th className="text-left px-5 py-3">Total Hours</th>
                     </>
                   ) : (
                     <>
@@ -134,54 +110,61 @@ export default function AttendancePage() {
                 </tr>
               </thead>
               <tbody>
-                {/* ✅ DAILY MODE: Grouped by user (One section per person) */}
-                {mode === 'daily' && groupedDaily.map((group: any) => (
-                  <Fragment key={group.userId}>
-                    {group.sessions.map((session: any, idx: number) => (
-                      <tr key={session.id} className={cn("border-b border-ink-border last:border-0 hover:bg-brand-light/10 transition-colors", idx !== 0 && "bg-gray-50/30")}>
-                        {idx === 0 && (
-                          <td rowSpan={group.sessions.length} className="px-5 py-3 align-top border-r border-ink-border/50">
-                            <button
-                              onClick={() => setSelectedUser({ 
-                                id: group.userId, 
-                                name: group.user?.name, 
-                                date: dateStr
-                              })}
-                              className="text-left group"
-                            >
-                              <p className="font-semibold text-ink group-hover:text-brand transition-colors">{group.user?.name}</p>
-                              <p className="text-[11.5px] text-ink-muted uppercase mt-0.5">{group.user?.role?.name || group.user?.role}</p>
-                            </button>
-                          </td>
-                        )}
-                        <td className="px-5 py-3 text-ink-muted">
-                          {session.checkIn ? format(new Date(session.checkIn), 'dd/MM/yyyy') : '—'}
+                {data.data.map((row: any, i: number) => (
+                  <tr key={row.id || i} className="border-b border-ink-border last:border-0 hover:bg-brand-light/10 transition-colors">
+                    <td className="px-5 py-3 align-top">
+                      <button
+                        onClick={() => setSelectedUser({ 
+                          id: row.userId, 
+                          name: row.user?.name, 
+                          date: row.date ? new Date(row.date).toISOString().split('T')[0] : dateStr 
+                        })}
+                        className="text-left group"
+                      >
+                        <p className="font-semibold text-ink group-hover:text-brand transition-colors">{row.user?.name}</p>
+                        <p className="text-[11.5px] text-ink-muted uppercase mt-0.5">{row.user?.role?.name || row.user?.role}</p>
+                      </button>
+                    </td>
+
+                    {mode === 'daily' ? (
+                      <>
+                        <td className="px-5 py-3 text-ink-muted align-top">
+                          {row.firstLogin ? format(new Date(row.firstLogin), 'dd/MM/yyyy') : '—'}
                         </td>
-                        <td className="px-5 py-3 text-green-600 font-medium">
-                          {session.checkIn ? formatIST(session.checkIn) : '—'}
+                        <td className="px-5 py-3 text-green-600 font-medium align-top">
+                          {row.firstLogin ? formatIST(row.firstLogin) : '—'}
                         </td>
-                        <td className="px-5 py-3 text-red-500 font-medium">
-                          {session.checkOut 
-                            ? formatIST(session.checkOut) 
+                        <td className="px-5 py-3 text-red-500 font-medium align-top">
+                          {row.lastLogout 
+                            ? formatIST(row.lastLogout) 
                             : <span className="text-ink-muted text-[12px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded">Active</span>}
                         </td>
-                        <td className="px-5 py-3 text-ink">
-                          {session.totalHours > 0 ? `${session.totalHours.toFixed(1)} hrs` : '—'}
+                        
+                        {/* Break Times */}
+                        <td className="px-5 py-3 align-top">
+                          {row.breaks && row.breaks.length > 0 ? (
+                            <div className="flex flex-col gap-1.5">
+                              {row.breaks.map((b: any, idx: number) => (
+                                <span key={idx} className="text-[11.5px] font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded-md border border-amber-200 inline-flex items-center gap-1.5 w-fit">
+                                  <Coffee className="w-3 h-3" /> {formatIST(b.start)} - {formatIST(b.end)}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-ink-muted">—</span>
+                          )}
                         </td>
-                      </tr>
-                    ))}
-                  </Fragment>
-                ))}
 
-                {/* ✅ WEEKLY / MONTHLY MODE: Aggregated */}
-                {(mode === 'weekly' || mode === 'monthly') && data.data.map((row: any) => (
-                  <tr key={row.id} className="border-b border-ink-border last:border-0 hover:bg-brand-light/10 transition-colors">
-                    <td className="px-5 py-3">
-                      <p className="font-semibold text-ink">{row.user?.name}</p>
-                      <p className="text-[11.5px] text-ink-muted uppercase mt-0.5">{row.user?.role?.name || row.user?.role}</p>
-                    </td>
-                    <td className="px-5 py-3 text-ink">{row.daysPresent} days</td>
-                    <td className="px-5 py-3 text-brand font-medium">{row.totalHours} hrs</td>
+                        <td className="px-5 py-3 text-brand font-medium align-top">
+                          {row.totalHours > 0 ? `${row.totalHours.toFixed(1)} hrs` : '—'}
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-5 py-3 text-ink align-top">{row.daysPresent} days</td>
+                        <td className="px-5 py-3 text-brand font-medium align-top">{row.totalHours} hrs</td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -190,7 +173,7 @@ export default function AttendancePage() {
         )}
       </div>
 
-      {/* Detailed Modal (Click name to see all sessions) */}
+      {/* Detailed Modal */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={() => setSelectedUser(null)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -199,7 +182,7 @@ export default function AttendancePage() {
                 <h3 className="text-[16px] font-bold text-ink flex items-center gap-2">
                   <User className="w-4 h-4 text-brand" /> {selectedUser.name}
                 </h3>
-                <p className="text-[12px] text-ink-muted mt-0.5">Logs for {format(new Date(selectedUser.date), 'dd MMM yyyy')}</p>
+                <p className="text-[12px] text-ink-muted mt-0.5">All Sessions for {format(new Date(selectedUser.date), 'dd MMM yyyy')}</p>
               </div>
               <button onClick={() => setSelectedUser(null)} className="p-1.5 hover:bg-white rounded-md text-ink-muted transition-colors">
                 <X className="w-5 h-5" />
