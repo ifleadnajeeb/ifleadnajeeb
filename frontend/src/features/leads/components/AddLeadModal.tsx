@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/app/providers/auth-provider';
 import { useQuery } from '@tanstack/react-query';
 import { X, CheckCircle2 } from 'lucide-react';
 import { api } from '@/shared/api/client';
@@ -30,6 +31,10 @@ function cleanPhone(raw: string): { ok: true; phone: string } | { ok: false; msg
 export function AddLeadModal({
   open, onClose, onSuccess, defaultAssignedToId, ownerName,
 }: Props) {
+  const { user } = useAuth();
+  const isBDE = user?.role === 'BDE';
+  open, onClose, onSuccess, defaultAssignedToId, ownerName,
+}: Props) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [projectName, setProjectName] = useState('');
@@ -44,6 +49,7 @@ export function AddLeadModal({
   const [notes, setNotes] = useState('');
 
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [isBDE, setIsBDE] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -88,10 +94,17 @@ export function AddLeadModal({
     }
 
     let nextFollowupAt: string | undefined;
-    if (nextFollowupDate && nextFollowupTime) {
-      nextFollowupAt = new Date(`${nextFollowupDate}T${nextFollowupTime}`).toISOString();
-    } else if (nextFollowupDate) {
-      nextFollowupAt = new Date(`${nextFollowupDate}T09:00`).toISOString();
+    if (nextFollowupDate) {
+      try {
+        const time = nextFollowupTime || '09:00';
+        const dateObj = new Date(`${nextFollowupDate}T${time}:00`);
+        // Ensure it's a valid date before converting to ISO
+        if (!isNaN(dateObj.getTime())) {
+          nextFollowupAt = dateObj.toISOString();
+        }
+      } catch (e) {
+        console.error("Invalid date format", e);
+      }
     }
 
     setSubmitting(true);
