@@ -71,6 +71,8 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
 
   const handleSubmit = async () => {
     setError('');
+    
+    // Frontend Validation
     if (name.trim().length < 2) { setError('Name must be at least 2 characters.'); return; }
 
     let normalizedPhone: string | undefined;
@@ -100,12 +102,13 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
         name: name.trim(),
         phone: normalizedPhone,
         company: projectName.trim() || undefined,
-        source, status, priority,
-        value: value ? Number(value) : undefined,
+        source, 
+        status, 
+        priority,
+        value: value && Number(value) > 0 ? Number(value) : undefined,
         notes: notes.trim() || undefined,
       };
       
-      // Only send assignedToId if NOT a BDE
       if (!isBDE && assignedToId) payload.assignedToId = assignedToId;
       if (nextFollowupAt) payload.nextFollowupAt = nextFollowupAt;
 
@@ -117,11 +120,22 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
       onSuccess?.();
     } catch (err: any) {
       console.error('[AddLeadModal] error:', err?.response?.data || err.message);
-      setError(
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        'Could not create lead.'
-      );
+      
+      // ✅ Extract the exact Zod error message if it exists
+      let msg = 'Could not create lead.';
+      const data = err?.response?.data;
+      if (data) {
+        if (data.details && Array.isArray(data.details)) {
+          // If it's a Zod validation error, join the field names and messages
+          msg = data.details.map((d: any) => `${d.path.join('.')}: ${d.message}`).join(' | ');
+        } else if (data.message && data.message !== 'VALIDATION') {
+          msg = data.message;
+        } else if (data.error) {
+          msg = data.error;
+        }
+      }
+      
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -270,17 +284,12 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
                 <option value="">— Assign to me (default) —</option>
                 {users.map((u) => (
                   <option key={u.id} value={u.id}>
-                    {u.name} · {ROLE_LABEL[typeof u.role === 'object' ? u.role.name : u.role] ?? (typeof u.role === 'object' ? u.role.name : u.role)}
+                    {u.name} · {ROLE_LABEL[u.role] ?? u.role}
                   </option>
                 ))}
               </select>
               {loadingUsers && (
                 <p className="text-[12px] text-ink-muted mt-1">Loading teammates…</p>
-              )}
-              {assignedToId && (
-                <p className="text-[12px] text-amber-700 mt-1.5">
-                  ⚡ This lead will appear in <strong>{users.find((u) => u.id === assignedToId)?.name ?? ownerName ?? 'the selected user'}</strong>'s panel
-                </p>
               )}
             </div>
           )}
