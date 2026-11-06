@@ -158,7 +158,16 @@ export default function TasksPage() {
       {mainView === 'kanban' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
-            const tasks = (displayTasks || []).filter((t: any) => t.status === col);
+            let tasks = (displayTasks || []).filter((t: any) => t.status === col);
+            
+            // ✅ ONLY show TODAY's completed tasks in the Done column
+            if (col === 'DONE') {
+              const todayStr = new Date().toLocaleDateString('en-IN');
+              tasks = tasks.filter((t: any) => {
+                if (!t.updatedAt) return false;
+                return new Date(t.updatedAt).toLocaleDateString('en-IN') === todayStr;
+              });
+            }
             return (
               <div
                 key={col}
