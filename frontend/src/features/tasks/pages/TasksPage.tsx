@@ -33,6 +33,8 @@ export default function TasksPage() {
   const isOpManager = user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO';
   
   const [viewMode, setViewMode] = useState<'all' | 'mine' | 'review'>('all');
+  const [completedFilter, setCompletedFilter] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [mainView, setMainView] = useState<'kanban' | 'list' | 'completed'>('kanban');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
@@ -122,11 +124,14 @@ export default function TasksPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-ink-bg p-1 rounded-lg">
-            <button onClick={() => setViewMode('kanban')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${viewMode === 'kanban' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            <button onClick={() => setMainView('kanban')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${mainView === 'kanban' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               <LayoutGrid className="w-3.5 h-3.5 inline mr-1" /> Kanban
             </button>
-            <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            <button onClick={() => setMainView('list')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${mainView === 'list' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               <ListIcon className="w-3.5 h-3.5 inline mr-1" /> List
+            </button>
+            <button onClick={() => setMainView('completed')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${mainView === 'completed' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+              <CheckCircle2 className="w-3.5 h-3.5 inline mr-1" /> Completed
             </button>
           </div>
           <button onClick={() => setDailyReportOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-ink-border bg-white text-ink text-[13.5px] font-medium hover:bg-brand-light transition-colors">
@@ -150,7 +155,7 @@ export default function TasksPage() {
         />
       </div>
 
-      {view === 'kanban' && (
+      {mainView === 'kanban' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
             const tasks = (displayTasks || []).filter((t: any) => t.status === col);
@@ -272,7 +277,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      {view === 'list' && (
+      {mainView === 'list' && (
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
           {listQ.isLoading && <div className="py-12 text-center text-ink-muted text-sm">Loading…</div>}
           {listQ.data && listQ.data.data.length === 0 && (
@@ -347,6 +352,59 @@ export default function TasksPage() {
         onClose={() => setDailyReportOpen(false)} 
         onSuccess={() => { setDailyReportOpen(false); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }}
       />
+
+      {mainView === 'completed' && (
+        <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden mt-4">
+          <div className="p-4 border-b border-ink-border flex items-center justify-between">
+            <h2 className="text-[15px] font-semibold text-ink">Completed Works</h2>
+            <div className="flex bg-ink-bg p-1 rounded-lg">
+              {['daily', 'weekly', 'monthly'].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setCompletedFilter(f as any)}
+                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium capitalize transition-colors ${
+                    completedFilter === f ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#f8f9fa] text-[11.5px] uppercase tracking-wider text-ink-muted font-semibold border-b border-ink-border">
+                <tr>
+                  <th className="text-left px-5 py-3">Task</th>
+                  <th className="text-left px-5 py-3">Completed By</th>
+                  <th className="text-left px-5 py-3">Date Completed</th>
+                  <th className="text-left px-5 py-3">Total Progress</th>
+                  <th className="text-left px-5 py-3">Hours Spent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* We filter the displayTasks to only show DONE tasks, you can add date filtering here later */}
+                {displayTasks.filter((t: any) => t.status === 'DONE').map((task: any) => (
+                  <tr key={task.id} className="border-b border-ink-border last:border-0 hover:bg-brand-light/10">
+                    <td className="px-5 py-3 font-medium text-ink">{task.title}</td>
+                    <td className="px-5 py-3 text-ink-muted">{task.assignedTo?.name || '—'}</td>
+                    <td className="px-5 py-3 text-ink-muted">{fmtDate(task.updatedAt)}</td>
+                    <td className="px-5 py-3">
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-green-100 text-green-700">100%</span>
+                    </td>
+                    <td className="px-5 py-3 text-ink">{task.totalHoursSpent || '—'} hrs</td>
+                  </tr>
+                ))}
+                {displayTasks.filter((t: any) => t.status === 'DONE').length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-ink-muted">No completed works found for this period.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -439,6 +497,59 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
         </div>
       </div>
       
+
+      {mainView === 'completed' && (
+        <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden mt-4">
+          <div className="p-4 border-b border-ink-border flex items-center justify-between">
+            <h2 className="text-[15px] font-semibold text-ink">Completed Works</h2>
+            <div className="flex bg-ink-bg p-1 rounded-lg">
+              {['daily', 'weekly', 'monthly'].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setCompletedFilter(f as any)}
+                  className={`px-3 py-1.5 rounded-md text-[12px] font-medium capitalize transition-colors ${
+                    completedFilter === f ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#f8f9fa] text-[11.5px] uppercase tracking-wider text-ink-muted font-semibold border-b border-ink-border">
+                <tr>
+                  <th className="text-left px-5 py-3">Task</th>
+                  <th className="text-left px-5 py-3">Completed By</th>
+                  <th className="text-left px-5 py-3">Date Completed</th>
+                  <th className="text-left px-5 py-3">Total Progress</th>
+                  <th className="text-left px-5 py-3">Hours Spent</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* We filter the displayTasks to only show DONE tasks, you can add date filtering here later */}
+                {displayTasks.filter((t: any) => t.status === 'DONE').map((task: any) => (
+                  <tr key={task.id} className="border-b border-ink-border last:border-0 hover:bg-brand-light/10">
+                    <td className="px-5 py-3 font-medium text-ink">{task.title}</td>
+                    <td className="px-5 py-3 text-ink-muted">{task.assignedTo?.name || '—'}</td>
+                    <td className="px-5 py-3 text-ink-muted">{fmtDate(task.updatedAt)}</td>
+                    <td className="px-5 py-3">
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-green-100 text-green-700">100%</span>
+                    </td>
+                    <td className="px-5 py-3 text-ink">{task.totalHoursSpent || '—'} hrs</td>
+                  </tr>
+                ))}
+                {displayTasks.filter((t: any) => t.status === 'DONE').length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-ink-muted">No completed works found for this period.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
