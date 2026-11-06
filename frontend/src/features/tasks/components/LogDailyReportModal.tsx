@@ -26,7 +26,7 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
 
   const { data: tasksData, isLoading: loadingTasks } = useQuery({
     queryKey: ['tasks', 'dropdown'],
-    queryFn: () => tasksService.list({ pageSize: 100 }),
+    queryFn: () => tasksService.list({ view: 'mine', pageSize: 100 }),
     enabled: open,
   });
 

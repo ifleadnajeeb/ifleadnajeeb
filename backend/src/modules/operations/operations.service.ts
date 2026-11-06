@@ -118,6 +118,8 @@ export const operationsService = {
   async createDailyReport(actor: AuthUser, input: any) {
     const createdReports = [];
       const reportItems = input.reports || [];
+      const totalTasks = reportItems.length || 1;
+      const timePerTask = (input.timeSpent || 0) / totalTasks;
       
       for (const item of reportItems) {
         const r = await prisma.dailyReport.create({
@@ -126,7 +128,7 @@ export const operationsService = {
             employeeId: actor.id,
             taskId: item.taskId,
             workCompleted: input.workCompleted,
-            timeSpent: input.timeSpent,
+            timeSpent: timePerTask,
             progress: item.progress,
             blockers: input.blockers ?? null,
           }

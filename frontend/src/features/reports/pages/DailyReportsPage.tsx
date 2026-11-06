@@ -174,6 +174,7 @@ export default function DailyReportsPage() {
                 <tr className="text-left text-[11px] uppercase tracking-wider text-ink-muted font-semibold">
                   <th className="px-5 py-3">Employee</th>
                   <th className="px-5 py-3">Task</th>
+                      <th className="px-5 py-3 text-left font-semibold text-ink-muted">Work Completed</th>
                   <th className="px-5 py-3">Date</th>
                   <th className="px-5 py-3 w-[150px]">Progress</th>
                   <th className="px-5 py-3">Hours</th>
@@ -197,6 +198,14 @@ export default function DailyReportsPage() {
                       </div>
                     </td>
                     <td className="px-5 py-3 font-medium text-ink">{r.task?.title || 'N/A'}</td>
+                      <td className="px-5 py-3 text-left max-w-[200px]">
+                        <div className="flex items-center gap-1 text-[13px] text-ink-muted">
+                          <span className="truncate" title={r.workCompleted}>{r.workCompleted || '—'}</span>
+                          {r.workCompleted && r.workCompleted.length > 20 && (
+                            <span className="text-brand text-[11px] font-medium cursor-pointer shrink-0" title={r.workCompleted}>[View]</span>
+                          )}
+                        </div>
+                      </td>
                     <td className="px-5 py-3 text-ink-muted whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}</td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
