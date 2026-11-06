@@ -120,13 +120,9 @@ export function DesktopSidebar() {
                     isActive && 'bg-brand text-white hover:bg-brand-hover'
                   )
                 }
-                title={!allowed ? 'View only — actions are restricted by your role' : undefined}
               >
                 <DisplayIcon className="w-4 h-4 shrink-0" />
                 <span className="flex-1">{displayLabel}</span>
-                {!allowed && (
-                  <Lock className="w-3 h-3 shrink-0 opacity-40" aria-label="View only" />
-                )}
               </NavLink>
             );
           });
