@@ -129,6 +129,9 @@ export default function TasksPage() {
               <ListIcon className="w-3.5 h-3.5 inline mr-1" /> List
             </button>
           </div>
+          <button onClick={() => setDailyReportOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-ink-border bg-white text-ink text-[13.5px] font-medium hover:bg-brand-light transition-colors">
+            <Calendar className="w-4 h-4" /> Log Daily Report
+          </button>
           <CanDo permission="tasks:create">
             <button onClick={() => setCreateOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover">
               <Plus className="w-4 h-4" /> New {pageTitle.slice(0, -1)}
