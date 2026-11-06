@@ -93,39 +93,45 @@ export const attendanceService = {
         if (!groupedByUser[session.userId]) {
           groupedByUser[session.userId] = {
             id: session.userId, userId: session.userId, user: session.user,
-            date: session.checkIn, firstLogin: session.checkIn, lastLogout: session.checkOut,
-            totalHours: 0, hasActiveSession: !session.checkOut, allSessions: []
+            date: session.checkIn, totalHours: 0, allSessions: []
           };
         }
-        
-        const u = groupedByUser[session.userId];
-        u.allSessions.push(session);
-        
-        if (new Date(session.checkIn) < new Date(u.firstLogin)) u.firstLogin = session.checkIn;
-        if (session.checkOut) {
-          if (!u.lastLogout || new Date(session.checkOut) > new Date(u.lastLogout)) u.lastLogout = session.checkOut;
-        }
-        if (!session.checkOut) u.hasActiveSession = true;
-        u.totalHours += session.totalHours;
+        groupedByUser[session.userId].allSessions.push(session);
+        groupedByUser[session.userId].totalHours += session.totalHours;
       }
       
       const dailyResult = Object.values(groupedByUser).map((u: any) => {
-        // Sort sessions chronologically to find breaks
+        // 1. Sort sessions chronologically (Oldest to Newest)
         u.allSessions.sort((a: any, b: any) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime());
         
-        // Calculate break intervals
+        // 2. The absolute first login is the very first session
+        const firstLogin = u.allSessions[0].checkIn;
+        
+        // 3. Find the absolute last logout (ignoring active sessions)
+        const closedSessions = u.allSessions.filter((s: any) => s.checkOut);
+        const lastLogout = closedSessions.length > 0 ? closedSessions[closedSessions.length - 1].checkOut : null;
+        
+        // 4. Is the user currently active? (The last session has no checkOut)
+        const hasActiveSession = !u.allSessions[u.allSessions.length - 1].checkOut;
+        
+        // 5. Calculate Break Intervals (Ignore gaps under 1 minute)
         const breaks: { start: Date; end: Date }[] = [];
         for (let i = 0; i < u.allSessions.length - 1; i++) {
           const current = u.allSessions[i];
           const next = u.allSessions[i+1];
           if (current.checkOut && next.checkIn) {
-            breaks.push({ start: current.checkOut, end: next.checkIn });
+            const gapMinutes = (new Date(next.checkIn).getTime() - new Date(current.checkOut).getTime()) / (1000 * 60);
+            if (gapMinutes > 1) { // Only count breaks longer than 1 minute
+              breaks.push({ start: current.checkOut, end: next.checkIn });
+            }
           }
         }
 
         return {
           ...u,
-          lastLogout: u.hasActiveSession ? null : u.lastLogout,
+          firstLogin,
+          lastLogout: hasActiveSession ? null : lastLogout,
+          hasActiveSession,
           totalHours: Math.round(u.totalHours * 10) / 10,
           breaks
         };
