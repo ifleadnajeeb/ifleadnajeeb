@@ -8,7 +8,7 @@ const TABS_BY_ROLE: Record<string, Array<string>> = {
   ADMIN:      ['SALES_HEAD', 'GM', 'BDM', 'BDE'],
   CEO:        ['SALES_HEAD', 'GM', 'BDM', 'BDE'],
   GM:         ['SALES_HEAD', 'GM', 'BDM', 'BDE'],
-  BDM:        ['SALES_HEAD', 'GM', 'BDM', 'BDE'], // ✅ BDM gets full access
+  BDM:        ['SALES_HEAD', 'GM', 'BDM', 'BDE'],
   SALES_HEAD: ['BDE'],
   BDE:        [],
 };
@@ -26,17 +26,22 @@ export default function TeamPerformancePage() {
     if (!active) return;
     setLoading(true);
     setError('');
+    
+    // Fetch up to 200 users
     usersService
       .list({ page: 1, pageSize: 200 })
-      .then((r) => {
-        // ✅ Correctly filter by role object or string
-        const filtered = (r.data ?? []).filter((u: AppUser) => {
-          const roleName = typeof u.role === 'object' ? (u.role as any).name : u.role;
+      .then((r: any) => {
+        const fetchedUsers = r?.data || r || [];
+        const filtered = fetchedUsers.filter((u: AppUser) => {
+          const roleName = typeof u.role === 'object' ? (u.role as any)?.name : u.role;
           return roleName === active;
         });
         setRows(filtered);
       })
-      .catch((e: any) => setError(e?.response?.data?.message ?? 'Failed to load team'))
+      .catch((e: any) => {
+        console.error("Team Performance API Error:", e);
+        setError(e?.response?.data?.message || e?.message || 'Failed to load team. You may not have permission.');
+      })
       .finally(() => setLoading(false));
   }, [active]);
 
@@ -80,7 +85,7 @@ export default function TeamPerformancePage() {
         </div>
 
         {loading && <div className="p-8 text-center text-ink-muted text-sm">Loading…</div>}
-        {error && <div className="p-8 text-center text-danger text-sm">{error}</div>}
+        {error && <div className="p-8 text-center text-danger text-sm bg-red-50">{error}</div>}
         {!loading && !error && rows.length === 0 && (
           <div className="p-8 text-center text-ink-muted text-sm">No members found in your scope.</div>
         )}
@@ -99,7 +104,7 @@ export default function TeamPerformancePage() {
               </thead>
               <tbody>
                 {rows.map((u) => {
-                  const roleName = typeof u.role === 'object' ? (u.role as any).name : u.role;
+                  const roleName = typeof u.role === 'object' ? (u.role as any)?.name : u.role;
                   return (
                     <tr key={u.id} className="border-t border-ink-border hover:bg-ink-bg/40">
                       <td className="px-5 py-3 font-medium text-ink">{u.name}</td>
