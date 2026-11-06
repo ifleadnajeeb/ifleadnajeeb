@@ -65,19 +65,19 @@ export const usersService = {
 };
 
 export const ROLE_LABEL: Record<string, string> = {
+  ADMIN: 'Admin',
+  CEO: 'CEO',
+  GM: 'GM',
+  BDM: 'BDM',
+  SALES_HEAD: 'Sales Head',
+  BDE: 'BDE',
   OP_MANAGER: 'OP Manager',
   WEB_DEVELOPER: 'Web Dev',
   SOFTWARE_DEVELOPER: 'Software Dev',
   DIGITAL_MARKETER: 'Digital Mktg',
   CONTENT_CREATOR: 'Content Creator',
-  GRAPHIC_DESIGNER: 'Graphic Designer',
   VIDEO_EDITOR: 'Video Editor',
-
-  ADMIN: 'Admin',
-  CEO: 'CEO',
-  BDM: 'GM',
-  SALES_HEAD: 'Sales Head',
-  BDE: 'BDE',
+  GRAPHIC_DESIGNER: 'Graphic Designer'
 };
 
 export const ROLE_COLOR: Record<string, string> = {
