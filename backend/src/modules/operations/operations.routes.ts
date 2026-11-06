@@ -23,4 +23,7 @@ router.get('/analytics', requirePermission('reports:read'), operationsController
 router.get('/departments', requirePermission('tasks:read'), operationsController.listDepartments);
 router.post('/departments', requirePermission('tasks:create'), validate(CreateDepartmentSchema), operationsController.createDepartment);
 
+import { operationsController } from './operations.controller.js';
+router.post('/daily-reports', operationsController.createDailyReport);
+
 export default router;

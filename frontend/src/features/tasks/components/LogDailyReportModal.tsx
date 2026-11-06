@@ -12,26 +12,24 @@ interface Props {
 
 export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
+  const [progressMap, setProgressMap] = useState<Record<string, number>>({});
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [workCompleted, setWorkCompleted] = useState('');
   const [timeSpent, setTimeSpent] = useState('');
-  const [progress, setProgress] = useState(50);
   const [blockers, setBlockers] = useState('');
   
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // Fetch active tasks
   const { data: tasksData, isLoading: loadingTasks } = useQuery({
     queryKey: ['tasks', 'dropdown'],
     queryFn: () => tasksService.list({ pageSize: 100 }),
     enabled: open,
   });
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -45,9 +43,9 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
   useEffect(() => {
     if (!open) {
       setSelectedTasks([]);
+      setProgressMap({});
       setWorkCompleted('');
       setTimeSpent('');
-      setProgress(50);
       setBlockers('');
       setError('');
       setSuccess(false);
@@ -58,9 +56,13 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
   if (!open) return null;
 
   const handleToggleTask = (id: string) => {
-    setSelectedTasks(prev => 
-      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
-    );
+    if (selectedTasks.includes(id)) {
+      setSelectedTasks(prev => prev.filter(t => t !== id));
+    } else {
+      setSelectedTasks(prev => [...prev, id]);
+      // Initialize progress to 20% for the newly selected task
+      setProgressMap(prev => ({ ...prev, [id]: prev[id] ?? 20 }));
+    }
   };
 
   const handleSubmit = async () => {
@@ -71,20 +73,23 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
 
     setSubmitting(true);
     try {
+      const reports = selectedTasks.map(id => ({
+        taskId: id,
+        progress: progressMap[id] ?? 20
+      }));
+
       const payload = {
-        taskIds: selectedTasks, // Send array of selected tasks
+        reports,
         workCompleted: workCompleted.trim(),
         timeSpent: Number(timeSpent),
-        progress: Number(progress),
         blockers: blockers.trim() || undefined,
       };
       
-      // Using the standard operations endpoint (adjust if your grep command shows otherwise)
       await api.post('/operations/daily-reports', payload);
       setSuccess(true);
       onSuccess?.();
     } catch (err: any) {
-      setError(err?.response?.data?.message || 'Failed to submit report. Check your route.');
+      setError(err?.response?.data?.message || 'Failed to submit report.');
     } finally {
       setSubmitting(false);
     }
@@ -123,7 +128,6 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
         </div>
 
         <div className="px-5 py-4 space-y-4">
-          {/* Custom Multi-Select Dropdown */}
           <div ref={dropdownRef} className="relative">
             <label className="block text-[13px] text-ink-muted mb-1.5">Select Work(s) *</label>
             <button
@@ -143,7 +147,17 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
                   <input 
                     type="checkbox" 
                     checked={selectedTasks.length === tasks.length && tasks.length > 0}
-                    onChange={(e) => setSelectedTasks(e.target.checked ? tasks.map((t:any) => t.id) : [])}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedTasks(tasks.map((t:any) => t.id));
+                        const newMap: Record<string, number> = {};
+                        tasks.forEach((t:any) => { newMap[t.id] = 20; });
+                        setProgressMap(newMap);
+                      } else {
+                        setSelectedTasks([]);
+                        setProgressMap({});
+                      }
+                    }}
                     className="rounded text-brand focus:ring-brand"
                   />
                   <span className="font-medium text-[13px]">Select All Works</span>
@@ -163,7 +177,30 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
             )}
           </div>
 
-          {/* Work Completed */}
+          {/* ✅ DYNAMIC PROGRESS SLIDERS FOR EACH SELECTED WORK */}
+          {selectedTasks.length > 0 && (
+            <div className="space-y-3 border border-ink-border rounded-lg p-3 bg-ink-bg/30">
+              <label className="block text-[13px] text-ink-muted font-medium">Progress per Work</label>
+              {selectedTasks.map(tid => {
+                const task = tasks.find((t:any) => t.id === tid);
+                const val = progressMap[tid] ?? 20;
+                return (
+                  <div key={tid} className="space-y-1">
+                    <div className="flex items-center justify-between text-[12px]">
+                      <span className="font-medium text-ink truncate max-w-[250px]">{task?.title}</span>
+                      <span className="text-brand font-bold">{val}%</span>
+                    </div>
+                    <input
+                      type="range" min="0" max="100" step="5" value={val}
+                      onChange={(e) => setProgressMap(prev => ({ ...prev, [tid]: Number(e.target.value) }))}
+                      className="w-full accent-brand"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <div>
             <label className="block text-[13px] text-ink-muted mb-1.5 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5" /> Work Completed *
@@ -177,55 +214,22 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
             />
           </div>
 
-          {/* Progress Slider */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[13px] text-ink-muted">Progress</label>
-              <span className="text-[13px] font-medium text-ink">{progress}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-              value={progress}
-              onChange={(e) => setProgress(Number(e.target.value))}
-              className="w-full accent-brand"
-            />
-            <div className="flex justify-between text-[11px] text-ink-muted mt-1">
-              <span>0%</span>
-              <span>50%</span>
-              <span>100%</span>
-            </div>
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
-            {/* Time Spent */}
             <div>
               <label className="block text-[13px] text-ink-muted mb-1.5 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" /> Hours Spent *
               </label>
               <input
-                type="number"
-                step="0.5"
-                min="0.5"
-                value={timeSpent}
-                onChange={(e) => setTimeSpent(e.target.value)}
-                placeholder="e.g. 2.5"
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
+                type="number" step="0.5" min="0.5" value={timeSpent} onChange={(e) => setTimeSpent(e.target.value)}
+                placeholder="e.g. 2.5" className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
               />
             </div>
-
-            {/* Blockers */}
             <div>
               <label className="block text-[13px] text-ink-muted mb-1.5 flex items-center gap-1.5">
                 <AlertCircle className="w-3.5 h-3.5" /> Blockers (if any)
               </label>
               <input
-                type="text"
-                value={blockers}
-                onChange={(e) => setBlockers(e.target.value)}
-                placeholder="Any issues?"
+                type="text" value={blockers} onChange={(e) => setBlockers(e.target.value)} placeholder="Any issues?"
                 className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
               />
             </div>

@@ -116,26 +116,24 @@ export const operationsService = {
   },
 
   async createDailyReport(actor: AuthUser, input: any) {
-    const reports = [];
-      const ids = input.taskIds || (input.taskId ? [input.taskId] : []);
+    const createdReports = [];
+      const reportItems = input.reports || [];
       
-      for (const tid of ids) {
+      for (const item of reportItems) {
         const r = await prisma.dailyReport.create({
           data: {
             organizationId: actor.organizationId,
             employeeId: actor.id,
-            taskId: tid,
+            taskId: item.taskId,
             workCompleted: input.workCompleted,
             timeSpent: input.timeSpent,
-            progress: input.progress ?? 0,
+            progress: item.progress,
             blockers: input.blockers ?? null,
           }
         });
-        reports.push(r);
-        
-        
+        createdReports.push(r);
       }
-      return reports;
+      return createdReports;
   },
 
   async createDepartment(actor: AuthUser, input: any) {
