@@ -28,7 +28,9 @@ function cleanPhone(raw: string): { ok: true; phone: string } | { ok: false; msg
 
 export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ownerName }: Props) {
   const { user } = useAuth();
-  const isBDE = user?.role === 'BDE';
+  // Safely check if the current user is a BDE, whether role is a string or object
+  const roleStr = typeof user?.role === 'object' ? (user?.role as any)?.name : user?.role;
+  const isBDE = roleStr === 'BDE';
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -41,6 +43,7 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
   const [nextFollowupTime, setNextFollowupTime] = useState('');
   const [assignedToId, setAssignedToId] = useState(defaultAssignedToId ?? '');
   const [notes, setNotes] = useState('');
+  
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -51,11 +54,22 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
   useEffect(() => {
     if (!open) return;
     if (defaultAssignedToId) setAssignedToId(defaultAssignedToId);
+    
     setLoadingUsers(true);
     usersService
       .list({ page: 1, pageSize: 200 })
-      .then((r) => setUsers(r.data))
-      .catch(() => setUsers([]))
+      .then((r: any) => {
+        // ✅ Robustly handle different response structures
+        let fetchedUsers: AppUser[] = [];
+        if (Array.isArray(r)) fetchedUsers = r;
+        else if (r && Array.isArray(r.data)) fetchedUsers = r.data;
+        
+        setUsers(fetchedUsers);
+      })
+      .catch((err) => {
+        console.error("Failed to load teammates:", err);
+        setUsers([]);
+      })
       .finally(() => setLoadingUsers(false));
   }, [open, defaultAssignedToId]);
 
@@ -71,8 +85,6 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
 
   const handleSubmit = async () => {
     setError('');
-    
-    // Frontend Validation
     if (name.trim().length < 2) { setError('Name must be at least 2 characters.'); return; }
 
     let normalizedPhone: string | undefined;
@@ -82,18 +94,13 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
       normalizedPhone = r.phone;
     }
 
-    // Build combined follow-up timestamp safely
     let nextFollowupAt: string | undefined;
     if (nextFollowupDate) {
       try {
         const time = nextFollowupTime || '09:00';
         const dateObj = new Date(`${nextFollowupDate}T${time}:00`);
-        if (!isNaN(dateObj.getTime())) {
-          nextFollowupAt = dateObj.toISOString();
-        }
-      } catch (e) {
-        console.error("Invalid date format", e);
-      }
+        if (!isNaN(dateObj.getTime())) nextFollowupAt = dateObj.toISOString();
+      } catch (e) {}
     }
 
     setSubmitting(true);
@@ -102,40 +109,19 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
         name: name.trim(),
         phone: normalizedPhone,
         company: projectName.trim() || undefined,
-        source, 
-        status, 
-        priority,
-        value: value && Number(value) > 0 ? Number(value) : undefined,
+        source, status, priority,
+        value: value ? Number(value) : undefined,
         notes: notes.trim() || undefined,
       };
       
       if (!isBDE && assignedToId) payload.assignedToId = assignedToId;
       if (nextFollowupAt) payload.nextFollowupAt = nextFollowupAt;
 
-      console.log('[AddLeadModal] POST /leads payload:', JSON.stringify(payload, null, 2));
-
-      const res = await api.post('/leads', payload);
-      console.log('[AddLeadModal] response:', res.data);
+      await api.post('/leads', payload);
       setSuccess(true);
       onSuccess?.();
     } catch (err: any) {
-      console.error('[AddLeadModal] error:', err?.response?.data || err.message);
-      
-      // ✅ Extract the exact Zod error message if it exists
-      let msg = 'Could not create lead.';
-      const data = err?.response?.data;
-      if (data) {
-        if (data.details && Array.isArray(data.details)) {
-          // If it's a Zod validation error, join the field names and messages
-          msg = data.details.map((d: any) => `${d.path.join('.')}: ${d.message}`).join(' | ');
-        } else if (data.message && data.message !== 'VALIDATION') {
-          msg = data.message;
-        } else if (data.error) {
-          msg = data.error;
-        }
-      }
-      
-      setError(msg);
+      setError(err?.response?.data?.message || err?.response?.data?.error || 'Could not create lead.');
     } finally {
       setSubmitting(false);
     }
@@ -159,11 +145,6 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
                 ? 'has been assigned.'
                 : 'has been added to your leads.'}
           </p>
-          {nextFollowupDate && (
-            <p className="text-[13px] text-amber-700 mb-4">
-              📅 Follow-up scheduled for {nextFollowupDate} {nextFollowupTime || '09:00'}
-            </p>
-          )}
           <button onClick={handleClose} className="w-full h-11 rounded-lg bg-brand text-white font-medium hover:bg-brand-hover transition-colors">
             Continue
           </button>
@@ -178,13 +159,8 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-ink-border">
           <div>
             <h2 className="text-[16px] font-semibold text-ink">Add New Lead</h2>
-            {!isBDE && defaultAssignedToId && ownerName && (
-              <p className="text-[12px] text-amber-700 mt-0.5">
-                ⚡ Will be assigned to <strong>{ownerName}</strong>
-              </p>
-            )}
           </div>
-          <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-md text-ink-muted hover:bg-brand-light hover:text-brand transition-colors" aria-label="Close">
+          <button onClick={handleClose} className="w-8 h-8 flex items-center justify-center rounded-md text-ink-muted hover:bg-brand-light hover:text-brand transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -247,25 +223,12 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
               <span className="text-ink-muted font-normal">(optional)</span>
             </label>
             <div className="grid grid-cols-2 gap-3">
-              <input
-                type="date"
-                value={nextFollowupDate}
-                onChange={(e) => setNextFollowupDate(e.target.value)}
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
-              />
-              <input
-                type="time"
-                value={nextFollowupTime}
-                onChange={(e) => setNextFollowupTime(e.target.value)}
+              <input type="date" value={nextFollowupDate} onChange={(e) => setNextFollowupDate(e.target.value)}
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand" />
+              <input type="time" value={nextFollowupTime} onChange={(e) => setNextFollowupTime(e.target.value)}
                 disabled={!nextFollowupDate}
-                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand disabled:bg-ink-bg disabled:text-ink-muted"
-              />
+                className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand disabled:bg-ink-bg" />
             </div>
-            {nextFollowupDate && (
-              <p className="text-[12px] text-brand mt-1.5">
-                📅 Follow-up on {new Date(nextFollowupDate).toLocaleDateString('en-GB')} at {nextFollowupTime || '09:00'}
-              </p>
-            )}
           </div>
 
           {!isBDE && (
@@ -282,15 +245,17 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
                 className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand disabled:bg-ink-bg"
               >
                 <option value="">— Assign to me (default) —</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} · {ROLE_LABEL[u.role] ?? u.role}
-                  </option>
-                ))}
+                {users.map((u) => {
+                  // ✅ Safely extract the role name whether it's an object or string
+                  const rName = typeof u.role === 'object' ? (u.role as any)?.name : u.role;
+                  return (
+                    <option key={u.id} value={u.id}>
+                      {u.name} · {ROLE_LABEL[rName] ?? rName}
+                    </option>
+                  );
+                })}
               </select>
-              {loadingUsers && (
-                <p className="text-[12px] text-ink-muted mt-1">Loading teammates…</p>
-              )}
+              {loadingUsers && <p className="text-[12px] text-ink-muted mt-1">Loading teammates…</p>}
             </div>
           )}
 
