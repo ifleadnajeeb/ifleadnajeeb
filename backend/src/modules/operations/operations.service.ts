@@ -116,20 +116,26 @@ export const operationsService = {
   },
 
   async createDailyReport(actor: AuthUser, input: any) {
-    return prisma.dailyReport.create({
-      data: {
-        organizationId: actor.organizationId,
-        employeeId: actor.id,
-        taskId: input.taskId,
-        workCompleted: input.workCompleted,
-        timeSpent: input.timeSpent,
-        progress: input.progress,
-        blockers: input.blockers,
-        workStatus: input.workStatus || 'In Progress', // ✅ New
-        nextDayPlan: input.nextDayPlan,                 // ✅ New
-        attachments: input.attachments || [],           // ✅ New
-      },
-    });
+    const reports = [];
+      const ids = input.taskIds || (input.taskId ? [input.taskId] : []);
+      
+      for (const tid of ids) {
+        const r = await prisma.dailyReport.create({
+          data: {
+            organizationId: actor.organizationId,
+            employeeId: actor.id,
+            taskId: tid,
+            workCompleted: input.workCompleted,
+            timeSpent: input.timeSpent,
+            progress: input.progress ?? 0,
+            blockers: input.blockers ?? null,
+          }
+        });
+        reports.push(r);
+        
+        
+      }
+      return reports;
   },
 
   async createDepartment(actor: AuthUser, input: any) {
