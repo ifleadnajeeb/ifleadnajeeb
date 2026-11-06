@@ -99,6 +99,7 @@ export default function AttendancePage() {
                       <th className="text-left px-5 py-3">First Login</th>
                       <th className="text-left px-5 py-3">Last Logout</th>
                       <th className="text-left px-5 py-3">Break Times</th>
+                      <th className="text-left px-5 py-3">Total Break</th>
                       <th className="text-left px-5 py-3">Total Hours</th>
                     </>
                   ) : (
@@ -153,6 +154,10 @@ export default function AttendancePage() {
                           ) : (
                             <span className="text-ink-muted">—</span>
                           )}
+                        </td>
+
+                        <td className="px-5 py-3 text-amber-700 font-medium align-top">
+                          {row.totalBreakHours > 0 ? `${row.totalBreakHours} hrs` : '—'}
                         </td>
 
                         <td className="px-5 py-3 text-brand font-medium align-top">
