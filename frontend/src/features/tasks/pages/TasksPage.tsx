@@ -338,6 +338,11 @@ export default function TasksPage() {
       />
 
       <TaskDetailDrawer taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
+      <LogDailyReportModal 
+        open={dailyReportOpen} 
+        onClose={() => setDailyReportOpen(false)} 
+        onSuccess={() => { setDailyReportOpen(false); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }}
+      />
     </div>
   );
 }
@@ -429,6 +434,11 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
           </button>
         </div>
       </div>
+      <LogDailyReportModal 
+        open={dailyReportOpen} 
+        onClose={() => setDailyReportOpen(false)} 
+        onSuccess={() => { setDailyReportOpen(false); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }}
+      />
     </div>
   );
 }
