@@ -15,10 +15,11 @@ export const CreateDepartmentSchema = z.object({
 });
 
 export const CreateDailyReportSchema = z.object({
-  reports: z.array(z.object({ reports: z.array(z.object({ taskId: z.string(), progress: z.number() })), progress: z.number() })),.optional(),
-  workCompleted: z.string().min(2),
-  timeSpent: z.number().optional(),
-  progress: z.number().min(0).max(100).optional(),
-  blockers: z.string().optional(),
-  nextPlan: z.string().optional(),
+  reports: z.array(z.object({ 
+    taskId: z.string(), 
+    progress: z.number() 
+  })).optional(),
+  workCompleted: z.string().min(1, 'Work completed is required'),
+  timeSpent: z.coerce.number().min(0.1, 'Time spent must be greater than 0'),
+  blockers: z.string().optional().nullable(),
 });
