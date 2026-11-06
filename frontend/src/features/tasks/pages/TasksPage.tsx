@@ -27,6 +27,7 @@ function isOverdue(iso: string | null) {
 }
 
 export default function TasksPage() {
+  const [dailyReportOpen, setDailyReportOpen] = useState(false);
   const { user } = useAuth();
   const isOpManager = user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO';
   
