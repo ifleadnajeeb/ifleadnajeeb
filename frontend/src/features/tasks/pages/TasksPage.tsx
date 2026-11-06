@@ -4,7 +4,7 @@ import { useAuth } from '@/app/providers/auth-provider';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Search, LayoutGrid, List as ListIcon, X, Calendar } from 'lucide-react';
+import { Plus, Search, LayoutGrid, List as ListIcon, X, Calendar, CheckCircle2 } from 'lucide-react';
 import {
   tasksService, Task, TaskStatus, TaskPriority,
   STATUS_LABEL, STATUS_COLOR, PRIORITY_COLOR,
