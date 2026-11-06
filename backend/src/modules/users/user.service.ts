@@ -95,7 +95,7 @@ export const userService = {
         { id: actor.id },
         { teamId: actor.teamId ?? '__none__' },
       ];
-    } else if (actor.role === 'BDM') {
+    } else if (actor.role === 'BDM' || actor.role === 'GM' || actor.role === 'ADMIN' || actor.role === 'CEO') {
       const ids = await collectDescendants(actor.id);
       where.id = { in: [actor.id, ...ids] };
     }
