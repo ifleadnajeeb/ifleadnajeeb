@@ -4,11 +4,12 @@ import { useAuth } from '@/app/providers/auth-provider';
 import { usersService, AppUser, ROLE_LABEL, ROLE_COLOR } from '../services/users.service';
 import { Users, ExternalLink, ShieldAlert } from 'lucide-react';
 
+// ✅ Clean mapping of tabs. No duplicates.
 const TABS_BY_ROLE: Record<string, Array<string>> = {
   ADMIN:      ['SALES_HEAD', 'GM', 'BDM', 'BDE'],
   CEO:        ['SALES_HEAD', 'GM', 'BDM', 'BDE'],
-  GM:         ['SALES_HEAD', 'GM', 'BDM', 'BDE'],
-  BDM:        ['SALES_HEAD', 'GM', 'BDM', 'BDE'],
+  GM:         ['SALES_HEAD', 'BDM', 'BDE'],
+  BDM:        ['SALES_HEAD', 'GM', 'BDE'], // BDM gets access to everyone below them
   SALES_HEAD: ['BDE'],
   BDE:        [],
 };
@@ -27,9 +28,9 @@ export default function TeamPerformancePage() {
     setLoading(true);
     setError('');
     
-    // Fetch up to 200 users
+    // ✅ Ensure we pass page and pageSize to avoid 422 Validation Errors
     usersService
-      .list({ page: 1, pageSize: 200 })
+      .list({ page: 1, pageSize: 100 })
       .then((r: any) => {
         const fetchedUsers = r?.data || r || [];
         const filtered = fetchedUsers.filter((u: AppUser) => {
@@ -40,7 +41,7 @@ export default function TeamPerformancePage() {
       })
       .catch((e: any) => {
         console.error("Team Performance API Error:", e);
-        setError(e?.response?.data?.message || e?.message || 'Failed to load team. You may not have permission.');
+        setError(e?.response?.data?.message || 'Failed to load team. Check permissions.');
       })
       .finally(() => setLoading(false));
   }, [active]);
