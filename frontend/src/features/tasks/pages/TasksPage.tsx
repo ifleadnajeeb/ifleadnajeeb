@@ -28,6 +28,7 @@ function isOverdue(iso: string | null) {
 }
 
 export default function TasksPage() {
+  const [view, setView] = useState<'kanban' | 'list' | 'completed'>('kanban');
   const [dailyReportOpen, setDailyReportOpen] = useState(false);
   const { user } = useAuth();
   const isOpManager = user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO';
@@ -44,8 +45,7 @@ export default function TasksPage() {
   const [searchParams] = useSearchParams();
   const customerName = searchParams.get('customerName');
   
-  const [view, setView] = useState<'kanban' | 'list' | 'completed'>('kanban');
-  const [search, setSearch] = useState('');
+    const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(!!customerName);
   const [showPrivate, setShowPrivate] = useState(false);
