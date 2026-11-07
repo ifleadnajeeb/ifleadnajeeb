@@ -34,8 +34,7 @@ export default function TasksPage() {
   
   const [viewMode, setViewMode] = useState<'all' | 'mine' | 'review'>('all');
   const [completedFilter, setCompletedFilter] = useState<'daily' | 'weekly' | 'monthly'>('daily');
-  const [mainView, setMainView] = useState<'kanban' | 'list' | 'completed'>('kanban');
-  const [assigneeFilter, setAssigneeFilter] = useState('all');
+    const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
   const qc = useQueryClient();
@@ -45,7 +44,7 @@ export default function TasksPage() {
   const [searchParams] = useSearchParams();
   const customerName = searchParams.get('customerName');
   
-  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [view, setView] = useState<'kanban' | 'list' | 'completed'>('kanban');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(!!customerName);
@@ -124,13 +123,13 @@ export default function TasksPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-ink-bg p-1 rounded-lg">
-            <button onClick={() => setMainView('kanban')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${mainView === 'kanban' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            <button onClick={() => setView('kanban')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${view === 'kanban' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               <LayoutGrid className="w-3.5 h-3.5 inline mr-1" /> Kanban
             </button>
-            <button onClick={() => setMainView('list')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${mainView === 'list' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            <button onClick={() => setView('list')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${view === 'list' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               <ListIcon className="w-3.5 h-3.5 inline mr-1" /> List
             </button>
-            <button onClick={() => setMainView('completed')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${mainView === 'completed' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            <button onClick={() => setView('completed' as any)} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${(view as string) === 'completed' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               <CheckCircle2 className="w-3.5 h-3.5 inline mr-1" /> Completed
             </button>
           </div>
@@ -155,7 +154,7 @@ export default function TasksPage() {
         />
       </div>
 
-      {mainView === 'kanban' && (
+      {view === 'kanban' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
             let tasks = (displayTasks || []).filter((t: any) => t.status === col);
@@ -286,7 +285,7 @@ export default function TasksPage() {
         </div>
       )}
 
-      {mainView === 'list' && (
+      {view === 'list' && (
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
           {listQ.isLoading && <div className="py-12 text-center text-ink-muted text-sm">Loading…</div>}
           {listQ.data && listQ.data.data.length === 0 && (
@@ -362,7 +361,7 @@ export default function TasksPage() {
         onSuccess={() => { setDailyReportOpen(false); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }}
       />
 
-      {mainView === 'completed' && (
+      {(view as string) === 'completed' && (
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden mt-4">
           <div className="p-4 border-b border-ink-border flex items-center justify-between">
             <h2 className="text-[15px] font-semibold text-ink">Completed Works</h2>
@@ -507,7 +506,7 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
       </div>
       
 
-      {mainView === 'completed' && (
+      {(view as string) === 'completed' && (
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden mt-4">
           <div className="p-4 border-b border-ink-border flex items-center justify-between">
             <h2 className="text-[15px] font-semibold text-ink">Completed Works</h2>
