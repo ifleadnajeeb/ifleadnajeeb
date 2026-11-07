@@ -20,8 +20,7 @@ function pairSessions(logs: any[]) {
 
   for (const log of logs) {
     if (log.action === 'auth.login') {
-      // ✅ FIX: Only set the login if there isn't already an active session.
-      // This prevents a second login (without a logout) from overwriting the first login time.
+      // ✅ FIX: Do NOT overwrite an existing open login. This keeps the first login of the day.
       if (!openLogins[log.userId!]) {
         openLogins[log.userId!] = { id: log.id, checkIn: new Date(log.createdAt), user: log.user };
       }
@@ -46,12 +45,12 @@ function pairSessions(logs: any[]) {
     });
   }
 
-  return sessions.sort((a, b) => b.checkIn.getTime() - a.checkIn.getTime());
+  return sessions;
 }
 
 export const attendanceService = {
-  async startSession(userId: string, organizationId: string) { return null; },
-  async endSession(userId: string, reason: string) { return null; },
+  async startSession() { return null; },
+  async endSession() { return null; },
   async summary() { return { data: [] }; },
 
   async list(req: AuthRequest, query: any) {
@@ -72,11 +71,15 @@ export const attendanceService = {
       end = new Date(targetDate); end.setHours(23, 59, 59, 999);
     }
 
+    // ✅ Look back 24 hours to catch overnight sessions
+    const lookbackStart = new Date(start);
+    lookbackStart.setDate(lookbackStart.getDate() - 1);
+
     const userScope = await getUserScope(actor);
     const logs = await prisma.auditLog.findMany({
       where: {
         action: { in: ['auth.login', 'auth.logout'] },
-        createdAt: { gte: start, lte: end },
+        createdAt: { gte: lookbackStart, lte: end },
         user: { organizationId: actor.organizationId },
         ...userScope
       },
@@ -87,13 +90,21 @@ export const attendanceService = {
     const sessions = pairSessions(logs);
 
     if (query.mode === 'raw') {
-      return { data: sessions, meta: { total: sessions.length } };
+      const relevant = sessions.filter(s => {
+        const sEnd = s.checkOut ? s.checkOut.getTime() : end.getTime();
+        return s.checkIn.getTime() <= end.getTime() && sEnd >= start.getTime();
+      });
+      return { data: relevant, meta: { total: relevant.length } };
     }
 
     if (query.mode === 'daily') {
+      const todaySessions = sessions.filter(s => {
+        const sEnd = s.checkOut ? s.checkOut.getTime() : end.getTime();
+        return s.checkIn.getTime() <= end.getTime() && sEnd >= start.getTime();
+      });
+
       const groupedByUser: Record<string, any> = {};
-      
-      for (const session of sessions) {
+      for (const session of todaySessions) {
         if (!groupedByUser[session.userId]) {
           groupedByUser[session.userId] = {
             id: session.userId, userId: session.userId, user: session.user,
@@ -105,28 +116,26 @@ export const attendanceService = {
       }
       
       const dailyResult = Object.values(groupedByUser).map((u: any) => {
-        // 1. Sort sessions chronologically (Oldest to Newest)
         u.allSessions.sort((a: any, b: any) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime());
         
-        // 2. The absolute first login is the very first session
+        // ✅ The absolute earliest login (even if it was yesterday)
         const firstLogin = u.allSessions[0].checkIn;
         
-        // 3. Find the absolute last logout (ignoring active sessions)
         const closedSessions = u.allSessions.filter((s: any) => s.checkOut);
         const lastLogout = closedSessions.length > 0 ? closedSessions[closedSessions.length - 1].checkOut : null;
-        
-        // 4. Is the user currently active? (The last session has no checkOut)
         const hasActiveSession = !u.allSessions[u.allSessions.length - 1].checkOut;
         
-        // 5. Calculate Break Intervals (Ignore gaps under 1 minute)
         const breaks: { start: Date; end: Date }[] = [];
+        let totalBreakMinutes = 0;
+        
         for (let i = 0; i < u.allSessions.length - 1; i++) {
           const current = u.allSessions[i];
           const next = u.allSessions[i+1];
           if (current.checkOut && next.checkIn) {
             const gapMinutes = (new Date(next.checkIn).getTime() - new Date(current.checkOut).getTime()) / (1000 * 60);
-            if (gapMinutes > 30) { // Only count breaks longer than 1 minute
+            if (gapMinutes > 30) { 
               breaks.push({ start: current.checkOut, end: next.checkIn });
+              totalBreakMinutes += gapMinutes;
             }
           }
         }
@@ -137,7 +146,8 @@ export const attendanceService = {
           lastLogout: hasActiveSession ? null : lastLogout,
           hasActiveSession,
           totalHours: Math.round(u.totalHours * 10) / 10,
-          breaks
+          breaks,
+          totalBreakHours: Math.round((totalBreakMinutes / 60) * 10) / 10
         };
       });
 
@@ -167,13 +177,28 @@ export const attendanceService = {
     const start = new Date(targetDate); start.setHours(0, 0, 0, 0);
     const end = new Date(targetDate); end.setHours(23, 59, 59, 999);
 
+    // ✅ Look back 24 hours for the modal too
+    const lookbackStart = new Date(start);
+    lookbackStart.setDate(lookbackStart.getDate() - 1);
+
     const logs = await prisma.auditLog.findMany({
-      where: { userId, action: { in: ['auth.login', 'auth.logout'] }, createdAt: { gte: start, lte: end }, user: { organizationId: actor.organizationId } },
+      where: {
+        userId,
+        action: { in: ['auth.login', 'auth.logout'] },
+        createdAt: { gte: lookbackStart, lte: end },
+        user: { organizationId: actor.organizationId }
+      },
       include: { user: { select: { name: true, role: { select: { name: true } } } } },
       orderBy: { createdAt: 'asc' }
     });
 
-    const sessions = pairSessions(logs).sort((a: any, b: any) => a.checkIn.getTime() - b.checkIn.getTime());
+    const sessions = pairSessions(logs)
+      .filter(s => {
+        const sEnd = s.checkOut ? s.checkOut.getTime() : end.getTime();
+        return s.checkIn.getTime() <= end.getTime() && sEnd >= start.getTime();
+      })
+      .sort((a: any, b: any) => a.checkIn.getTime() - b.checkIn.getTime());
+
     return { data: sessions };
   }
 };
