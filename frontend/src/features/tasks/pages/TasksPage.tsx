@@ -29,7 +29,7 @@ function isOverdue(iso: string | null) {
 
 export default function TasksPage() {
   const [view, setView] = useState<'kanban' | 'list' | 'completed'>('kanban');
-  const [dailyReportOpen, setDailyReportOpen] = useState(false);
+    const [dailyReportOpen, setDailyReportOpen] = useState(false);
   const { user } = useAuth();
   const isOpManager = user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO';
   
