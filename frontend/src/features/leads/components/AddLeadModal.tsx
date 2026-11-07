@@ -59,11 +59,8 @@ export function AddLeadModal({ open, onClose, onSuccess, defaultAssignedToId, ow
     usersService
       .list({ page: 1, pageSize: 200 })
       .then((r: any) => {
-        // ✅ Robustly handle different response structures
-        let fetchedUsers: AppUser[] = [];
-        if (Array.isArray(r)) fetchedUsers = r;
-        else if (r && Array.isArray(r.data)) fetchedUsers = r.data;
-        
+        // ✅ Safely extract the users array from the response
+        const fetchedUsers = r?.data || r || [];
         setUsers(fetchedUsers);
       })
       .catch((err) => {
