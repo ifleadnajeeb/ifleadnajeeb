@@ -20,7 +20,11 @@ function pairSessions(logs: any[]) {
 
   for (const log of logs) {
     if (log.action === 'auth.login') {
-      openLogins[log.userId!] = { id: log.id, checkIn: new Date(log.createdAt), user: log.user };
+      // ✅ FIX: Only set the login if there isn't already an active session.
+      // This prevents a second login (without a logout) from overwriting the first login time.
+      if (!openLogins[log.userId!]) {
+        openLogins[log.userId!] = { id: log.id, checkIn: new Date(log.createdAt), user: log.user };
+      }
     } else if (log.action === 'auth.logout') {
       const open = openLogins[log.userId!];
       if (open) {
