@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, X, UserPlus } from 'lucide-react';
+import { Plus, Search, X, UserPlus, Pencil } from 'lucide-react';
 import { useAuth } from '@/app/providers/auth-provider';
 import { usersService, AppUser, ROLE_LABEL, ROLE_COLOR } from '../services/users.service';
 import { cn } from '@/shared/utils/cn';
@@ -12,6 +12,7 @@ export default function UsersPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AppUser | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['users', search],
@@ -140,6 +141,15 @@ export default function UsersPage() {
                       <CanDo permission="users:delete">
                         {u.role !== 'ADMIN' && u.id !== user?.id ? (
                           <div className="flex items-center justify-end gap-3">
+                            
+                            {/* 👇 NEW EDIT BUTTON 👇 */}
+                            <button
+                              onClick={() => setEditingUser(u)}
+                              className="text-[12px] text-brand font-medium hover:underline flex items-center gap-1"
+                            >
+                              <Pencil size={12} /> Edit
+                            </button>
+
                             <button
                               onClick={() => {
                                 if (confirm('Deactivate ' + u.name + '?')) {
@@ -201,6 +211,123 @@ export default function UsersPage() {
           allowedRoles={canCreateRoles}
         />
       )}
+
+      {/* 👇 NEW EDIT MODAL 👇 */}
+      <EditUserModal
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+      />
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// EditUserModal
+// ─────────────────────────────────────────────
+function EditUserModal({
+  user,
+  onClose,
+}: {
+  user: AppUser | null;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [name, setName] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setName(user.name);
+      setError('');
+    }
+  }, [user]);
+
+  if (!user) return null;
+
+  const handleSubmit = async () => {
+    if (!name.trim()) {
+      setError('Name cannot be empty');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      await usersService.update(user.id, { name: name.trim() });
+      qc.invalidateQueries({ queryKey: ['users'] });
+      onClose();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to update name');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl max-w-[420px] w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[16px] font-semibold text-ink">Edit User Name</h2>
+          <button
+            onClick={onClose}
+            className="text-ink-muted hover:text-ink"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">Email</label>
+            <input
+              value={user.email}
+              disabled
+              className="w-full h-10 px-3 border border-ink-border rounded-md bg-ink-bg text-ink-muted text-[14px]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[13px] text-ink-muted mb-1.5">
+              Full Name
+            </label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px]
+                         bg-white focus:outline-none focus:border-brand"
+            />
+          </div>
+
+          {error && (
+            <div className="text-[13px] text-danger bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 mt-6">
+          <button
+            onClick={onClose}
+            className="h-10 px-4 rounded-md border border-ink-border text-[13.5px] text-ink hover:bg-brand-light transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="h-10 px-5 rounded-md bg-brand text-white text-[13.5px] font-medium hover:bg-brand-hover disabled:opacity-50 transition-colors"
+          >
+            {submitting ? 'Saving…' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
