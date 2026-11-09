@@ -54,9 +54,16 @@ export const usersService = {
     return res.data;
   },
 
-  // 👇 THIS IS THE NEW UPDATE METHOD 👇
   update: async (id: string, data: { name: string }) => {
     const res = await api.patch(`/users/${id}`, data);
     return res.data;
+  },
+
+  // 👇 RESTORED: The function Vercel was looking for 👇
+  bookable: async (): Promise<AppUser[]> => {
+    const res = await api.get('/users/bookable', {
+      params: { page: 1, pageSize: 200 },
+    });
+    return res.data.data;
   },
 };
