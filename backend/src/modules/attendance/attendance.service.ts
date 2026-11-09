@@ -133,7 +133,8 @@ export const attendanceService = {
           const next = u.allSessions[i+1];
           if (current.checkOut && next.checkIn) {
             const gapMinutes = (new Date(next.checkIn).getTime() - new Date(current.checkOut).getTime()) / (1000 * 60);
-            if (gapMinutes > 30) { 
+            // 👇 CHANGED FROM 30 TO 20 HERE 👇
+            if (gapMinutes > 20) { 
               breaks.push({ start: current.checkOut, end: next.checkIn });
               totalBreakMinutes += gapMinutes;
             }

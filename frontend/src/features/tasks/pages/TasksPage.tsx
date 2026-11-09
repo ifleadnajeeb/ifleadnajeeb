@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Search, LayoutGrid, List as ListIcon, X, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   tasksService, Task, TaskStatus, TaskPriority,
   STATUS_LABEL, STATUS_COLOR, PRIORITY_COLOR,
@@ -15,6 +16,16 @@ import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
 
 const COLUMNS: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.98 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
+};
 
 function fmtDate(iso: string | null) {
   if (!iso) return '—';
@@ -35,7 +46,10 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<'all' | 'mine' | 'review'>('all');
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  
+  // This fetches users for the dropdown (uses the cached data from NewTaskModal)
   const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
+  
   const qc = useQueryClient();
   const isOpsRole = ['OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'].includes(user?.role || '');
   const pageTitle = isOpsRole ? 'Works' : 'Tasks';
@@ -50,7 +64,6 @@ export default function TasksPage() {
   const [showPrivate, setShowPrivate] = useState(false);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
-  // Auto-open modal if coming from "Assign Work"
   useEffect(() => {
     if (customerName) setCreateOpen(true);
   }, [customerName]);
@@ -62,7 +75,6 @@ export default function TasksPage() {
     enabled: view === 'kanban',
   });
   
-
   const listQ = useQuery({
     queryKey: ['tasks', 'list', search, page],
     queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
@@ -89,7 +101,6 @@ export default function TasksPage() {
     }
   };
 
-      // ✅ Safely extract tasks from the list API
   const extractTasks = (data: any) => {
     if (!data) return [];
     if (Array.isArray(data)) return data;
@@ -97,21 +108,13 @@ export default function TasksPage() {
     return [];
   };
 
-  const rawTasks = view === 'kanban' 
-    ? extractTasks(kanbanQ.data) 
-    : extractTasks(listQ.data);
+  const rawTasks = view === 'kanban' ? extractTasks(kanbanQ.data) : extractTasks(listQ.data);
 
   const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
     if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
     return true; 
   }) : [];
-
-
-  
-  
-  
-  
 
   return (
     <div className="space-y-4">
@@ -151,18 +154,18 @@ export default function TasksPage() {
       </div>
 
       {view === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
             const tasks = (displayTasks || []).filter((t: any) => t.status === col);
             return (
-              <div
+              <motion.div
+                variants={itemVariants}
                 key={col}
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => {
                   e.preventDefault();
                   const taskId = e.dataTransfer.getData('text/task-id');
-                  const allTasks = displayTasks;
-                  const dragged = allTasks.find((t: Task) => t.id === taskId);
+                  const dragged = displayTasks.find((t: Task) => t.id === taskId);
                   if (dragged) moveTask(dragged, col);
                 }}
                 className="bg-ink-bg border border-ink-border rounded-xl p-3 min-h-[200px]"
@@ -174,110 +177,98 @@ export default function TasksPage() {
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {(tasks || []).map(task => {
-                    // Calculate progress based on status or latest daily report
-                    const latestProgressReport = task.dailyReports?.[0];
-                    let progress = 0;
-                    if (task.status === 'DONE') progress = 100;
-                    else if (task.reviewStatus === 'PENDING_REVIEW') progress = 80;
-                    else if (latestProgressReport?.progress != null) progress = latestProgressReport.progress;
-                    else if (task.acceptance === 'ACCEPTED') progress = 20;
-                    else if (task.acceptance === 'PENDING') progress = 0;
+                  <AnimatePresence>
+                    {(tasks || []).map(task => {
+                      const latestProgressReport = task.dailyReports?.[0];
+                      let progress = 0;
+                      if (task.status === 'DONE') progress = 100;
+                      else if (task.reviewStatus === 'PENDING_REVIEW') progress = 80;
+                      else if (latestProgressReport?.progress != null) progress = latestProgressReport.progress;
+                      else if (task.acceptance === 'ACCEPTED') progress = 20;
 
-                    // Get latest report text (shortened)
-                    const latestReport = task.dailyReports?.[0]?.workCompleted;
-                    const shortReport = latestReport ? (latestReport.length > 40 ? latestReport.substring(0, 40) + '...' : latestReport) : null;
+                      const latestReport = task.dailyReports?.[0]?.workCompleted;
+                      const shortReport = latestReport ? (latestReport.length > 40 ? latestReport.substring(0, 40) + '...' : latestReport) : null;
 
-                    return (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={e => e.dataTransfer.setData('text/task-id', task.id)}
-                        className="bg-white border border-ink-border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <button
-                            onClick={() => setOpenTaskId(task.id)}
-                            className="text-[13.5px] font-medium text-ink leading-snug flex-1 text-left hover:text-brand"
-                          >
-                            {task.title}
-                          </button>
-                          <button
-                            onClick={() => deleteTask(task)}
-                            className="text-ink-muted hover:text-danger"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        
-                        {/* Status Badge */}
-                        <div className="mb-2 flex items-center justify-between">
-                          <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold', 
-                            task.acceptance === 'PENDING' ? 'bg-amber-100 text-amber-700' :
-                            task.reviewStatus === 'PENDING_REVIEW' ? 'bg-purple-100 text-purple-700' :
-                            task.reviewStatus === 'CORRECTION_REQUESTED' ? 'bg-red-100 text-red-700' :
-                            task.status === 'DONE' ? 'bg-green-100 text-green-700' :
-                            'bg-blue-100 text-blue-700'
-                          )}>
-                            {task.acceptance === 'PENDING' ? 'PENDING ACCEPT' :
-                             task.reviewStatus === 'PENDING_REVIEW' ? 'IN REVIEW' :
-                             task.reviewStatus === 'CORRECTION_REQUESTED' ? 'NEEDS FIX' :
-                             task.status === 'DONE' ? 'COMPLETED' : 'IN PROGRESS'}
-                          </span>
-                          <span className="text-[10px] font-semibold text-ink-muted">{progress}%</span>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
-                          <div className={cn("h-1.5 rounded-full", progress === 100 ? "bg-green-500" : "bg-brand")} style={{ width: `${progress}%` }}></div>
-                        </div>
-
-                        {/* Latest Report Snippet */}
-                        {shortReport && (
-                          <div className="text-[10.5px] text-ink-muted italic mb-2 bg-gray-50 p-1.5 rounded border border-gray-100">
-                            "{shortReport}"
+                      return (
+                        <motion.div
+                          layout
+                          variants={itemVariants}
+                          whileHover={{ y: -3, boxShadow: "0px 6px 15px rgba(0,0,0,0.06)" }}
+                          whileTap={{ scale: 0.98 }}
+                          key={task.id}
+                          draggable
+                          onDragStart={e => e.dataTransfer.setData('text/task-id', task.id)}
+                          className="bg-white border border-ink-border rounded-lg p-3 shadow-sm cursor-grab active:cursor-grabbing transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <button onClick={() => setOpenTaskId(task.id)} className="text-[13.5px] font-medium text-ink leading-snug flex-1 text-left hover:text-brand">
+                              {task.title}
+                            </button>
+                            <button onClick={() => deleteTask(task)} className="text-ink-muted hover:text-danger">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                        )}
-
-                        <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
-                          <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', PRIORITY_COLOR[task.priority])}>
-                            {task.priority}
-                          </span>
-                          {task.dueAt && (
-                            <span className={cn('text-[11px] inline-flex items-center gap-1',
-                              isOverdue(task.dueAt) && task.status !== 'DONE' ? 'text-danger font-medium' : 'text-ink-muted')}>
-                              <Calendar className="w-3 h-3" /> {fmtDate(task.dueAt)}
+                          
+                          <div className="mb-2 flex items-center justify-between">
+                            <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold', 
+                              task.acceptance === 'PENDING' ? 'bg-amber-100 text-amber-700' :
+                              task.reviewStatus === 'PENDING_REVIEW' ? 'bg-purple-100 text-purple-700' :
+                              task.reviewStatus === 'CORRECTION_REQUESTED' ? 'bg-red-100 text-red-700' :
+                              task.status === 'DONE' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                            )}>
+                              {task.acceptance === 'PENDING' ? 'PENDING ACCEPT' :
+                               task.reviewStatus === 'PENDING_REVIEW' ? 'IN REVIEW' :
+                               task.reviewStatus === 'CORRECTION_REQUESTED' ? 'NEEDS FIX' :
+                               task.status === 'DONE' ? 'COMPLETED' : 'IN PROGRESS'}
                             </span>
-                          )}
-                        </div>
-                        
-                        {task.assignedTo && (
-                          <div className="text-[11px] text-ink font-medium mt-1.5 pt-1.5 border-t border-ink-border flex items-center gap-1">
-                            <div className="w-4 h-4 rounded-full bg-brand-light text-brand flex items-center justify-center text-[8px]">
-                              {task.assignedTo.name.charAt(0).toUpperCase()}
-                            </div>
-                            {task.assignedTo.name}
+                            <span className="text-[10px] font-semibold text-ink-muted">{progress}%</span>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {tasks.length === 0 && (
-                    <div className="text-center py-6 text-[12px] text-ink-muted">No tasks</div>
-                  )}
+
+                          <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className={cn("h-1.5 rounded-full", progress === 100 ? "bg-green-500" : "bg-brand")} />
+                          </div>
+
+                          {shortReport && (
+                            <div className="text-[10.5px] text-ink-muted italic mb-2 bg-gray-50 p-1.5 rounded border border-gray-100">
+                              "{shortReport}"
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+                            <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-medium', PRIORITY_COLOR[task.priority])}>
+                              {task.priority}
+                            </span>
+                            {task.dueAt && (
+                              <span className={cn('text-[11px] inline-flex items-center gap-1', isOverdue(task.dueAt) && task.status !== 'DONE' ? 'text-danger font-medium' : 'text-ink-muted')}>
+                                <Calendar className="w-3 h-3" /> {fmtDate(task.dueAt)}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {task.assignedTo && (
+                            <div className="text-[11px] text-ink font-medium mt-1.5 pt-1.5 border-t border-ink-border flex items-center gap-1">
+                              <div className="w-4 h-4 rounded-full bg-brand-light text-brand flex items-center justify-center text-[8px]">
+                                {task.assignedTo.name.charAt(0).toUpperCase()}
+                              </div>
+                              {task.assignedTo.name}
+                            </div>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                  {tasks.length === 0 && <div className="text-center py-6 text-[12px] text-ink-muted">No tasks</div>}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       {view === 'list' && (
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
           {listQ.isLoading && <div className="py-12 text-center text-ink-muted text-sm">Loading…</div>}
-          {listQ.data && listQ.data.data.length === 0 && (
-            <div className="py-16 text-center text-ink-muted text-sm">No tasks found.</div>
-          )}
+          {listQ.data && listQ.data.data.length === 0 && <div className="py-16 text-center text-ink-muted text-sm">No tasks found.</div>}
           {listQ.data && listQ.data.data.length > 0 && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[800px]">
@@ -291,44 +282,26 @@ export default function TasksPage() {
                     <th className="px-5 py-3">Created</th>
                   </tr>
                 </thead>
-                <tbody>
+                <motion.tbody variants={containerVariants} initial="hidden" animate="show">
                   {(Array.isArray(listQ.data) ? listQ.data : (listQ.data?.data || [])).map(t => (
-                    <tr key={t.id} className="border-t border-ink-border hover:bg-brand-light/40">
+                    <motion.tr variants={itemVariants} whileHover={{ backgroundColor: "#f9fafb" }} key={t.id} className="border-t border-ink-border transition-colors">
                       <td className="px-5 py-3">
                         <div className="font-medium text-ink">{t.title}</div>
                         {t.description && <div className="text-[12px] text-ink-muted line-clamp-1">{t.description}</div>}
                       </td>
                       <td className="px-5 py-3">
-                        <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', STATUS_COLOR[t.status])}>
-                          {STATUS_LABEL[t.status]}
-                        </span>
+                        <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', STATUS_COLOR[t.status])}>{STATUS_LABEL[t.status]}</span>
                       </td>
                       <td className="px-5 py-3">
-                        <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', PRIORITY_COLOR[t.priority])}>
-                          {t.priority}
-                        </span>
+                        <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', PRIORITY_COLOR[t.priority])}>{t.priority}</span>
                       </td>
                       <td className="px-5 py-3 text-ink-muted">{t.assignedTo?.name ?? '—'}</td>
-                      <td className={cn('px-5 py-3 whitespace-nowrap',
-                        isOverdue(t.dueAt) && t.status !== 'DONE' ? 'text-danger font-medium' : 'text-ink-muted')}>
-                        {fmtDate(t.dueAt)}
-                      </td>
+                      <td className={cn('px-5 py-3 whitespace-nowrap', isOverdue(t.dueAt) && t.status !== 'DONE' ? 'text-danger font-medium' : 'text-ink-muted')}>{fmtDate(t.dueAt)}</td>
                       <td className="px-5 py-3 text-ink-muted">{fmtDate(t.createdAt)}</td>
-                    </tr>
+                    </motion.tr>
                   ))}
-                </tbody>
+                </motion.tbody>
               </table>
-            </div>
-          )}
-          {listQ.data && listQ.data.meta.totalPages > 1 && (
-            <div className="border-t border-ink-border px-5 py-3 flex items-center justify-between">
-              <span className="text-[12px] text-ink-muted">Page {listQ.data.meta.page} of {listQ.data.meta.totalPages}</span>
-              <div className="flex gap-2">
-                <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
-                  className="px-3 py-1.5 border border-ink-border rounded text-[12px] disabled:opacity-40">Previous</button>
-                <button disabled={page >= listQ.data.meta.totalPages} onClick={() => setPage(p => p + 1)}
-                  className="px-3 py-1.5 border border-ink-border rounded text-[12px] disabled:opacity-40">Next</button>
-              </div>
             </div>
           )}
         </div>
@@ -342,17 +315,19 @@ export default function TasksPage() {
       />
 
       <TaskDetailDrawer taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
+      
+      {/* 👇 Fixed queryClient to qc 👇 */}
       <LogDailyReportModal 
         open={dailyReportOpen} 
         onClose={() => setDailyReportOpen(false)} 
-        onSuccess={() => { setDailyReportOpen(false); queryClient.invalidateQueries({ queryKey: ['tasks'] }); }}
+        onSuccess={() => { setDailyReportOpen(false); qc.invalidateQueries({ queryKey: ['tasks'] }); }}
       />
     </div>
   );
 }
 
 function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open: boolean; onClose: () => void; onSuccess: () => void; defaultCustomerName?: string }) {
-  const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
+  const { data: users, isLoading: loadingUsers, isError } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
 
   const [title, setTitle] = useState('');
   const [assignedToId, setAssignedToId] = useState('');
@@ -362,7 +337,6 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
   const [dueAt, setDueAt] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-
 
   useEffect(() => {
     if (defaultCustomerName) {
@@ -416,8 +390,9 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
             <label className="block text-[13px] text-ink-muted mb-1.5">Assign To Staff *</label>
             <select value={assignedToId} onChange={e => setAssignedToId(e.target.value)} required
               className="w-full h-10 px-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand">
-              <option value="">— Select Employee —</option>
-              {/* Ensure `users` is available in this component scope. If not, we may need to pass it as a prop. */}
+              <option value="">
+                {loadingUsers ? 'Loading employees...' : isError ? 'Error loading employees' : '— Select Employee —'}
+              </option>
               {(Array.isArray(users) ? users : (users?.data || [])).map((u: any) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
@@ -438,9 +413,6 @@ function NewTaskModal({ open, onClose, onSuccess, defaultCustomerName }: { open:
           </button>
         </div>
       </div>
-      
     </div>
   );
 }
-
-// 💥 Forced safety patch applied to prevent undefined map crash
