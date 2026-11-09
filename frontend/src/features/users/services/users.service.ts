@@ -59,11 +59,19 @@ export const usersService = {
     return res.data;
   },
 
-  // 👇 RESTORED: The function Vercel was looking for 👇
+  // 👇 RESTORED: The function used by the Task Modal 👇
+  assignable: async (): Promise<AppUser[]> => {
+    // Note: If your backend route is /users/bookable instead of /users/assignable, change it here
+    const res = await api.get('/users/bookable', {
+      params: { page: 1, pageSize: 200 },
+    });
+    return res.data.data || res.data; // Handles both nested and direct array responses
+  },
+
   bookable: async (): Promise<AppUser[]> => {
     const res = await api.get('/users/bookable', {
       params: { page: 1, pageSize: 200 },
     });
-    return res.data.data;
+    return res.data.data || res.data;
   },
 };
