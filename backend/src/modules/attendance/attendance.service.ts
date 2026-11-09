@@ -20,7 +20,6 @@ function pairSessions(logs: any[]) {
 
   for (const log of logs) {
     if (log.action === 'auth.login') {
-      // ✅ FIX: Do NOT overwrite an existing open login. This keeps the first login of the day.
       if (!openLogins[log.userId!]) {
         openLogins[log.userId!] = { id: log.id, checkIn: new Date(log.createdAt), user: log.user };
       }
@@ -49,8 +48,10 @@ function pairSessions(logs: any[]) {
 }
 
 export const attendanceService = {
-  async startSession() { return null; },
-  async endSession() { return null; },
+  // 👇 FIXED: Added parameters so TypeScript stops complaining 👇
+  async startSession(userId: string, organizationId: string) { return null; },
+  async endSession(userId: string, action: string) { return null; },
+  
   async summary() { return { data: [] }; },
 
   async list(req: AuthRequest, query: any) {
@@ -71,7 +72,6 @@ export const attendanceService = {
       end = new Date(targetDate); end.setHours(23, 59, 59, 999);
     }
 
-    // ✅ Look back 24 hours to catch overnight sessions
     const lookbackStart = new Date(start);
     lookbackStart.setDate(lookbackStart.getDate() - 1);
 
@@ -88,14 +88,6 @@ export const attendanceService = {
     });
 
     const sessions = pairSessions(logs);
-
-    if (query.mode === 'raw') {
-      const relevant = sessions.filter(s => {
-        const sEnd = s.checkOut ? s.checkOut.getTime() : end.getTime();
-        return s.checkIn.getTime() <= end.getTime() && sEnd >= start.getTime();
-      });
-      return { data: relevant, meta: { total: relevant.length } };
-    }
 
     if (query.mode === 'daily') {
       const todaySessions = sessions.filter(s => {
@@ -118,9 +110,7 @@ export const attendanceService = {
       const dailyResult = Object.values(groupedByUser).map((u: any) => {
         u.allSessions.sort((a: any, b: any) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime());
         
-        // ✅ The absolute earliest login (even if it was yesterday)
         const firstLogin = u.allSessions[0].checkIn;
-        
         const closedSessions = u.allSessions.filter((s: any) => s.checkOut);
         const lastLogout = closedSessions.length > 0 ? closedSessions[closedSessions.length - 1].checkOut : null;
         const hasActiveSession = !u.allSessions[u.allSessions.length - 1].checkOut;
@@ -133,7 +123,7 @@ export const attendanceService = {
           const next = u.allSessions[i+1];
           if (current.checkOut && next.checkIn) {
             const gapMinutes = (new Date(next.checkIn).getTime() - new Date(current.checkOut).getTime()) / (1000 * 60);
-            // 👇 CHANGED FROM 30 TO 20 HERE 👇
+            
             if (gapMinutes > 20) { 
               breaks.push({ start: current.checkOut, end: next.checkIn });
               totalBreakMinutes += gapMinutes;
@@ -178,7 +168,6 @@ export const attendanceService = {
     const start = new Date(targetDate); start.setHours(0, 0, 0, 0);
     const end = new Date(targetDate); end.setHours(23, 59, 59, 999);
 
-    // ✅ Look back 24 hours for the modal too
     const lookbackStart = new Date(start);
     lookbackStart.setDate(lookbackStart.getDate() - 1);
 
