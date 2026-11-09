@@ -112,6 +112,38 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
 
   const tasks = tasksData?.data || [];
 
+  // 👇 GROUPING LOGIC 👇
+  const todayStr = new Date().toDateString();
+  
+  const getTaskDate = (t: any) => {
+    const d = t.createdAt || t.date || new Date();
+    return new Date(d).toDateString();
+  };
+
+  const todayTasks = tasks.filter((t: any) => 
+    t.status !== 'DONE' && getTaskDate(t) === todayStr
+  );
+  
+  const previousTasks = tasks.filter((t: any) => 
+    t.status !== 'DONE' && getTaskDate(t) !== todayStr
+  );
+  
+  const doneTasks = tasks.filter((t: any) => 
+    t.status === 'DONE'
+  );
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedTasks(tasks.map((t:any) => t.id));
+      const newMap: Record<string, number> = {};
+      tasks.forEach((t:any) => { newMap[t.id] = 20; });
+      setProgressMap(newMap);
+    } else {
+      setSelectedTasks([]);
+      setProgressMap({});
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 z-[60] flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl max-w-[500px] w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -142,37 +174,82 @@ export function LogDailyReportModal({ open, onClose, onSuccess }: Props) {
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute z-10 w-full mt-1 bg-white border border-ink-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                <label className="flex items-center gap-2 px-3 py-2 hover:bg-brand-light cursor-pointer border-b border-ink-border">
+              <div className="absolute z-10 w-full mt-1 bg-white border border-ink-border rounded-md shadow-lg max-h-[300px] overflow-y-auto">
+                
+                {/* Select All */}
+                <label className="flex items-center gap-2 px-3 py-2 hover:bg-brand-light cursor-pointer border-b border-ink-border bg-gray-50/50">
                   <input 
                     type="checkbox" 
                     checked={selectedTasks.length === tasks.length && tasks.length > 0}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedTasks(tasks.map((t:any) => t.id));
-                        const newMap: Record<string, number> = {};
-                        tasks.forEach((t:any) => { newMap[t.id] = 20; });
-                        setProgressMap(newMap);
-                      } else {
-                        setSelectedTasks([]);
-                        setProgressMap({});
-                      }
-                    }}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
                     className="rounded text-brand focus:ring-brand"
                   />
-                  <span className="font-medium text-[13px]">Select All Works</span>
+                  <span className="font-semibold text-[13px]">Select All Works</span>
                 </label>
-                {tasks.map((t: any) => (
-                  <label key={t.id} className="flex items-center gap-2 px-3 py-2 hover:bg-brand-light cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedTasks.includes(t.id)}
-                      onChange={() => handleToggleTask(t.id)}
-                      className="rounded text-brand focus:ring-brand"
-                    />
-                    <span className="text-[13px]">{t.title} <span className="text-ink-muted">({t.status})</span></span>
-                  </label>
-                ))}
+
+                {/* 1. TODAY'S WORKS */}
+                {todayTasks.length > 0 && (
+                  <div>
+                    <div className="px-3 py-1.5 bg-blue-50 text-[11px] font-bold text-blue-700 uppercase tracking-wider sticky top-0 z-10 border-b border-blue-100">
+                      Today's Works
+                    </div>
+                    {todayTasks.map((t: any) => (
+                      <label key={t.id} className="flex items-center gap-2 px-3 py-2 hover:bg-brand-light cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedTasks.includes(t.id)}
+                          onChange={() => handleToggleTask(t.id)}
+                          className="rounded text-brand focus:ring-brand"
+                        />
+                        <span className="text-[13px]">{t.title} <span className="text-ink-muted">({t.status})</span></span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {/* 2. PREVIOUS PENDING WORKS */}
+                {previousTasks.length > 0 && (
+                  <div>
+                    <div className="px-3 py-1.5 bg-amber-50 text-[11px] font-bold text-amber-700 uppercase tracking-wider sticky top-0 z-10 border-b border-amber-100">
+                      Previous Pending Works
+                    </div>
+                    {previousTasks.map((t: any) => (
+                      <label key={t.id} className="flex items-center gap-2 px-3 py-2 hover:bg-brand-light cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedTasks.includes(t.id)}
+                          onChange={() => handleToggleTask(t.id)}
+                          className="rounded text-brand focus:ring-brand"
+                        />
+                        <span className="text-[13px]">{t.title} <span className="text-ink-muted">({t.status})</span></span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {/* 3. DONE WORKS */}
+                {doneTasks.length > 0 && (
+                  <div className="opacity-70">
+                    <div className="px-3 py-1.5 bg-gray-100 text-[11px] font-bold text-gray-600 uppercase tracking-wider sticky top-0 z-10 border-b border-gray-200">
+                      Done Works
+                    </div>
+                    {doneTasks.map((t: any) => (
+                      <label key={t.id} className="flex items-center gap-2 px-3 py-2 hover:bg-brand-light cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedTasks.includes(t.id)}
+                          onChange={() => handleToggleTask(t.id)}
+                          className="rounded text-brand focus:ring-brand"
+                        />
+                        <span className="text-[13px] line-through text-gray-500">{t.title} <span className="text-ink-muted no-underline">({t.status})</span></span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {tasks.length === 0 && !loadingTasks && (
+                  <div className="p-4 text-center text-[13px] text-ink-muted">No tasks found.</div>
+                )}
               </div>
             )}
           </div>
