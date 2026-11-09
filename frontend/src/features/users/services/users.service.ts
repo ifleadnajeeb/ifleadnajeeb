@@ -59,19 +59,25 @@ export const usersService = {
     return res.data;
   },
 
-  // 👇 RESTORED: The function used by the Task Modal 👇
   assignable: async (): Promise<AppUser[]> => {
-    // Note: If your backend route is /users/bookable instead of /users/assignable, change it here
-    const res = await api.get('/users/bookable', {
-      params: { page: 1, pageSize: 200 },
-    });
-    return res.data.data || res.data; // Handles both nested and direct array responses
+    try {
+      // 👇 FIXED: Changed pageSize from 200 to 100 👇
+      const res = await api.get('/users/bookable', { params: { page: 1, pageSize: 100 } });
+      const data = res.data.data || res.data;
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      console.error('Failed to fetch assignable users', err);
+      // Fallback to standard list if /bookable fails
+      try {
+        const res = await api.get('/users', { params: { page: 1, pageSize: 100 } });
+        return res.data.data || [];
+      } catch (e) {
+        return [];
+      }
+    }
   },
 
   bookable: async (): Promise<AppUser[]> => {
-    const res = await api.get('/users/bookable', {
-      params: { page: 1, pageSize: 200 },
-    });
-    return res.data.data || res.data;
+    return usersService.assignable();
   },
 };
