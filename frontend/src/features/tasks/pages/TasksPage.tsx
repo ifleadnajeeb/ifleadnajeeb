@@ -52,7 +52,6 @@ export default function TasksPage() {
   const [searchParams] = useSearchParams();
   const customerName = searchParams.get('customerName');
   
-  // Added 'reports' to the view state
   const [view, setView] = useState<'kanban' | 'list' | 'reports'>('kanban');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -67,7 +66,7 @@ export default function TasksPage() {
     refetchOnMount: 'always',
     queryKey: ['tasks', 'kanban', search],
     queryFn: () => tasksService.list({ search: search || undefined, pageSize: 100 }),
-    enabled: view === 'kanban' || view === 'reports', // Fetch data for both Kanban and Reports
+    enabled: view === 'kanban' || view === 'reports',
   });
   
   const listQ = useQuery({
@@ -113,7 +112,8 @@ export default function TasksPage() {
 
   // --- REPORT CALCULATIONS ---
   const totalTasks = displayTasks.length;
-  const doneTasks = displayTasks.filter((t: any) => t.status === 'DONE').length;
+  const completedTasksList = displayTasks.filter((t: any) => t.status === 'DONE');
+  const doneTasks = completedTasksList.length;
   const pendingTasks = displayTasks.filter((t: any) => t.status !== 'DONE' && t.status !== 'CANCELLED').length;
   const reviewTasks = displayTasks.filter((t: any) => t.reviewStatus === 'PENDING_REVIEW').length;
   
@@ -228,6 +228,40 @@ export default function TasksPage() {
               {statsArray.length === 0 && <p className="text-center text-gray-500 py-6">No data available.</p>}
             </div>
           </div>
+
+          {/* 👇 NEW: All Completed Works Table 👇 */}
+          <div className="bg-white border border-ink-border rounded-xl shadow-sm p-5">
+            <h3 className="text-lg font-semibold text-ink mb-4">All Completed Works</h3>
+            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
+              <table className="w-full text-sm min-w-[700px]">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr className="text-left text-[12px] uppercase tracking-wider text-ink-muted font-semibold border-b border-ink-border">
+                    <th className="px-4 py-3">Task Title</th>
+                    <th className="px-4 py-3">Assigned To</th>
+                    <th className="px-4 py-3">Priority</th>
+                    <th className="px-4 py-3">Completed Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {completedTasksList.map((t: any) => (
+                    <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-ink">{t.title}</td>
+                      <td className="px-4 py-3 text-ink-muted">{t.assignedTo?.name || 'Unassigned'}</td>
+                      <td className="px-4 py-3">
+                        <span className={cn('px-2 py-0.5 rounded text-[11px] font-medium', PRIORITY_COLOR[t.priority])}>{t.priority}</span>
+                      </td>
+                      <td className="px-4 py-3 text-ink-muted">{fmtDate(t.updatedAt || t.dueAt || t.createdAt)}</td>
+                    </tr>
+                  ))}
+                  {completedTasksList.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-ink-muted">No completed works yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </motion.div>
       )}
 
@@ -235,18 +269,14 @@ export default function TasksPage() {
       {view === 'kanban' && (
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
-            // 👇 FIXED: Filter to only show TODAY'S done tasks 👇
             const tasks = (displayTasks || []).filter((t: any) => {
               if (t.status !== col) return false;
-              
               if (col === 'DONE') {
                 const completionDate = t.updatedAt || t.completedAt || t.dueAt;
                 if (!completionDate) return false;
-                
                 const todayStr = new Date().toDateString();
                 return new Date(completionDate).toDateString() === todayStr;
               }
-              
               return true;
             });
             
