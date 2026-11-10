@@ -4,7 +4,7 @@ import { useAuth } from '@/app/providers/auth-provider';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Search, LayoutGrid, List as ListIcon, X, Calendar } from 'lucide-react';
+import { Plus, Search, LayoutGrid, List as ListIcon, X, Calendar, PieChart, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   tasksService, Task, TaskStatus, TaskPriority,
@@ -41,13 +41,8 @@ function isOverdue(iso: string | null) {
 export default function TasksPage() {
   const [dailyReportOpen, setDailyReportOpen] = useState(false);
   const { user } = useAuth();
-  const isOpManager = user?.role === 'OP_MANAGER' || user?.role === 'ADMIN' || user?.role === 'CEO';
   
   const [viewMode, setViewMode] = useState<'all' | 'mine' | 'review'>('all');
-  const [assigneeFilter, setAssigneeFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  
-  // This fetches users for the dropdown (uses the cached data from NewTaskModal)
   const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
   
   const qc = useQueryClient();
@@ -57,11 +52,11 @@ export default function TasksPage() {
   const [searchParams] = useSearchParams();
   const customerName = searchParams.get('customerName');
   
-  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  // Added 'reports' to the view state
+  const [view, setView] = useState<'kanban' | 'list' | 'reports'>('kanban');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(!!customerName);
-  const [showPrivate, setShowPrivate] = useState(false);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,7 +67,7 @@ export default function TasksPage() {
     refetchOnMount: 'always',
     queryKey: ['tasks', 'kanban', search],
     queryFn: () => tasksService.list({ search: search || undefined, pageSize: 100 }),
-    enabled: view === 'kanban',
+    enabled: view === 'kanban' || view === 'reports', // Fetch data for both Kanban and Reports
   });
   
   const listQ = useQuery({
@@ -108,7 +103,7 @@ export default function TasksPage() {
     return [];
   };
 
-  const rawTasks = view === 'kanban' ? extractTasks(kanbanQ.data) : extractTasks(listQ.data);
+  const rawTasks = view === 'list' ? extractTasks(listQ.data) : extractTasks(kanbanQ.data);
 
   const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
@@ -116,22 +111,47 @@ export default function TasksPage() {
     return true; 
   }) : [];
 
+  // --- REPORT CALCULATIONS ---
+  const totalTasks = displayTasks.length;
+  const doneTasks = displayTasks.filter((t: any) => t.status === 'DONE').length;
+  const pendingTasks = displayTasks.filter((t: any) => t.status !== 'DONE' && t.status !== 'CANCELLED').length;
+  const reviewTasks = displayTasks.filter((t: any) => t.reviewStatus === 'PENDING_REVIEW').length;
+  
+  // Group by Employee for the report
+  const employeeStats = displayTasks.reduce((acc: any, task: any) => {
+    const empId = task.assignedToId || 'unassigned';
+    const empName = task.assignedTo?.name || 'Unassigned';
+    if (!acc[empId]) {
+      acc[empId] = { name: empName, total: 0, done: 0, pending: 0 };
+    }
+    acc[empId].total += 1;
+    if (task.status === 'DONE') acc[empId].done += 1;
+    else if (task.status !== 'CANCELLED') acc[empId].pending += 1;
+    return acc;
+  }, {});
+  
+  const statsArray = Object.values(employeeStats).sort((a: any, b: any) => b.total - a.total);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink">{pageTitle}</h1>
-          <p className="text-[13.5px] text-ink-muted mt-0.5">Manage your tasks and assignments</p>
+          <p className="text-[13.5px] text-ink-muted mt-0.5">Manage your {pageTitle.toLowerCase()} and assignments</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-ink-bg p-1 rounded-lg">
-            <button onClick={() => setViewMode('kanban')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${viewMode === 'kanban' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            <button onClick={() => setView('kanban')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${view === 'kanban' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               <LayoutGrid className="w-3.5 h-3.5 inline mr-1" /> Kanban
             </button>
-            <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+            <button onClick={() => setView('list')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${view === 'list' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
               <ListIcon className="w-3.5 h-3.5 inline mr-1" /> List
             </button>
+            <button onClick={() => setView('reports')} className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${view === 'reports' ? 'bg-white text-ink shadow-sm' : 'text-ink-muted hover:text-ink'}`}>
+              <PieChart className="w-3.5 h-3.5 inline mr-1" /> Reports
+            </button>
           </div>
+          
           <button onClick={() => setDailyReportOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-ink-border bg-white text-ink text-[13.5px] font-medium hover:bg-brand-light transition-colors">
             <Calendar className="w-4 h-4" /> Log Daily Report
           </button>
@@ -143,16 +163,75 @@ export default function TasksPage() {
         </div>
       </div>
       
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
-        <input
-          value={search}
-          onChange={e => { setSearch(e.target.value); setPage(1); }}
-          placeholder={`Search ${isOpsRole ? 'works' : 'tasks'}…`}
-          className="w-full h-10 pl-9 pr-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
-        />
-      </div>
+      {view !== 'reports' && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
+          <input
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(1); }}
+            placeholder={`Search ${isOpsRole ? 'works' : 'tasks'}…`}
+            className="w-full h-10 pl-9 pr-3 border border-ink-border rounded-md text-[14px] bg-white focus:outline-none focus:border-brand"
+          />
+        </div>
+      )}
 
+      {/* -------------------- REPORTS VIEW -------------------- */}
+      {view === 'reports' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          
+          {/* Top Stat Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0"><ListIcon className="w-6 h-6 text-blue-600" /></div>
+              <div><p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Total Works</p><p className="text-2xl font-bold text-ink">{totalTasks}</p></div>
+            </div>
+            <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center shrink-0"><CheckCircle2 className="w-6 h-6 text-green-600" /></div>
+              <div><p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Completed</p><p className="text-2xl font-bold text-green-600">{doneTasks}</p></div>
+            </div>
+            <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center shrink-0"><Clock className="w-6 h-6 text-amber-600" /></div>
+              <div><p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">Pending</p><p className="text-2xl font-bold text-amber-600">{pendingTasks}</p></div>
+            </div>
+            <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center shrink-0"><AlertCircle className="w-6 h-6 text-purple-600" /></div>
+              <div><p className="text-[12px] font-semibold text-ink-muted uppercase tracking-wider">In Review</p><p className="text-2xl font-bold text-purple-600">{reviewTasks}</p></div>
+            </div>
+          </div>
+
+          {/* Employee Workload Breakdown */}
+          <div className="bg-white border border-ink-border rounded-xl shadow-sm p-5">
+            <h3 className="text-lg font-semibold text-ink mb-4">Employee Workload</h3>
+            <div className="space-y-4">
+              {statsArray.map((emp: any, i) => {
+                const completionRate = emp.total > 0 ? Math.round((emp.done / emp.total) * 100) : 0;
+                return (
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-100 pb-3 last:border-0">
+                    <div className="w-48 shrink-0">
+                      <p className="font-semibold text-ink text-sm">{emp.name}</p>
+                      <p className="text-xs text-gray-500">{emp.total} assigned works</p>
+                    </div>
+                    <div className="flex-1 max-w-xl flex items-center gap-4">
+                      <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden flex">
+                        <div className="h-full bg-green-500" style={{ width: `${completionRate}%` }} title="Completed"></div>
+                        <div className="h-full bg-amber-400" style={{ width: `${100 - completionRate}%` }} title="Pending"></div>
+                      </div>
+                      <span className="text-sm font-bold text-ink w-12 text-right">{completionRate}%</span>
+                    </div>
+                    <div className="flex gap-2 text-xs font-medium shrink-0">
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded">{emp.done} Done</span>
+                      <span className="bg-amber-100 text-amber-700 px-2 py-1 rounded">{emp.pending} Pending</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {statsArray.length === 0 && <p className="text-center text-gray-500 py-6">No data available.</p>}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* -------------------- KANBAN VIEW -------------------- */}
       {view === 'kanban' && (
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
@@ -265,6 +344,7 @@ export default function TasksPage() {
         </motion.div>
       )}
 
+      {/* -------------------- LIST VIEW -------------------- */}
       {view === 'list' && (
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
           {listQ.isLoading && <div className="py-12 text-center text-ink-muted text-sm">Loading…</div>}
@@ -316,7 +396,6 @@ export default function TasksPage() {
 
       <TaskDetailDrawer taskId={openTaskId} onClose={() => setOpenTaskId(null)} />
       
-      {/* 👇 Fixed queryClient to qc 👇 */}
       <LogDailyReportModal 
         open={dailyReportOpen} 
         onClose={() => setDailyReportOpen(false)} 
