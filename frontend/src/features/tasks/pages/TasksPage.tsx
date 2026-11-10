@@ -235,7 +235,21 @@ export default function TasksPage() {
       {view === 'kanban' && (
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
-            const tasks = (displayTasks || []).filter((t: any) => t.status === col);
+            // 👇 FIXED: Filter to only show TODAY'S done tasks 👇
+            const tasks = (displayTasks || []).filter((t: any) => {
+              if (t.status !== col) return false;
+              
+              if (col === 'DONE') {
+                const completionDate = t.updatedAt || t.completedAt || t.dueAt;
+                if (!completionDate) return false;
+                
+                const todayStr = new Date().toDateString();
+                return new Date(completionDate).toDateString() === todayStr;
+              }
+              
+              return true;
+            });
+            
             return (
               <motion.div
                 variants={itemVariants}
