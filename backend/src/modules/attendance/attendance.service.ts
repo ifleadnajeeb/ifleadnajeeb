@@ -22,15 +22,16 @@ function pairSessions(logs: any[]) {
     const logDate = new Date(log.createdAt);
     
     if (log.action === 'auth.login') {
-      // If there's an open session from before, auto-close it at 7 PM
       const open = openLogins[log.userId!];
       if (open) {
+        // Auto-close previous open session
         const autoCheckout = new Date(open.checkIn);
-        autoCheckout.setHours(19, 0, 0, 0); // 7:00 PM
+        // 7:00 PM IST = 13:30 UTC
+        autoCheckout.setUTCHours(13, 30, 0, 0); 
         
-        // If they logged in after 7 PM, close at 11:59 PM instead
+        // If they logged in after 7 PM, close at 11:59 PM IST (18:29 UTC)
         if (open.checkIn > autoCheckout) {
-          autoCheckout.setHours(23, 59, 59, 999);
+          autoCheckout.setUTCHours(18, 29, 59, 999);
         }
 
         if (autoCheckout > open.checkIn) {
@@ -62,13 +63,13 @@ function pairSessions(logs: any[]) {
   const now = new Date();
   for (const [userId, open] of Object.entries(openLogins)) {
     const autoCheckout = new Date(open.checkIn);
-    autoCheckout.setHours(19, 0, 0, 0); // 7:00 PM
+    // 7:00 PM IST = 13:30 UTC
+    autoCheckout.setUTCHours(13, 30, 0, 0); 
     
     if (open.checkIn > autoCheckout) {
-      autoCheckout.setHours(23, 59, 59, 999);
+      autoCheckout.setUTCHours(18, 29, 59, 999);
     }
 
-    // If 7 PM has passed, mark it as logged out at 7 PM
     if (now > autoCheckout && autoCheckout > open.checkIn) {
        const totalHours = (autoCheckout.getTime() - open.checkIn.getTime()) / (1000 * 60 * 60);
        sessions.push({
@@ -76,7 +77,6 @@ function pairSessions(logs: any[]) {
          checkIn: open.checkIn, checkOut: autoCheckout, totalHours,
        });
     } else {
-       // Still active (hasn't reached 7 PM yet)
        sessions.push({
          id: open.id, userId, user: open.user, date: open.checkIn,
          checkIn: open.checkIn, checkOut: null, totalHours: 0,
@@ -110,7 +110,6 @@ export const attendanceService = {
       end = new Date(targetDate); end.setHours(23, 59, 59, 999);
     }
 
-    // Look back 24 hours to catch overnight sessions
     const lookbackStart = new Date(start);
     lookbackStart.setDate(lookbackStart.getDate() - 1);
 
@@ -131,7 +130,6 @@ export const attendanceService = {
     if (query.mode === 'daily') {
       const todaySessions = sessions.filter(s => {
         const sEnd = s.checkOut ? s.checkOut.getTime() : end.getTime();
-        // Ensures we only show sessions that overlap with the selected day
         return s.checkIn.getTime() <= end.getTime() && sEnd >= start.getTime();
       });
 
@@ -163,8 +161,6 @@ export const attendanceService = {
           const next = u.allSessions[i+1];
           if (current.checkOut && next.checkIn) {
             const gapMinutes = (new Date(next.checkIn).getTime() - new Date(current.checkOut).getTime()) / (1000 * 60);
-            
-            // Marks break if gap is greater than 20 mins
             if (gapMinutes > 20) { 
               breaks.push({ start: current.checkOut, end: next.checkIn });
               totalBreakMinutes += gapMinutes;
