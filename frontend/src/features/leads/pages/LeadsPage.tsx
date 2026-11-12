@@ -17,10 +17,8 @@ import { BulkImportModal } from '../components/BulkImportModal';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/app/providers/auth-provider';
 
-// 👇 Removed 'all' from the View type
 type View = 'mine' | 'today' | 'hot' | 'overdue' | 'won' | 'lost';
 
-// 👇 Removed the 'all' tab from the menu
 const TABS: { id: View; label: string; sub: string }[] = [
   { id: 'mine',    label: 'My Leads',           sub: 'Assigned to me' },
   { id: 'today',   label: "Today's follow-ups", sub: 'Need attention today' },
@@ -69,7 +67,7 @@ export default function LeadsPage() {
       page, 
       pageSize: 20,
       assignedToId: view === 'mine' ? user?.id : undefined,
-      createdById: user?.id, // 👈 Strictly limit to this user's created leads
+      createdById: user?.id,
     }),
   });
 
@@ -154,6 +152,18 @@ export default function LeadsPage() {
 
   const clearSelection = () => setSelected(new Set());
 
+  // 👇 NEW: Function to delete a single lead 👇
+  const doDeleteLead = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to permanently delete the lead "${name}"?`)) return;
+    try {
+      await api.delete(`/leads/${id}`);
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      alert('Lead deleted successfully.');
+    } catch (e: any) {
+      alert(e?.response?.data?.message || 'Failed to delete lead');
+    }
+  };
+
   const doBulkDelete = async () => {
     if (!confirm(`Delete ${selected.size} selected leads? This cannot be undone.`)) return;
     try {
@@ -202,7 +212,6 @@ export default function LeadsPage() {
         </div>
       </div>
 
-      {/* KPI Cards - Adjusted grid for 6 cards instead of 7 */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {TABS.map((t) => (
           <button
@@ -277,8 +286,10 @@ export default function LeadsPage() {
                       onOpen={() => setOpenClient(lead.id)}
                       onFollowup={() => setFollowupLead(lead.id)}
                       onEdit={() => setEditingLead(lead)}
+                      onDelete={() => doDeleteLead(lead.id, lead.name)} // 👈 Pass delete function
                       onWhatsApp={() => setWaLead({ id: lead.id, name: lead.name, phone: lead.phone })}
-                    onDescClick={setSelectedLeadForDesc} />
+                      onDescClick={setSelectedLeadForDesc} 
+                    />
                   ))}
                 </tbody>
               </table>
@@ -425,7 +436,7 @@ export default function LeadsPage() {
 }
 
 function LeadRow({
-  lead, isSelected, onToggleSelect, onOpen, onFollowup, onEdit, onWhatsApp,
+  lead, isSelected, onToggleSelect, onOpen, onFollowup, onEdit, onDelete, onWhatsApp,
   onDescClick,
 }: {
   lead: Lead;
@@ -434,6 +445,7 @@ function LeadRow({
   onOpen: () => void;
   onFollowup: () => void;
   onEdit: () => void;
+  onDelete: () => void; // 👈 Added type for onDelete
   onWhatsApp: () => void;
   onDescClick: (lead: any) => void;
 }) {
@@ -539,6 +551,19 @@ function LeadRow({
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
           </button>
+          
+          {/* 👇 NEW: Single Delete Button 👇 */}
+          <CanDo permission="leads:delete">
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              type="button"
+              title="Delete Lead"
+              className="w-8 h-8 rounded-md inline-flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors mr-1"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </CanDo>
+
           <button
             onClick={onFollowup}
             disabled={isClosed}
@@ -565,7 +590,7 @@ function BulkAssignModal({
   const [error, setError] = useState('');
 
   useState(() => {
-    api.get('/users?pageSize=200')
+    api.get('/users?pageSize=100')
       .then((r) => setUsers(r.data.data ?? []))
       .catch(() => setUsers([]))
       .finally(() => setLoading(false));
