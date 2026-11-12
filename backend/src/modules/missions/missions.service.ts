@@ -47,10 +47,14 @@ export const missionsService = {
     endOfDay.setDate(endOfDay.getDate() + 1);
     const endOfToday = new Date(endOfDay);
 
+    // 👇 NEW: Force CEO to only see their own assigned leads 👇
+    const ceoFilter = actor.role === 'CEO' ? { assignedToId: actor.id } : {};
+
     const [overdueLeads, todayLeads] = await Promise.all([
       prisma.lead.findMany({
         where: {
           ...scope.where,
+          ...ceoFilter, // Apply the CEO filter here
           status: { notIn: ['WON', 'LOST'] },
           followups: {
             some: { dueAt: { lt: startOfDay }, status: 'PENDING' },
@@ -69,6 +73,7 @@ export const missionsService = {
       prisma.lead.findMany({
         where: {
           ...scope.where,
+          ...ceoFilter, // Apply the CEO filter here
           status: { notIn: ['WON', 'LOST'] },
           followups: {
             some: {
@@ -120,7 +125,6 @@ export const missionsService = {
         levelNextXp: level.hi,
         levelPct: level.pct,
         dailyGoal: DAILY_GOAL,
-        // Completed count will be tracked below
       },
       missions,
       counts: {
@@ -266,7 +270,6 @@ export const missionsServiceExtra = {
     const actor = req.user!;
 
     // Scope: show top performers in the same organization
-    // BDE sees own org top 10; managers see their subtree
     const where: any = { organizationId: actor.organizationId };
 
     const users = await prisma.user.findMany({
@@ -310,4 +313,3 @@ export const missionsServiceExtra = {
     }));
   },
 };
-
