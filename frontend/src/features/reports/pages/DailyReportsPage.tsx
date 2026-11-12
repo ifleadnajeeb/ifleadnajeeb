@@ -12,15 +12,15 @@ export default function DailyReportsPage() {
   const [viewMode, setViewMode] = useState<'detailed' | 'employee'>('detailed');
   const [search, setSearch] = useState('');
   
-  // 👇 NEW: State for the View Modal 👇
+  // 👇 NEW: State for the Work Filter Dropdown 👇
+  const [selectedWork, setSelectedWork] = useState('all');
+
   const [selectedReport, setSelectedReport] = useState<any>(null);
 
-  // Default dates
   const today = new Date().toISOString().split('T')[0];
   const [startDate, setStartDate] = useState(today);
   const [endDate, setEndDate] = useState(today);
 
-  // ✅ Handle Tab Switching (Auto-adjusts dates)
   const handleTabChange = (tab: 'daily' | 'weekly' | 'monthly') => {
     setActiveTab(tab);
     const now = new Date();
@@ -45,11 +45,29 @@ export default function DailyReportsPage() {
     queryFn: () => operationsService.listDailyReports({ startDate, endDate, search }),
   });
 
-  const reports = Array.isArray(data?.data) ? data.data : [];
-  const summary = data?.summary || { totalHours: 0, completedTasks: 0, uniqueEmployees: 0, totalReports: 0 };
+  const rawReports = Array.isArray(data?.data) ? data.data : [];
 
-  // ✅ Aggregate data for Employee Summary
-  const employeeSummaries = reports.reduce((acc: any, report: any) => {
+  // 👇 Extract unique work names for the dropdown 👇
+  const uniqueWorks = Array.from(new Set(
+    rawReports.map((r: any) => r.task?.title).filter(Boolean)
+  )).sort();
+
+  // 👇 Filter reports based on the selected work 👇
+  const filteredReports = rawReports.filter((r: any) => {
+    if (selectedWork === 'all') return true;
+    return r.task?.title === selectedWork;
+  });
+
+  // 👇 Recalculate summary based on filtered reports 👇
+  const summary = {
+    totalReports: filteredReports.length,
+    totalHours: filteredReports.reduce((sum: number, r: any) => sum + (r.timeSpent || 0), 0),
+    completedTasks: filteredReports.filter((r: any) => r.progress === 100 || r.workStatus === 'Completed').length,
+    uniqueEmployees: new Set(filteredReports.map((r: any) => r.employeeId)).size
+  };
+
+  // Aggregate data for Employee Summary
+  const employeeSummaries = filteredReports.reduce((acc: any, report: any) => {
     const empId = report.employeeId;
     if (!acc[empId]) {
       acc[empId] = {
@@ -73,16 +91,15 @@ export default function DailyReportsPage() {
 
   const employeeList = Object.values(employeeSummaries);
 
-  // 👇 NEW: Export to CSV Function 👇
   const handleExport = () => {
-    if (!reports || reports.length === 0) {
+    if (!filteredReports || filteredReports.length === 0) {
       alert("No reports to export");
       return;
     }
 
     const headers = ['Employee', 'Department', 'Task', 'Work Completed', 'Date', 'Progress', 'Hours', 'Status', 'Submitted'];
     
-    const csvRows = reports.map((r: any) => [
+    const csvRows = filteredReports.map((r: any) => [
       `"${r.employee?.name || 'Unknown'}"`,
       `"${r.employee?.department?.name || 'General'}"`,
       `"${r.task?.title || 'N/A'}"`,
@@ -100,7 +117,7 @@ export default function DailyReportsPage() {
     
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `daily-reports-${startDate}-to-${endDate}.csv`);
+    link.setAttribute('download', `reports-${selectedWork !== 'all' ? selectedWork : 'all'}-${startDate}-to-${endDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -115,7 +132,6 @@ export default function DailyReportsPage() {
           <p className="text-[13.5px] text-ink-muted mt-0.5">View all employee timesheets and daily progress updates</p>
         </div>
         
-        {/* ✅ View Mode Toggle & Export */}
         <div className="flex items-center gap-2">
           <div className="flex bg-ink-bg p-1 rounded-lg border border-ink-border">
             <button
@@ -132,7 +148,6 @@ export default function DailyReportsPage() {
             </button>
           </div>
           
-          {/* 👇 CONNECTED EXPORT BUTTON 👇 */}
           <button 
             onClick={handleExport}
             className="h-9 px-4 rounded-md border border-ink-border bg-white text-[13px] font-medium flex items-center gap-2 hover:bg-gray-50 transition-colors"
@@ -146,7 +161,6 @@ export default function DailyReportsPage() {
       <div className="bg-white border border-ink-border rounded-xl shadow-sm p-4 space-y-4">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           
-          {/* Tabs */}
           <div className="flex bg-gray-100 p-1 rounded-lg">
             {['daily', 'weekly', 'monthly'].map((tab) => (
               <button
@@ -162,7 +176,6 @@ export default function DailyReportsPage() {
             ))}
           </div>
 
-          {/* Date Range & Filters */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2 bg-white border border-ink-border rounded-md px-3 h-9">
               <CalIcon className="w-4 h-4 text-ink-muted" />
@@ -171,8 +184,16 @@ export default function DailyReportsPage() {
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-[12.5px] outline-none bg-transparent" />
             </div>
             
-            <select className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand">
-              <option value="">All Departments</option>
+            {/* 👇 NEW: Dynamic Works Dropdown 👇 */}
+            <select 
+              value={selectedWork} 
+              onChange={e => setSelectedWork(e.target.value)}
+              className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand max-w-[200px]"
+            >
+              <option value="all">All Works</option>
+              {uniqueWorks.map((work: any) => (
+                <option key={work} value={work}>{work}</option>
+              ))}
             </select>
 
             <div className="relative w-full sm:w-[240px]">
@@ -211,7 +232,6 @@ export default function DailyReportsPage() {
       <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           
-          {/* ✅ DETAILED VIEW */}
           {viewMode === 'detailed' && (
             <table className="w-full text-[13px] min-w-[900px]">
               <thead className="bg-gray-50 border-b border-ink-border">
@@ -228,9 +248,9 @@ export default function DailyReportsPage() {
               </thead>
               <tbody className="divide-y divide-ink-border">
                 {isLoading && <tr><td colSpan={8} className="p-10 text-center text-ink-muted">Loading reports...</td></tr>}
-                {!isLoading && reports.length === 0 && <tr><td colSpan={8} className="p-10 text-center text-ink-muted">No reports found for this date range.</td></tr>}
+                {!isLoading && filteredReports.length === 0 && <tr><td colSpan={8} className="p-10 text-center text-ink-muted">No reports found for this work and date range.</td></tr>}
                 
-                {(Array.isArray(reports) ? reports : (reports?.data || [])).map((r: any) => (
+                {filteredReports.map((r: any) => (
                   <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
@@ -246,7 +266,6 @@ export default function DailyReportsPage() {
                       <div className="flex items-center gap-1 text-[13px] text-ink-muted">
                         <span className="truncate" title={r.workCompleted}>{r.workCompleted || '—'}</span>
                         {r.workCompleted && r.workCompleted.length > 20 && (
-                          // 👇 CONNECTED VIEW BUTTON 👇
                           <button 
                             onClick={() => setSelectedReport(r)} 
                             className="text-brand text-[11px] font-medium hover:underline shrink-0"
@@ -276,7 +295,6 @@ export default function DailyReportsPage() {
             </table>
           )}
 
-          {/* ✅ EMPLOYEE SUMMARY VIEW */}
           {viewMode === 'employee' && (
             <table className="w-full text-[13px] min-w-[800px]">
               <thead className="bg-gray-50 border-b border-ink-border">
@@ -290,7 +308,7 @@ export default function DailyReportsPage() {
               </thead>
               <tbody className="divide-y divide-ink-border">
                 {isLoading && <tr><td colSpan={5} className="p-10 text-center text-ink-muted">Loading...</td></tr>}
-                {!isLoading && employeeList.length === 0 && <tr><td colSpan={5} className="p-10 text-center text-ink-muted">No reports found for this date range.</td></tr>}
+                {!isLoading && employeeList.length === 0 && <tr><td colSpan={5} className="p-10 text-center text-ink-muted">No reports found for this work and date range.</td></tr>}
                 
                 {employeeList.map((emp: any, idx) => (
                   <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
@@ -316,7 +334,7 @@ export default function DailyReportsPage() {
         </div>
       </div>
 
-      {/* 👇 NEW: VIEW REPORT MODAL 👇 */}
+      {/* VIEW REPORT MODAL */}
       {selectedReport && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40" onClick={() => setSelectedReport(null)}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-[500px] w-full p-6" onClick={(e) => e.stopPropagation()}>
