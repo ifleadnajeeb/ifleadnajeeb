@@ -12,8 +12,9 @@ export default function DailyReportsPage() {
   const [viewMode, setViewMode] = useState<'detailed' | 'employee'>('detailed');
   const [search, setSearch] = useState('');
   
-  // 👇 NEW: State for the Work Filter Dropdown 👇
+  // 👇 State for the Dropdowns 👇
   const [selectedWork, setSelectedWork] = useState('all');
+  const [selectedEmployee, setSelectedEmployee] = useState('all');
 
   const [selectedReport, setSelectedReport] = useState<any>(null);
 
@@ -47,18 +48,24 @@ export default function DailyReportsPage() {
 
   const rawReports = Array.isArray(data?.data) ? data.data : [];
 
-  // 👇 Extract unique work names for the dropdown 👇
+  // Extract unique work names
   const uniqueWorks = Array.from(new Set(
     rawReports.map((r: any) => r.task?.title).filter(Boolean)
   )).sort();
 
-  // 👇 Filter reports based on the selected work 👇
+  // Extract unique employees
+  const uniqueEmployees = Array.from(new Map(
+    rawReports.map((r: any) => [r.employeeId, { id: r.employeeId, name: r.employee?.name || 'Unknown' }])
+  ).values()).sort((a: any, b: any) => a.name.localeCompare(b.name));
+
+  // Filter reports based on BOTH dropdowns
   const filteredReports = rawReports.filter((r: any) => {
-    if (selectedWork === 'all') return true;
-    return r.task?.title === selectedWork;
+    const matchesWork = selectedWork === 'all' || r.task?.title === selectedWork;
+    const matchesEmployee = selectedEmployee === 'all' || r.employeeId === selectedEmployee;
+    return matchesWork && matchesEmployee;
   });
 
-  // 👇 Recalculate summary based on filtered reports 👇
+  // Recalculate summary based on filtered reports
   const summary = {
     totalReports: filteredReports.length,
     totalHours: filteredReports.reduce((sum: number, r: any) => sum + (r.timeSpent || 0), 0),
@@ -117,7 +124,7 @@ export default function DailyReportsPage() {
     
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `reports-${selectedWork !== 'all' ? selectedWork : 'all'}-${startDate}-to-${endDate}.csv`);
+    link.setAttribute('download', `reports-${startDate}-to-${endDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -184,11 +191,23 @@ export default function DailyReportsPage() {
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-[12.5px] outline-none bg-transparent" />
             </div>
             
-            {/* 👇 NEW: Dynamic Works Dropdown 👇 */}
+            {/* 👇 NEW: Employees Dropdown 👇 */}
+            <select 
+              value={selectedEmployee} 
+              onChange={e => setSelectedEmployee(e.target.value)}
+              className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand max-w-[160px]"
+            >
+              <option value="all">All Employees</option>
+              {uniqueEmployees.map((emp: any) => (
+                <option key={emp.id} value={emp.id}>{emp.name}</option>
+              ))}
+            </select>
+
+            {/* Works Dropdown */}
             <select 
               value={selectedWork} 
               onChange={e => setSelectedWork(e.target.value)}
-              className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand max-w-[200px]"
+              className="h-9 px-3 border border-ink-border rounded-md text-[13px] bg-white focus:outline-none focus:border-brand max-w-[160px]"
             >
               <option value="all">All Works</option>
               {uniqueWorks.map((work: any) => (
@@ -196,7 +215,7 @@ export default function DailyReportsPage() {
               ))}
             </select>
 
-            <div className="relative w-full sm:w-[240px]">
+            <div className="relative w-full sm:w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
               <input
                 value={search} onChange={e => setSearch(e.target.value)}
@@ -248,7 +267,7 @@ export default function DailyReportsPage() {
               </thead>
               <tbody className="divide-y divide-ink-border">
                 {isLoading && <tr><td colSpan={8} className="p-10 text-center text-ink-muted">Loading reports...</td></tr>}
-                {!isLoading && filteredReports.length === 0 && <tr><td colSpan={8} className="p-10 text-center text-ink-muted">No reports found for this work and date range.</td></tr>}
+                {!isLoading && filteredReports.length === 0 && <tr><td colSpan={8} className="p-10 text-center text-ink-muted">No reports found for this selection.</td></tr>}
                 
                 {filteredReports.map((r: any) => (
                   <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
@@ -308,7 +327,7 @@ export default function DailyReportsPage() {
               </thead>
               <tbody className="divide-y divide-ink-border">
                 {isLoading && <tr><td colSpan={5} className="p-10 text-center text-ink-muted">Loading...</td></tr>}
-                {!isLoading && employeeList.length === 0 && <tr><td colSpan={5} className="p-10 text-center text-ink-muted">No reports found for this work and date range.</td></tr>}
+                {!isLoading && employeeList.length === 0 && <tr><td colSpan={5} className="p-10 text-center text-ink-muted">No reports found for this selection.</td></tr>}
                 
                 {employeeList.map((emp: any, idx) => (
                   <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
