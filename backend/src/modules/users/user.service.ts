@@ -96,8 +96,9 @@ export const userService = {
         { teamId: actor.teamId ?? '__none__' },
       ];
     } else if (actor.role === 'BDM' || actor.role === 'GM' || actor.role === 'ADMIN' || actor.role === 'CEO') {
-      const ids = await collectDescendants(actor.id);
-      where.id = { in: [actor.id, ...ids] };
+      // 👇 FIXED: Admin, CEO, BDM, and GM now see ALL users in the organization.
+      // We removed the `collectDescendants` filter so it doesn't hide unassigned users.
+      // No additional `where` filter is needed here because `organizationId` is already set above.
     }
 
     if (query.search) {
@@ -250,6 +251,7 @@ export const userService = {
   canCreate(actorRole: string): RoleName[] {
     return CAN_CREATE[actorRole as RoleName] ?? [];
   },
+  
   async bookable(actor: AuthUser, q: any) {
     const page = Number(q.page ?? 1);
     const pageSize = Math.min(Number(q.pageSize ?? 100), 200);
@@ -292,7 +294,6 @@ export const userService = {
       meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
     };
   },
-
 };
 
 async function collectDescendants(rootId: string): Promise<string[]> {
