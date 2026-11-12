@@ -3,8 +3,8 @@ import { usersService } from '@/features/users/services/users.service';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import { Plus, Search, LayoutGrid, List as ListIcon, X, Calendar, PieChart, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Plus, Search, LayoutGrid, List as ListIcon, X, Calendar, PieChart, CheckCircle2, Clock, AlertCircle, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   tasksService, Task, TaskStatus, TaskPriority,
@@ -41,6 +41,7 @@ function isOverdue(iso: string | null) {
 export default function TasksPage() {
   const [dailyReportOpen, setDailyReportOpen] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const [viewMode, setViewMode] = useState<'all' | 'mine' | 'review'>('all');
   const { data: users } = useQuery({ queryKey: ['assignable-users'], queryFn: usersService.assignable });
@@ -49,8 +50,11 @@ export default function TasksPage() {
   const isOpsRole = ['OP_MANAGER', 'WEB_DEVELOPER', 'SOFTWARE_DEVELOPER', 'DIGITAL_MARKETER', 'CONTENT_CREATOR', 'VIDEO_EDITOR', 'GRAPHIC_DESIGNER'].includes(user?.role || '');
   const pageTitle = isOpsRole ? 'Works' : 'Tasks';
   const opsFilter = isOpsRole ? 'true' : 'false';
+  
   const [searchParams] = useSearchParams();
   const customerName = searchParams.get('customerName');
+  const filterUserId = searchParams.get('userId');
+  const filterUserName = searchParams.get('userName');
   
   const [view, setView] = useState<'kanban' | 'list' | 'reports'>('kanban');
   const [search, setSearch] = useState('');
@@ -105,19 +109,18 @@ export default function TasksPage() {
   const rawTasks = view === 'list' ? extractTasks(listQ.data) : extractTasks(kanbanQ.data);
 
   const displayTasks = Array.isArray(rawTasks) ? rawTasks.filter((task: any) => {
+    if (filterUserId && task.assignedToId !== filterUserId) return false;
     if (viewMode === 'mine' && task.assignedToId !== user?.id) return false;
     if (viewMode === 'review' && task.reviewStatus !== 'PENDING_REVIEW') return false;
     return true; 
   }) : [];
 
-  // --- REPORT CALCULATIONS ---
   const totalTasks = displayTasks.length;
   const completedTasksList = displayTasks.filter((t: any) => t.status === 'DONE');
   const doneTasks = completedTasksList.length;
   const pendingTasks = displayTasks.filter((t: any) => t.status !== 'DONE' && t.status !== 'CANCELLED').length;
   const reviewTasks = displayTasks.filter((t: any) => t.reviewStatus === 'PENDING_REVIEW').length;
   
-  // Group by Employee for the report
   const employeeStats = displayTasks.reduce((acc: any, task: any) => {
     const empId = task.assignedToId || 'unassigned';
     const empName = task.assignedTo?.name || 'Unassigned';
@@ -134,6 +137,15 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-4">
+      {filterUserId && (
+        <div className="bg-brand-light p-3 rounded-lg flex justify-between items-center text-ink border border-brand/20 mb-2">
+          <span className="text-[14px]">Viewing <strong>{pageTitle.toLowerCase()}</strong> assigned to <strong>{filterUserName || 'this user'}</strong></span>
+          <button onClick={() => navigate('/tasks')} className="text-brand underline text-[13px] font-medium flex items-center gap-1">
+            <ArrowLeft className="w-3.5 h-3.5" /> Clear Filter
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
         <div>
           <h1 className="text-2xl font-semibold text-ink">{pageTitle}</h1>
@@ -175,11 +187,8 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* -------------------- REPORTS VIEW -------------------- */}
       {view === 'reports' && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-          
-          {/* Top Stat Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white border border-ink-border rounded-xl p-5 shadow-sm flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center shrink-0"><ListIcon className="w-6 h-6 text-blue-600" /></div>
@@ -199,7 +208,6 @@ export default function TasksPage() {
             </div>
           </div>
 
-          {/* Employee Workload Breakdown */}
           <div className="bg-white border border-ink-border rounded-xl shadow-sm p-5">
             <h3 className="text-lg font-semibold text-ink mb-4">Employee Workload</h3>
             <div className="space-y-4">
@@ -229,7 +237,6 @@ export default function TasksPage() {
             </div>
           </div>
 
-          {/* 👇 NEW: All Completed Works Table 👇 */}
           <div className="bg-white border border-ink-border rounded-xl shadow-sm p-5">
             <h3 className="text-lg font-semibold text-ink mb-4">All Completed Works</h3>
             <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
@@ -265,7 +272,6 @@ export default function TasksPage() {
         </motion.div>
       )}
 
-      {/* -------------------- KANBAN VIEW -------------------- */}
       {view === 'kanban' && (
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {COLUMNS.map(col => {
@@ -388,7 +394,6 @@ export default function TasksPage() {
         </motion.div>
       )}
 
-      {/* -------------------- LIST VIEW -------------------- */}
       {view === 'list' && (
         <div className="bg-white border border-ink-border rounded-xl shadow-sm overflow-hidden">
           {listQ.isLoading && <div className="py-12 text-center text-ink-muted text-sm">Loading…</div>}

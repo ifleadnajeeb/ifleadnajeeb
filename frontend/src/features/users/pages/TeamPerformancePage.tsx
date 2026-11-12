@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/auth-provider';
 import { usersService, AppUser, ROLE_LABEL, ROLE_COLOR } from '../services/users.service';
-import { Users, ExternalLink, ShieldAlert } from 'lucide-react';
+import { Users, ExternalLink, ShieldAlert, Briefcase } from 'lucide-react'; // 👈 Added Briefcase icon
 
 // ✅ Clean mapping of tabs. No duplicates.
 const TABS_BY_ROLE: Record<string, Array<string>> = {
@@ -116,13 +116,24 @@ export default function TeamPerformancePage() {
                           {ROLE_LABEL[roleName] ?? roleName}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        <button
-                          onClick={() => navigate(`/panel/${u.id}`)}
-                          className="inline-flex items-center gap-1 text-[13px] font-medium text-brand hover:underline"
-                        >
-                          View panel <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-end gap-4">
+                          {/* 👇 NEW: View Works Button 👇 */}
+                          <button
+                            onClick={() => navigate(`/tasks?userId=${u.id}&userName=${encodeURIComponent(u.name)}`)}
+                            className="inline-flex items-center gap-1 text-[13px] font-medium text-brand hover:underline"
+                          >
+                            View Works <Briefcase className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* EXISTING: View Panel Button */}
+                          <button
+                            onClick={() => navigate(`/panel/${u.id}`)}
+                            className="inline-flex items-center gap-1 text-[13px] font-medium text-ink-muted hover:text-brand transition-colors"
+                          >
+                            View Panel <ExternalLink className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
