@@ -24,15 +24,9 @@ function pairSessions(logs: any[]) {
     if (log.action === 'auth.login') {
       const open = openLogins[log.userId!];
       if (open) {
-        // Auto-close previous open session
         const autoCheckout = new Date(open.checkIn);
-        // 7:00 PM IST = 13:30 UTC
         autoCheckout.setUTCHours(13, 30, 0, 0); 
-        
-        // If they logged in after 7 PM, close at 11:59 PM IST (18:29 UTC)
-        if (open.checkIn > autoCheckout) {
-          autoCheckout.setUTCHours(18, 29, 59, 999);
-        }
+        if (open.checkIn > autoCheckout) autoCheckout.setUTCHours(18, 29, 59, 999);
 
         if (autoCheckout > open.checkIn) {
           const totalHours = (autoCheckout.getTime() - open.checkIn.getTime()) / (1000 * 60 * 60);
@@ -59,16 +53,11 @@ function pairSessions(logs: any[]) {
     }
   }
 
-  // Handle remaining active sessions at the end of the day
   const now = new Date();
   for (const [userId, open] of Object.entries(openLogins)) {
     const autoCheckout = new Date(open.checkIn);
-    // 7:00 PM IST = 13:30 UTC
     autoCheckout.setUTCHours(13, 30, 0, 0); 
-    
-    if (open.checkIn > autoCheckout) {
-      autoCheckout.setUTCHours(18, 29, 59, 999);
-    }
+    if (open.checkIn > autoCheckout) autoCheckout.setUTCHours(18, 29, 59, 999);
 
     if (now > autoCheckout && autoCheckout > open.checkIn) {
        const totalHours = (autoCheckout.getTime() - open.checkIn.getTime()) / (1000 * 60 * 60);
@@ -142,25 +131,36 @@ export const attendanceService = {
           };
         }
         groupedByUser[session.userId].allSessions.push(session);
-        groupedByUser[session.userId].totalHours += session.totalHours;
       }
       
       const dailyResult = Object.values(groupedByUser).map((u: any) => {
         u.allSessions.sort((a: any, b: any) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime());
         
-        const firstLogin = u.allSessions[0].checkIn;
-        const closedSessions = u.allSessions.filter((s: any) => s.checkOut);
+        // 👇 FIXED: Filter sessions to only include ones that actually happened today
+        const todaySessionsList = u.allSessions.filter((s:any) => new Date(s.checkIn) >= start || (s.checkOut && new Date(s.checkOut) >= start));
+        
+        // First Login strictly for today
+        const firstLogin = todaySessionsList.length > 0 ? todaySessionsList[0].checkIn : null;
+        
+        // Last Logout strictly for today
+        const closedSessions = todaySessionsList.filter((s: any) => s.checkOut);
         const lastLogout = closedSessions.length > 0 ? closedSessions[closedSessions.length - 1].checkOut : null;
+        
         const hasActiveSession = !u.allSessions[u.allSessions.length - 1].checkOut;
         
+        // Calculate total hours and breaks based only on today's sessions
+        let totalHours = 0;
+        todaySessionsList.forEach((s:any) => totalHours += s.totalHours);
+
         const breaks: { start: Date; end: Date }[] = [];
         let totalBreakMinutes = 0;
         
-        for (let i = 0; i < u.allSessions.length - 1; i++) {
-          const current = u.allSessions[i];
-          const next = u.allSessions[i+1];
+        for (let i = 0; i < todaySessionsList.length - 1; i++) {
+          const current = todaySessionsList[i];
+          const next = todaySessionsList[i+1];
           if (current.checkOut && next.checkIn) {
             const gapMinutes = (new Date(next.checkIn).getTime() - new Date(current.checkOut).getTime()) / (1000 * 60);
+            
             if (gapMinutes > 20) { 
               breaks.push({ start: current.checkOut, end: next.checkIn });
               totalBreakMinutes += gapMinutes;
@@ -170,10 +170,11 @@ export const attendanceService = {
 
         return {
           ...u,
+          date: firstLogin || u.date,
           firstLogin,
           lastLogout: hasActiveSession ? null : lastLogout,
           hasActiveSession,
-          totalHours: Math.round(u.totalHours * 10) / 10,
+          totalHours: Math.round(totalHours * 10) / 10,
           breaks,
           totalBreakHours: Math.round((totalBreakMinutes / 60) * 10) / 10
         };
