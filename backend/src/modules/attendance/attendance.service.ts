@@ -24,6 +24,7 @@ function pairSessions(logs: any[]) {
     if (log.action === 'auth.login') {
       const open = openLogins[log.userId!];
       if (open) {
+        // Auto-close previous open session at 7 PM IST
         const autoCheckout = new Date(open.checkIn);
         autoCheckout.setUTCHours(13, 30, 0, 0); 
         if (open.checkIn > autoCheckout) autoCheckout.setUTCHours(18, 29, 59, 999);
@@ -53,6 +54,7 @@ function pairSessions(logs: any[]) {
     }
   }
 
+  // Handle remaining active sessions
   const now = new Date();
   for (const [userId, open] of Object.entries(openLogins)) {
     const autoCheckout = new Date(open.checkIn);
@@ -136,28 +138,31 @@ export const attendanceService = {
       const dailyResult = Object.values(groupedByUser).map((u: any) => {
         u.allSessions.sort((a: any, b: any) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime());
         
-        // 👇 FIXED: Filter sessions to only include ones that actually happened today
-        const todaySessionsList = u.allSessions.filter((s:any) => new Date(s.checkIn) >= start || (s.checkOut && new Date(s.checkOut) >= start));
+        // 👇 FIXED: Strictly only include sessions that STARTED on the requested date 👇
+        const sessionsToday = u.allSessions.filter((s: any) => {
+          const checkInTime = new Date(s.checkIn).getTime();
+          return checkInTime >= start.getTime() && checkInTime <= end.getTime();
+        });
+
+        // If they didn't log in today, firstLogin is null
+        const firstLogin = sessionsToday.length > 0 ? sessionsToday[0].checkIn : null;
         
-        // First Login strictly for today
-        const firstLogin = todaySessionsList.length > 0 ? todaySessionsList[0].checkIn : null;
-        
-        // Last Logout strictly for today
-        const closedSessions = todaySessionsList.filter((s: any) => s.checkOut);
+        const closedSessions = sessionsToday.filter((s: any) => s.checkOut);
         const lastLogout = closedSessions.length > 0 ? closedSessions[closedSessions.length - 1].checkOut : null;
         
-        const hasActiveSession = !u.allSessions[u.allSessions.length - 1].checkOut;
-        
-        // Calculate total hours and breaks based only on today's sessions
+        // Check if their very last session overall is still active
+        const lastOverallSession = u.allSessions[u.allSessions.length - 1];
+        const isActiveNow = !lastOverallSession.checkOut;
+
         let totalHours = 0;
-        todaySessionsList.forEach((s:any) => totalHours += s.totalHours);
+        sessionsToday.forEach((s:any) => totalHours += s.totalHours);
 
         const breaks: { start: Date; end: Date }[] = [];
         let totalBreakMinutes = 0;
         
-        for (let i = 0; i < todaySessionsList.length - 1; i++) {
-          const current = todaySessionsList[i];
-          const next = todaySessionsList[i+1];
+        for (let i = 0; i < sessionsToday.length - 1; i++) {
+          const current = sessionsToday[i];
+          const next = sessionsToday[i+1];
           if (current.checkOut && next.checkIn) {
             const gapMinutes = (new Date(next.checkIn).getTime() - new Date(current.checkOut).getTime()) / (1000 * 60);
             
@@ -170,10 +175,10 @@ export const attendanceService = {
 
         return {
           ...u,
-          date: firstLogin || u.date,
+          date: start, // Force the row date to be today
           firstLogin,
-          lastLogout: hasActiveSession ? null : lastLogout,
-          hasActiveSession,
+          lastLogout: isActiveNow ? null : lastLogout,
+          hasActiveSession: isActiveNow,
           totalHours: Math.round(totalHours * 10) / 10,
           breaks,
           totalBreakHours: Math.round((totalBreakMinutes / 60) * 10) / 10
