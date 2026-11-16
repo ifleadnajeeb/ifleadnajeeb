@@ -40,8 +40,8 @@ function toDTO(u: any) {
     email: u.email,
     phone: u.phone,
     status: u.status,
-    role: u.role.name,
-    roleLevel: u.role.level,
+    role: u.role?.name || 'UNKNOWN', // 👈 Safely handle missing roles
+    roleLevel: u.role?.level || 0,
     teamId: u.teamId,
     teamName: u.team?.name ?? null,
     managerId: u.managerId ?? null,
@@ -113,8 +113,9 @@ export const userService = {
     }
     if (query.status) where.status = query.status;
 
-    const page = query.page ?? 1;
-    const pageSize = query.pageSize ?? 20;
+    // 👇 FIXED: Explicitly parse page and pageSize as Numbers 👇
+    const page = Number(query.page) || 1;
+    const pageSize = Number(query.pageSize) || 20;
 
     const [data, total] = await Promise.all([
       prisma.user.findMany({
@@ -138,7 +139,6 @@ export const userService = {
     };
   },
 
-  // 👇 ADDED: The missing getById function 👇
   async getById(actor: AuthUser, id: string) {
     const target = await prisma.user.findUnique({
       where: { id },
@@ -250,8 +250,8 @@ export const userService = {
   },
   
   async bookable(actor: AuthUser, q: any) {
-    const page = Number(q.page ?? 1);
-    const pageSize = Math.min(Number(q.pageSize ?? 100), 200);
+    const page = Number(q.page) || 1;
+    const pageSize = Math.min(Number(q.pageSize) || 100, 200);
     const where: any = {
       organizationId: actor.organizationId,
       status: 'ACTIVE',
