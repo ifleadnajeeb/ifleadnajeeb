@@ -66,16 +66,29 @@ export default function TasksPage() {
     if (customerName) setCreateOpen(true);
   }, [customerName]);
 
+  // 👇 FIXED: Determine target user for API fetch 👇
+  const targetUserId = filterUserId || ((isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id);
+
   const kanbanQ = useQuery({
     refetchOnMount: 'always',
-    queryKey: ['tasks', 'kanban', search],
-    queryFn: () => tasksService.list({ search: search || undefined, pageSize: 100 }),
+    queryKey: ['tasks', 'kanban', search, targetUserId],
+    queryFn: () => tasksService.list({ 
+      search: search || undefined, 
+      pageSize: 100,
+      assignedToId: targetUserId 
+    }),
     enabled: view === 'kanban' || view === 'reports',
   });
   
   const listQ = useQuery({
-    queryKey: ['tasks', 'list', search, page],
-    queryFn: () => tasksService.list({ search: search || undefined, page, pageSize: 30, isOperations: opsFilter, assignedToId: (isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id }),
+    queryKey: ['tasks', 'list', search, page, targetUserId],
+    queryFn: () => tasksService.list({ 
+      search: search || undefined, 
+      page, 
+      pageSize: 30, 
+      isOperations: opsFilter, 
+      assignedToId: targetUserId 
+    }),
     enabled: view === 'list',
   });
 
