@@ -7,14 +7,9 @@ async function scopeFor(req: AuthRequest): Promise<any> {
   const u = req.user!;
   if (u.role === 'ADMIN') return {};
 
-  // ✅ Only CEO and OP_MANAGER see EVERYTHING in the organization
-  if (['CEO', 'OP_MANAGER'].includes(u.role)) {
+  // ✅ FIXED: Added BDM and GM so they can see ALL tasks just like CEO and Admin
+  if (['CEO', 'OP_MANAGER', 'BDM', 'GM'].includes(u.role)) {
     return { organizationId: u.organizationId };
-  }
-
-  if (u.role === 'BDM') {
-    const ids = await collectDesc(u.id);
-    return { organizationId: u.organizationId, assignedToId: { in: ids } };
   }
 
   if (u.role === 'SALES_HEAD') {
@@ -25,8 +20,8 @@ async function scopeFor(req: AuthRequest): Promise<any> {
 
   // ✅ FOR DIGITAL_MARKETER AND ALL OTHER WORKERS:
   // See tasks assigned to them OR tasks they created (even if assigned to others)
-  return { 
-    organizationId: u.organizationId, 
+  return {
+    organizationId: u.organizationId,
     OR: [
       { assignedToId: u.id },
       { createdById: u.id }
@@ -62,14 +57,12 @@ function toDTO(t: any) {
     departmentId: t.departmentId,
     acceptance: t.acceptance,
     reviewStatus: t.reviewStatus,
-    dailyReports: t.dailyReports, // <--- Send latest report data
+    dailyReports: t.dailyReports,
   };
 }
 
 const STATUSES = ['TODO', 'IN_PROGRESS', 'DONE', 'CANCELLED'] as const;
-
-
-  const userSelect = { select: { id: true, name: true, email: true } };
+const userSelect = { select: { id: true, name: true, email: true } };
 
 export const taskService = {
   async submitForReview(req: AuthRequest, id: string, deliverableUrl?: string) {
@@ -78,7 +71,6 @@ export const taskService = {
       data: { status: 'DONE', reviewStatus: 'PENDING_REVIEW', deliverableUrl },
     });
 
-    // Notify the task creator (usually OP Manager)
     if (task.createdById && task.createdById !== req.user!.id) {
       await prisma.notification.create({
         data: {
@@ -151,7 +143,6 @@ export const taskService = {
   },
 
   async list(req: AuthRequest, query: any = {}) {
-    // ✅ Apply role-based scope (workers see only their tasks, managers see all)
     const scope = await scopeFor(req);
     const where: any = { ...scope };
 
@@ -229,11 +220,10 @@ export const taskService = {
       },
     });
 
-    // Auto-update project status if all tasks are done
     if (updated.projectId) {
       const projectTasks = await prisma.task.findMany({ where: { projectId: updated.projectId } });
       const allDone = projectTasks.length > 0 && projectTasks.every((t: any) => t.status === 'DONE' || t.status === 'CANCELLED');
-      
+
       if (allDone) {
         await prisma.project.update({ where: { id: updated.projectId }, data: { status: 'COMPLETED' } });
       } else {
@@ -357,7 +347,6 @@ export const taskService = {
 };
 
 export const TASK_STATUSES = STATUSES;
-
 
 async function collectDescendants(rootId: string): Promise<string[]> {
   const ids: string[] = [rootId];
