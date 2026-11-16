@@ -66,8 +66,9 @@ export default function TasksPage() {
     if (customerName) setCreateOpen(true);
   }, [customerName]);
 
-  // 👇 FIXED: Determine target user for API fetch 👇
-  const targetUserId = filterUserId || ((isOpsRole || user?.role === 'DIGITAL_MARKETER') ? undefined : user?.id);
+  // 👇 FIXED: Added BDM, ADMIN, CEO, GM to the bypass list so they see ALL tasks 👇
+  const isManager = ['ADMIN', 'CEO', 'BDM', 'GM'].includes(user?.role || '');
+  const targetUserId = filterUserId || ((isOpsRole || isManager) ? undefined : user?.id);
 
   const kanbanQ = useQuery({
     refetchOnMount: 'always',
