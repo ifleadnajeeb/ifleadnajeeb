@@ -87,7 +87,6 @@ export const userService = {
   async list(actor: AuthUser, query: any) {
     const where: any = { organizationId: actor.organizationId };
 
-    // Scope based on role
     if (actor.role === 'BDE') {
       where.id = actor.id;
     } else if (actor.role === 'SALES_HEAD') {
@@ -96,9 +95,7 @@ export const userService = {
         { teamId: actor.teamId ?? '__none__' },
       ];
     } else if (actor.role === 'BDM' || actor.role === 'GM' || actor.role === 'ADMIN' || actor.role === 'CEO') {
-      // 👇 FIXED: Admin, CEO, BDM, and GM now see ALL users in the organization.
-      // We removed the `collectDescendants` filter so it doesn't hide unassigned users.
-      // No additional `where` filter is needed here because `organizationId` is already set above.
+      // Admin, CEO, BDM see all users
     }
 
     if (query.search) {
@@ -139,6 +136,19 @@ export const userService = {
         totalPages: Math.ceil(total / pageSize),
       },
     };
+  },
+
+  // 👇 ADDED: The missing getById function 👇
+  async getById(actor: AuthUser, id: string) {
+    const target = await prisma.user.findUnique({
+      where: { id },
+      include: { role: true, team: true, manager: true },
+    });
+    if (!target) throw new Error('User not found');
+    if (target.organizationId !== actor.organizationId) {
+      throw new Error('Cross-organization access denied');
+    }
+    return toDTO(target);
   },
 
   async update(actor: AuthUser, id: string, input: any) {
@@ -204,12 +214,10 @@ export const userService = {
       throw new Error('Cross-organization access denied');
     }
 
-    // Nobody can delete an ADMIN (including other admins)
     if (target.role.name === 'ADMIN') {
       throw new Error('Cannot delete an ADMIN');
     }
 
-    // Hierarchy check — same rules as deactivate
     if (actor.role !== 'ADMIN') {
       const allowed = CAN_MANAGE[actor.role as RoleName] ?? [];
       if (!allowed.includes(target.role.name)) {
@@ -217,33 +225,22 @@ export const userService = {
       }
     }
 
-    // Reassign direct reports so they don't become orphaned
     await prisma.user.updateMany({
       where: { managerId: id },
       data: { managerId: actor.id },
     });
 
-    // Delete in a transaction so FK constraints don't block the deletion
     await prisma.$transaction([
-      // 1. Delete chat messages sent by this user (RESTRICT constraint)
       prisma.chatMessage.deleteMany({ where: { senderId: id } }),
-
-      // 2. Reassign createdBy fields to the actor (RESTRICT constraints)
       prisma.followup.updateMany({ where: { createdById: id }, data: { createdById: actor.id } }),
       prisma.lead.updateMany({ where: { createdById: id }, data: { createdById: actor.id } }),
       prisma.task.updateMany({ where: { createdById: id }, data: { createdById: actor.id } }),
-      
-      // 3. Reassign TimeBlocks
       prisma.timeBlock.updateMany({ where: { createdById: id }, data: { createdById: actor.id } }),
       prisma.timeBlock.updateMany({ where: { userId: id }, data: { userId: actor.id } }),
-
-      // 4. Null out lead assignments so we don't lose leads (SET NULL constraint)
       prisma.lead.updateMany({
         where: { assignedToId: id },
         data: { assignedToId: null },
       }),
-
-      // 5. Remove the user
       prisma.user.delete({ where: { id } }),
     ]);
   },
@@ -295,20 +292,3 @@ export const userService = {
     };
   },
 };
-
-async function collectDescendants(rootId: string): Promise<string[]> {
-  const ids: string[] = [];
-  const queue = [rootId];
-  while (queue.length) {
-    const current = queue.shift()!;
-    const children = await prisma.user.findMany({
-      where: { managerId: current },
-      select: { id: true },
-    });
-    for (const c of children) {
-      ids.push(c.id);
-      queue.push(c.id);
-    }
-  }
-  return ids;
-}
