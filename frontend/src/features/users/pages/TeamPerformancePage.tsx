@@ -4,7 +4,6 @@ import { useAuth } from '@/app/providers/auth-provider';
 import { usersService, AppUser, ROLE_LABEL, ROLE_COLOR } from '../services/users.service';
 import { Users, ExternalLink, ShieldAlert, Briefcase } from 'lucide-react';
 
-// ✅ Added 'ALL' and 'SOFTWARE' roles to the tabs
 const TABS_BY_ROLE: Record<string, Array<string>> = {
   ADMIN:      ['ALL', 'SALES_HEAD', 'GM', 'BDM', 'BDE', 'SOFTWARE_DEVELOPER', 'WEB_DEVELOPER', 'GRAPHIC_DESIGNER', 'VIDEO_EDITOR'],
   CEO:        ['ALL', 'SALES_HEAD', 'GM', 'BDM', 'BDE', 'SOFTWARE_DEVELOPER', 'WEB_DEVELOPER', 'GRAPHIC_DESIGNER', 'VIDEO_EDITOR'],
@@ -31,19 +30,31 @@ export default function TeamPerformancePage() {
     usersService
       .list({ page: 1, pageSize: 100 })
       .then((r: any) => {
-        const fetchedUsers = r?.data || r || [];
+        // 👇 BULLETPROOF DATA EXTRACTION 👇
+        let fetchedUsers: any[] = [];
+        
+        if (Array.isArray(r)) {
+          fetchedUsers = r;
+        } else if (r && Array.isArray(r.data)) {
+          fetchedUsers = r.data;
+        } else if (r && r.data && Array.isArray(r.data.data)) {
+          fetchedUsers = r.data.data;
+        }
+
         const filtered = fetchedUsers.filter((u: AppUser) => {
-          // 👇 If "ALL" is selected, show everyone
-          if (active === 'ALL') return true; 
+          if (!u || !u.role) return false;
+          if (active === 'ALL') return true;
           
           const roleName = typeof u.role === 'object' ? (u.role as any)?.name : u.role;
           return roleName === active;
         });
+        
         setRows(filtered);
       })
       .catch((e: any) => {
         console.error("Team Performance API Error:", e);
-        setError(e?.response?.data?.message || 'Failed to load team. Check permissions.');
+        // Show actual error message if available, otherwise generic
+        setError(e?.response?.data?.message || e?.message || 'Failed to load team. The server might be restarting.');
       })
       .finally(() => setLoading(false));
   }, [active]);
@@ -120,23 +131,18 @@ export default function TeamPerformancePage() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center justify-end gap-4">
-                          
-                          {/* View Works Button */}
                           <button
                             onClick={() => navigate(`/tasks?userId=${u.id}&userName=${encodeURIComponent(u.name)}`)}
                             className="inline-flex items-center gap-1 text-[13px] font-medium text-brand hover:underline"
                           >
                             View Works <Briefcase className="w-3.5 h-3.5" />
                           </button>
-
-                          {/* View Panel Button */}
                           <button
                             onClick={() => navigate(`/panel/${u.id}`)}
                             className="inline-flex items-center gap-1 text-[13px] font-medium text-ink-muted hover:text-brand transition-colors"
                           >
                             View Panel <ExternalLink className="w-3.5 h-3.5" />
                           </button>
-
                         </div>
                       </td>
                     </tr>
