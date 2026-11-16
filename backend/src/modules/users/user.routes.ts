@@ -1,24 +1,31 @@
 import { Router } from 'express';
+import { userController } from './user.controller.js';
 import { authenticate } from '../../middleware/auth.middleware.js';
 import { requirePermission } from '../../middleware/permission.middleware.js';
 import { validate } from '../../middleware/validation.middleware.js';
-import { audit } from '../../services/audit.service.js';
-import { CreateUserSchema, UpdateUserSchema, ListUsersQuerySchema } from './user.schema.js';
-import { userController } from './user.controller.js';
 
 const router = Router();
 router.use(authenticate);
 
-router.get('/me/can-create', requirePermission('users:read'), userController.canCreate);
+// 👇 SPECIFIC ROUTES MUST GO BEFORE /:id 👇
+router.get(
+  '/can-create',
+  userController.canCreate
+);
 
-// NEW: any authenticated user — scoped by hierarchy
-router.get('/assignable', validate(ListUsersQuerySchema, 'query'), userController.list);
-router.get('/bookable', validate(ListUsersQuerySchema, 'query'), userController.bookable);
+router.get(
+  '/bookable',
+  userController.bookable
+);
 
-router.get('/', requirePermission('users:read'), validate(ListUsersQuerySchema, 'query'), userController.list);
-router.post('/', requirePermission('users:create'), validate(CreateUserSchema), audit('user.create', 'User'), userController.create);
-router.patch('/:id', requirePermission('users:update'), validate(UpdateUserSchema), audit('user.update', 'User'), userController.update);
-router.delete('/:id', requirePermission('users:delete'), audit('user.deactivate', 'User'), userController.deactivate);
-router.delete('/:id/permanent', requirePermission('users:delete'), audit('user.delete', 'User'), userController.remove);
+// Standard CRUD routes
+router.get('/', requirePermission('users:read'), userController.list);
+router.post('/', requirePermission('users:create'), userController.create);
+
+// Dynamic ID routes
+router.get('/:id', requirePermission('users:read'), userController.getById);
+router.patch('/:id', requirePermission('users:update'), userController.update);
+router.patch('/:id/deactivate', requirePermission('users:update'), userController.deactivate);
+router.delete('/:id', requirePermission('users:delete'), userController.remove);
 
 export default router;
